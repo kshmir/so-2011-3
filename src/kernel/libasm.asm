@@ -21,77 +21,76 @@ SECTION .text
 
 
 _Cli:
-	cli			; limpia flag de interrupciones
-	ret
+		cli			; limpia flag de interrupciones
+		ret
 
 _Sti:
-
-	sti			; habilita interrupciones por flag
-	ret
+		sti			; habilita interrupciones por flag
+		ret
 
 _mascaraPIC1:			; Escribe mascara del PIC 1
-	push    ebp
-        mov     ebp, esp
-        mov     ax, [ss:ebp+8]  ; ax = mascara de 16 bits
-        out	21h,al
-        pop     ebp
-        retn
+		push	ebp
+		mov		ebp, esp
+		mov		ax, [ss:ebp+8]  ; ax = mascara de 16 bits
+		out		21h,al
+		pop		ebp
+		retn
 
 _mascaraPIC2:			; Escribe mascara del PIC 2
-	push    ebp
-    mov     ebp, esp
-    mov     ax, [ss:ebp+8]  ; ax = mascara de 16 bits
-    out		0A1h,al
-    pop     ebp
-    retn
+		push	ebp
+		mov		ebp, esp
+		mov		ax, [ss:ebp+8]  ; ax = mascara de 16 bits
+		out		0A1h,al
+		pop		ebp
+		retn
 
 _read_msw:
         smsw    ax		; Obtiene la Machine Status Word
         retn
 
+; Carga el IDTR
+_lidt:
+		push	ebp
+		mov		ebp, esp
+		push	ebx
+		mov		ebx, [ss: ebp + 6] ; ds:bx = puntero a IDTR
+		rol		ebx,16
+		lidt	[ds: ebx]          ; carga IDTR
+		pop		ebx
+		pop		ebp
+		retn
 
-_lidt:				; Carga el IDTR
-        push    ebp
-        mov     ebp, esp
-        push    ebx
-        mov     ebx, [ss: ebp + 6] ; ds:bx = puntero a IDTR 
-	rol	ebx,16		    	
-	lidt    [ds: ebx]          ; carga IDTR
-        pop     ebx
-        pop     ebp
-        retn
-
-
-_int_08_hand:				; Handler de INT 8 ( Timer tick)
-        push    ds
-        push    es                      ; Se salvan los registros
-        pusha                           ; Carga de DS y ES con el valor del selector
-        mov     ax, 10h			; a utilizar.
-        mov     ds, ax
-        mov     es, ax                  
-        call    int_08                 
-        mov	al,20h			; Envio de EOI generico al PIC
-	out	20h,al
-	popa                            
-        pop     es
-        pop     ds
-        iret
+; Handler de INT 8 ( Timer tick)
+_int_08_hand:
+		push	ds
+		push	es					; Se salvan los registros
+		pusha							; Carga de DS y ES con el valor del selector
+		mov		ax, 10h			; a utilizar.
+		mov		ds, ax
+		mov		es, ax
+		call	int_08
+		mov		al,20h			; Envio de EOI generico al PIC
+		out		20h,al
+		popa
+		pop		es
+		pop		ds
+		iret
 
 __stack_chk_fail:
-				ret
+		ret
 
 
 _int_09_hand:
-	cli
-        push    ds
-        push    es      	; Se salvan los registros
-        pusha           	; Carga de DS y ES con el valor del selector
-        call int_09		; Se llama a la funcion en C
-        popa
-        pop     es
-        pop     ds
-	sti
-        iret
+		cli
+		push	ds
+		push	es      	; Se salvan los registros
+		pusha           	; Carga de DS y ES con el valor del selector
+		call	int_09		; Se llama a la funcion en C
+		popa
+		pop		es
+		pop		ds
+		sti
+		iret
 
 ; recibe parametros a traves de los registros
 ; aex -> 0 para write, 1 para read
@@ -100,101 +99,101 @@ _int_09_hand:
 ; edx -> cantidad de caracteres a escribir
 
 _int_80_hand:
-    cli
-    push ds
-    push es
-    pusha
-    push edx             ; cantidad de caracteres a escribir
-    push ecx             ; direccion de la cadena a escribir
-    push ebx             ; file descriptor
-    push eax		; system call
-    call int_80
-    pop eax             ; saco parametros
-    pop eax
-    pop eax
-    pop eax
-    popa
-    pop es
-    pop ds
-    sti
-    iret
+		cli
+		push	ds
+		push	es
+		pusha
+		push	edx             ; cantidad de caracteres a escribir
+		push	ecx             ; direccion de la cadena a escribir
+		push	ebx             ; file descriptor
+		push	eax		; system call
+		call int_80
+		pop		eax             ; saco parametros
+		pop		eax
+		pop		eax
+		pop		eax
+		popa
+		pop		es
+		pop		ds
+		sti
+		iret
 
 _write:
-	push ebp
-	mov ebp, esp
-	pusha
-	mov eax, 0		; eax en 0 para write
-	mov ebx, [ebp+8]	; file descriptor
-	mov ecx, [ebp+12]	; buffer a escribiar
-	mov edx, [ebp+16]	; cantidad
-	int 80h
-	popa
-	mov esp,ebp
-	pop ebp
-	ret
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov		eax, 0		; eax en 0 para write
+		mov 	ebx, [ebp+8]	; file descriptor
+		mov 	ecx, [ebp+12]	; buffer a escribiar
+		mov 	edx, [ebp+16]	; cantidad
+		int 	80h
+		popa
+		mov 	esp,ebp
+		pop 	ebp
+		ret
 
 _read:
-	push ebp
-	mov ebp, esp
-	pusha
-	mov eax, 1		; eax en 1 para read
-	mov ebx, [ebp+8]	; file descriptor
-	mov ecx, [ebp+12]	; buffer donde escribir
-	mov edx, [ebp+16]	; cantidad
-	int 80h
-	popa
-	mov esp, ebp
-	pop ebp
-	ret
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov 	eax, 1		; eax en 1 para read
+		mov 	ebx, [ebp+8]	; file descriptor
+		mov 	ecx, [ebp+12]	; buffer donde escribir
+		mov 	edx, [ebp+16]	; cantidad
+		int 	80h
+		popa
+		mov 	esp, ebp
+		pop 	ebp
+		ret
 
 _setCursor:
-	        push ebp
-	mov ebp, esp		; Stack frame
-	mov bx, [ebp+8]  	; lo que se envia
-	mov al,0x0e
-	mov dx,0x03d4
-	out dx, al
-	mov al,bh
-	mov dx,0x03d5
-	out dx, al
-	mov al,0x0f
-	mov dx,0x03d4
-	out dx, al
-	mov al,bl
-	mov dx,0x03d5
-	out dx, al
-	pop ebp
-	ret
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		bx, [ebp+8]  	; lo que se envia
+		mov		al,0x0e
+		mov		dx,0x03d4
+		out		dx, al
+		mov		al,bh
+		mov		dx,0x03d5
+		out		dx, al
+		mov		al,0x0f
+		mov		dx,0x03d4
+		out		dx, al
+		mov		al,bl
+		mov		dx,0x03d5
+		out		dx, al
+		pop		ebp
+		ret
 
 _restart:
-	mov al,0xfe
-	out 0x64,al
-	ret
+		mov		al,0xfe
+		out		0x64,al
+		ret
 
-_in:	
-    push ebp	
-    mov ebp, esp		; Stack frame
-    mov edx, [ebp+8]    ; Puerto
-    mov eax, 0          ; Limpio eax
-    in al, dx
-	pop ebp
-	ret
+_in:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		edx, [ebp+8]    ; Puerto
+		mov		eax, 0          ; Limpio eax
+		in		al, dx
+		pop		ebp
+		ret
 
 _out:
-    push ebp
-	mov ebp, esp		; Stack frame
-	mov edx, [ebp+8]   	; Puerto
-	mov eax, [ebp+12]  	; Lo que se va a mandar
-	out dx, al
-	pop ebp
-	ret
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		edx, [ebp+8]   	; Puerto
+		mov		eax, [ebp+12]  	; Lo que se va a mandar
+		out		dx, al
+		pop		ebp
+		ret
 
 _rdtsc:
-        push ebp	
-        mov ebp, esp		; Stack frame
+		push	ebp
+		mov		ebp, esp		; Stack frame
 		rdtsc
-		mov esp,ebp
-		pop ebp
+		mov		esp,ebp
+		pop		ebp
 		ret
 
 ; Debug para el BOCHS, detiene la ejecució; Para continuar colocar en el BOCHSDBG: set $eax=0
@@ -202,15 +201,16 @@ _rdtsc:
 
 
 _debug:
-        push    bp
-        mov     bp, sp
-        push	ax
-vuelve:	mov     ax, 1
-        cmp	ax, 0
-	jne	vuelve
-	pop	ax
-	pop     bp
-        retn
+		push	bp
+		mov		bp, sp
+		push	ax
+vuelve:	
+		mov		ax, 1
+		cmp		ax, 0
+		jne		vuelve
+		pop		ax
+		pop		bp
+		retn
 
 
-	
+

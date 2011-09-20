@@ -101,7 +101,7 @@ char* whenTabCalls(char* s) {
 // Shell startup
 void shellStart() {
 
-	printf("Murcielag O.S. is loading...\n");
+	printf("Monkey O.S. is loading...\n");
 	setTabCall(whenTabCalls);
 	setArrowHit(onKey);
 
@@ -112,21 +112,15 @@ void shellStart() {
 	f - 2.0;
 
 	_rdtsc();
-
-	printf("\n     ***Mucielag O.S*** \n\n");
-	printf("         (_    ,_,    _) \n");
-	printf("         / `'--) (--'` \\ \n");
-	printf("        /  _,-'\\_/'-,_  \\ \n");
-	printf("       /.-'     \"     '-.\\ \n\n\n\n");
-
 }
 
 char* loggedUser = NULL;
 char* command = NULL;
 void shellMain() {
 	while (1) {
-		if (loggedUser == NULL)
+		if (loggedUser == NULL) {
 			login(0, NULL);
+		}
 		printf(loggedUser);
 		int var = 0;
 		printf(OSDEFST);
@@ -137,8 +131,7 @@ void shellMain() {
 			createCall(command);
 			currentCall = NULL;
 			for (index = 0; function_names[index] != NULL; ++index) {
-				if (!strcmp(command, function_names[index]) && strlen(command)
-						>= strlen(function_names[index])) {
+				if (!strcmp(command, function_names[index]) && strlen(command) >= strlen(function_names[index])) {
 					int n = 0;
 					char** strs = sString(command, ' ', &n);
 					functions[index](n, strs);
@@ -155,15 +148,9 @@ int login(int size, char** args) {
 		printf("You are already logged in as: %s\n", loggedUser);
 	} else {
 		do {
-			printf("MurcielagOS login:");
+			printf("Login:");
 			loggedUser = getConsoleString(FALSE);
 		} while (loggedUser[0] == 0 || loggedUser[0] == '\n');
-
-		printf(
-				"Type `help cpuSpeed' to find out more about the function `cpuSpeed'.\n");
-		printf("   Ortiz, Ezequiel\n");
-		printf("   Pereyra, Cristian\n");
-		printf("   Videla, Maximo\n");
 	}
 }
 // "Logs out" a user just for fun and test
@@ -225,24 +212,19 @@ int printHelp(int size, char** args) {
 	}
 
 	if (!found) {
-		printf(
-				"MurcielagOS bash, version 1.0.0(1)-release (i686-pc-murcielago)\n");
-		printf(
-				"These shell commands are defined internally.  Type `help' to see this list.\n");
-		printf(
-				"Type `help cpuSpeed' to find out more about the function `cpuSpeed'.\n");
+		printf("MurcielagOS bash, version 1.0.0(1)-release (i686-pc-murcielago)\n");
+		printf("These shell commands are defined internally.  Type `help' to see this list.\n");
+		printf("Type `help cpuSpeed' to find out more about the function `cpuSpeed'.\n");
 	} else {
 		if (strcmp(command, "cpuSpeed") == 0) {
-			printf(
-					"Usage: cpuSpeed (r)? (numberofiterations) (numberofticks)\n");
+			printf("Usage: cpuSpeed (r)? (numberofiterations) (numberofticks)\n");
 			printf("numberofiterations is 1 by default\n");
 			printf("numbeofticks is 2 by default (wastes 1 for synchrony)\n");
-			printf(
-					"\"e\" will make the result more exact, by not approximating\n");
-			printf(
-					"Only use the extra params if you don't get good precision\n");
-		} else
+			printf("\"e\" will make the result more exact, by not approximating\n");
+			printf("Only use the extra params if you don't get good precision\n");
+		} else {
 			printf("Takes no parameters \n");
+		}
 	}
 }
 
@@ -300,8 +282,7 @@ int test(int size, char** args) {
 int ssh(int size, char** args) {
 	printf("Attempting to connect...\n");
 	printf("Oooops we forgot our internals don't have any TCP/IP backend...\n");
-	printf(
-			"You'll have to wait for MurcielagOS 2.0 or maybe 11.0 to see this working\n");
+	printf("You'll have to wait for MurcielagOS 2.0 or maybe 11.0 to see this working\n");
 	printf("Take a seat and wait!!!\n");
 	printf("...\n");
 	printf("...\n");

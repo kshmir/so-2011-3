@@ -1,3 +1,7 @@
+if [ $PWD == "/root" ]; then
+  cd tp2so
+fi
+
 cd bin
 
 nasm -f aout ../src/kernel/libasm.asm -o libasm.o

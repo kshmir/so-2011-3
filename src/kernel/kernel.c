@@ -88,18 +88,20 @@ double* getFrequency(int precision, int tcks) {
 	return &cpuFreq;
 }
 
+
+
 // Just counts ticks and updates the cursor.
 void int_08() {
 	ticks++;
 	cursor_ticks++;
-	if (cursor_ticks % 5 == 0)
-		if (hardCursorEnabled) {
-			cursorEnabled = !cursorEnabled;
-			if (cursorEnabled)
-				_setCursor(videoPos / 2);
-			else
-				_setCursor(-1);
-		}
+	if (hardCursorEnabled && cursor_ticks % 5 == 0) {
+		cursorEnabled = !cursorEnabled;
+		if (cursorEnabled)
+			_setCursor(videoPos / 2);
+		else
+			_setCursor(-1);
+	}
+
 }
 /* Handler del teclado */
 void int_09() {
@@ -112,10 +114,12 @@ void int_09() {
 	flag = flag || (scancode >= 0x10 && scancode <= 0x1b);
 	flag = flag || (scancode >= 0x1E && scancode <= 0x29);
 	flag = flag || (scancode >= 0x2b && scancode <= 0x35);
-	if (flag)
+	if (flag) {
 		pushC(scanCodeToChar(scancode)); //guarda un char en el stack
-	else
+	}
+	else {
 		controlKey(scancode); // Envia el scancode al analizador de control keys.
+	}
 
 	_write(PIC1, &eoi, 1);
 }
@@ -138,14 +142,14 @@ void int_80(int systemCall, int fd, char *buffer, int count) {
 		if (fd == STDOUT) //PANTALL
 		{
 			setBytes(vidmem + videoPos, buffer, count);
-		} else if (fd == PIC1)
+		} else if (fd == PIC1) {
 			_out(0x20, buffer[0]);
-
+		}
 	} else if (systemCall == READ) //read
 	{
-		if (fd == KEYBOARD)
+		if (fd == KEYBOARD) {
 			buffer[0] = _in(0x60);
-
+		}
 	}
 }
 
