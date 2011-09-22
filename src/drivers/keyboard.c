@@ -1,4 +1,7 @@
 #include "keyboard.h"
+#include "../../include/kernel.h"
+#include "../../include/kasm.h"
+#include "../../include/defs.h"
 
 #define MAX 0xff
 /* Pongo 2 coordenadas. 1: tecla normal. 2: Shift. */
@@ -145,6 +148,7 @@ void startKeyboard()
 	}
 }
 
+int _canRead = 0;
 
 // Buffer for arrows
 void pushArr(char c) {
@@ -154,6 +158,7 @@ void pushArr(char c) {
 }
 
 void pushC(char c) {
+	_canRead = 1;
 	if (charBufferPointer >= BUFFER_SIZE - 1)
 		charBufferPointer = BUFFER_SIZE - 2;
 	charBuffer[++charBufferPointer] = c;
@@ -296,9 +301,11 @@ char getA() {
 	return arrowBuffer[arrowBufferPointer--];
 }
 
-char getC() {
-	if (charBufferPointer < 0)
-		return 0;
+
+char getC() {	
+	while (charBufferPointer < 0) {
+		_Halt();
+	}
 
 	return charBuffer[charBufferPointer--];
 }

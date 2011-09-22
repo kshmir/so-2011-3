@@ -42,6 +42,7 @@ char getchar() {
 				putTab();
 			}
 		}
+		
 	}
 	putchar(c);
 	return c;

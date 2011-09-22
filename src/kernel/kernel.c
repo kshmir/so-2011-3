@@ -218,7 +218,6 @@ int kernel_main(int argc, char ** params) {
 }
 
 int idle_main(int argc, char ** params) {
-	printf("Idle Start...");		 
 	while(1) {
 		_Halt();
 	}
@@ -268,6 +267,8 @@ kmain() {
 	
 
 	idle = create_process("idle", idle_main, 0, 1);
+	tty_init();
+	tty_init();
 	tty_init();
 	_Sti();
 

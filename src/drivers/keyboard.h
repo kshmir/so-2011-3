@@ -5,6 +5,10 @@
 
 char scanCodeToChar(char scanCode);
 
+int canRead();
+
+int setCanRead(int c);
+
 void startKeyboard();
 /** Stores all the characters it receives on a buffer */
 void pushC(char c);

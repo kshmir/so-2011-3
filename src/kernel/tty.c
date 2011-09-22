@@ -32,7 +32,9 @@ int tty_main (int argc, char ** argv)
 	init_context(tty_id);
 	printf("user@tty:");
 	while(1) {
-
+		int val = 0;
+		char * input = (char *) getConsoleString(val);
+		printf("%s\n", input);
 		_Halt();
 	}
 	return 0;
