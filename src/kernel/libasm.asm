@@ -13,12 +13,20 @@ GLOBAL	_out
 GLOBAL  __stack_chk_fail
 GLOBAL	_rdtsc
 
+GLOBAL _GetCS
+GLOBAL _GetESP
+GLOBAL _Halt
+
 EXTERN  int_08
 EXTERN  int_09
 EXTERN	int_80
+EXTERN	scheduler_save_esp
+EXTERN	scheduler_get_temp_esp
+EXTERN	scheduler_think
+EXTERN	scheduler_load_esp
+
 
 SECTION .text
-
 
 _Cli:
 		cli			; limpia flag de interrupciones
@@ -26,6 +34,19 @@ _Cli:
 
 _Sti:
 		sti			; habilita interrupciones por flag
+		ret
+		
+; TODO: Improve this
+_Halt:			; Should lock everything?
+		hlt			; wait for HPET/PIT
+		ret
+		
+_GetCS: 		; For debugging
+		mov eax, cs
+		ret
+		
+_GetESP:		; For debugging
+		mov eax, esp
 		ret
 
 _mascaraPIC1:			; Escribe mascara del PIC 1
@@ -62,18 +83,38 @@ _lidt:
 
 ; Handler de INT 8 ( Timer tick)
 _int_08_hand:
-		push	ds
-		push	es					; Se salvan los registros
-		pusha							; Carga de DS y ES con el valor del selector
-		mov		ax, 10h			; a utilizar.
-		mov		ds, ax
-		mov		es, ax
-		call	int_08
-		mov		al,20h			; Envio de EOI generico al PIC
-		out		20h,al
-		popa
-		pop		es
-		pop		ds
+;		push	ds
+;		push	es					; Se salvan los registros
+;		pusha							; Carga de DS y ES con el valor del selector
+;		mov		ax, 10h			; a utilizar.
+;		mov		ds, ax
+;		mov		es, ax
+;		call	int_08
+;		mov		al,20h			; Envio de EOI generico al PIC
+;		out		20h,al
+;		popa
+;		pop		es
+;		pop		ds
+;		iret
+		
+		cli
+		pushad
+			mov eax, esp
+			push eax
+				call scheduler_save_esp
+			pop eax
+				call scheduler_get_temp_esp
+			mov esp, eax
+				call scheduler_think
+			push eax
+				call scheduler_load_esp
+			pop ebx
+			mov esp,eax
+			;call _debug;
+		popad
+		sti
+		mov al,20h			; Envio de EOI generico al PIC
+		out 20h,al
 		iret
 
 __stack_chk_fail:
@@ -90,6 +131,8 @@ _int_09_hand:
 		pop		es
 		pop		ds
 		sti
+		mov al,20h			; Envio de EOI generico al PIC
+		out 20h,al
 		iret
 
 ; recibe parametros a traves de los registros
@@ -106,7 +149,7 @@ _int_80_hand:
 		push	edx             ; cantidad de caracteres a escribir
 		push	ecx             ; direccion de la cadena a escribir
 		push	ebx             ; file descriptor
-		push	eax		; system call
+		push	eax							; system call
 		call int_80
 		pop		eax             ; saco parametros
 		pop		eax
@@ -122,10 +165,10 @@ _write:
 		push 	ebp
 		mov 	ebp, esp
 		pusha
-		mov		eax, 0		; eax en 0 para write
-		mov 	ebx, [ebp+8]	; file descriptor
-		mov 	ecx, [ebp+12]	; buffer a escribiar
-		mov 	edx, [ebp+16]	; cantidad
+		mov		eax, 0					; eax en 0 para write
+		mov 	ebx, [ebp+8]		; file descriptor
+		mov 	ecx, [ebp+12]		; buffer a escribiar
+		mov 	edx, [ebp+16]		; cantidad
 		int 	80h
 		popa
 		mov 	esp,ebp
@@ -136,10 +179,10 @@ _read:
 		push 	ebp
 		mov 	ebp, esp
 		pusha
-		mov 	eax, 1		; eax en 1 para read
-		mov 	ebx, [ebp+8]	; file descriptor
-		mov 	ecx, [ebp+12]	; buffer donde escribir
-		mov 	edx, [ebp+16]	; cantidad
+		mov 	eax, 1					; eax en 1 para read
+		mov 	ebx, [ebp+8]		; file descriptor
+		mov 	ecx, [ebp+12]		; buffer donde escribir
+		mov 	edx, [ebp+16]		; cantidad
 		int 	80h
 		popa
 		mov 	esp, ebp
@@ -196,8 +239,8 @@ _rdtsc:
 		pop		ebp
 		ret
 
-; Debug para el BOCHS, detiene la ejecució; Para continuar colocar en el BOCHSDBG: set $eax=0
-;
+; Debug para el BOCHS, detiene la ejecución Para continuar colocar en el BOCHSDBG: set $eax=0
+
 
 
 _debug:

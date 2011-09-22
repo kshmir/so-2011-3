@@ -19,6 +19,9 @@ typedef struct {
 ShellCall* lastCall;
 ShellCall* currentCall;
 
+char* loggedUser = NULL;
+char* command = NULL;
+
 void createCall(char* command) {
 	ShellCall* call = malloc(sizeof(ShellCall));
 	char* comm = malloc(sizeof(char) * strlen(command) + 1);
@@ -101,7 +104,7 @@ char* whenTabCalls(char* s) {
 // Shell startup
 void shellStart() {
 
-	printf("Monkey O.S. is loading...\n");
+	printf("Monkey O.S v0.0.1 is loading...\n");
 	setTabCall(whenTabCalls);
 	setArrowHit(onKey);
 
@@ -114,8 +117,6 @@ void shellStart() {
 	_rdtsc();
 }
 
-char* loggedUser = NULL;
-char* command = NULL;
 void shellMain() {
 	while (1) {
 		if (loggedUser == NULL) {
@@ -133,7 +134,7 @@ void shellMain() {
 			for (index = 0; function_names[index] != NULL; ++index) {
 				if (!strcmp(command, function_names[index]) && strlen(command) >= strlen(function_names[index])) {
 					int n = 0;
-					char** strs = sString(command, ' ', &n);
+					char** strs = split_string(command, ' ', &n);
 					functions[index](n, strs);
 				}
 			}
@@ -270,7 +271,7 @@ int test(int size, char** args) {
 
 	printf("These lines should be splitted");
 	int n = 0;
-	char** strs = sString("These lines should be splitted\n", ' ', &n);
+	char** strs = split_string("These lines should be splitted\n", ' ', &n);
 	int var = 0;
 	for (var = 0; var < n; ++var) {
 		printf("%s\n", strs[var]);

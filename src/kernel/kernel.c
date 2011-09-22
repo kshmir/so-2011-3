@@ -2,13 +2,19 @@
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
 
+#include "../scheduler/scheduler.h"
 #include "../startup/start.h"
 #include "../drivers/keyboard.h"
 #include "../drivers/video.h"
 #include "../shell.h"
 
-DESCR_INT idt[0x81]; /* IDT de 80h entradas*/
-IDTR idtr; /* IDTR */
+
+///////////// Inicio de Variables del Kernel
+
+/* IDT de 80h entradas*/
+DESCR_INT idt[0x81]; 
+/* IDTR */
+IDTR idtr; 
 
 // Counter of IRQ8 ticks since start.
 int ticks = 0;
@@ -16,31 +22,42 @@ int cursor_ticks = 0;
 
 // Counter of the video position
 int videoPos = 0;
+
 // Sets or not the cursor
 int cursorEnabled = 1;
 int hardCursorEnabled = 1;
+
 // Direction to the video memory.
 char *vidmem = (char *) 0xb8000;
+
 // Stores the CPU frequency.
 double cpuFreq = 0;
 
+int fix_flag = 0;
+
+///////////// Fin de Variables del Kernel
+
+///////////// Inicio de funciones auxiliares del Kernel.
+
+// TODO: Move me
 int _ticks() {
 	return cursor_ticks;
 }
+
+// TODO: Move me.
 void setCursor(int b) {
 	cursorEnabled = b;
 	hardCursorEnabled = b;
 }
 
+// TODO: Move me.
 void setVideoPos(int a) {
 	videoPos = a;
 	if (cursorEnabled)
 		_setCursor(a / 2);
 }
 
-int fix_flag = 0;
-
-// Gets the raw frecuency of the cpu
+// This method can be cleaned up...
 double* getFrequency(int precision, int tcks) {
 	// Precision gives us the amount of times it'll be approximated.
 	// Tcks gives us the amount of ticks to try to get the frecuency
@@ -88,9 +105,38 @@ double* getFrequency(int precision, int tcks) {
 	return &cpuFreq;
 }
 
+// Escribre sobre s la cantidad n de data que se le manda desde c
+void setBytes(void *s, char* c, int n) {
+	unsigned char *p = s;
+	int i;
 
+	for (i = 0; i < n; i++) {
+		p[i] = (char) c[i];
+	}
+}
 
-// Just counts ticks and updates the cursor.
+/*
+ *	setup_IDT_entry
+ * 		Inicializa un descriptor de la IDT
+ *
+ *	Recibe: Puntero a elemento de la IDT
+ *	 Selector a cargar en el descriptor de interrupcion
+ *	 Puntero a rutina de atencion de interrupcion
+ *	 Derechos de acceso del segmento
+ *	 Cero
+ */
+void setup_IDT_entry(DESCR_INT *item, byte selector, dword offset, byte access, byte cero) {
+	item->selector = selector;
+	item->offset_l = offset & 0xFFFF;
+	item->offset_h = offset >> 16;
+	item->access = access;
+	item->cero = cero;
+}
+
+///////////// Fin de funciones auxiliares del kernel.
+
+///////////// Inicio Handlers de interrupciones.
+
 void int_08() {
 	ticks++;
 	cursor_ticks++;
@@ -103,7 +149,7 @@ void int_08() {
 	}
 
 }
-/* Handler del teclado */
+
 void int_09() {
 	char scancode;
 	char eoi = EOI;
@@ -123,17 +169,7 @@ void int_09() {
 
 	_write(PIC1, &eoi, 1);
 }
-/* Escribe en la posicion de memoria s el
- * caracter c, n veces */
-void setBytes(void *s, char* c, int n) {
-	unsigned char *p = s;
-	int i;
 
-	for (i = 0; i < n; i++)
-		p[i] = (char) c[i];
-}
-
-/* Handler de INT 80h */
 void int_80(int systemCall, int fd, char *buffer, int count) {
 	int i, j;
 
@@ -153,17 +189,50 @@ void int_80(int systemCall, int fd, char *buffer, int count) {
 	}
 }
 
+///////////// Fin Handlers de interrupciones.
+
+
+Process * p1, * idle, * kernel;
+
+int thinked3 = 0;
+
+int p1_main(int argc, char ** params) {
+	int var = 0;
+	while(1) {
+		if(var < 10240) {
+			var++;
+		}
+		printf("I am the main... %d %d\n", var, thinked3);
+	}	
+}
+
+int kernel_main(int argc, char ** params) {
+	while(1) {
+		if(thinked3 < 102400) {
+			thinked3++;
+		}
+		_Halt();
+	}
+}
+
+int idle_main(int argc, char ** params) {
+	printf("Idle Start...");		 
+	while(1) {
+		_Halt();
+	}
+}
+
+
+///////////// Inicio KMAIN
+
 /**********************************************
  kmain()
- Punto de entrada de c—digo C.
+ Punto de entrada de cÃ³digo C.
  *************************************************/
-
 kmain() {
-
 	int i, num;
 
-	/* Borra la pantalla. */
-
+	_Cli();
 	/* CARGA DE IDT CON LA RUTINA DE ATENCION DE IRQ0    */
 
 	setup_IDT_entry(&idt[0x08], 0x08, (dword) & _int_08_hand, ACS_INT, 0);
@@ -184,21 +253,29 @@ kmain() {
 
 	_lidt(&idtr);
 
-	_Cli();
+	startKeyboard();
+	initVideo();
+
+
+
 
 	/* Habilito interrupcion de timer tick*/
 	_mascaraPIC1(0xFC);
 	_mascaraPIC2(0xFF);
+	
+	idle = create_process("idle", idle_main, 0, 1);
+	kernel = create_process("kernel", kernel_main, 0, 1);
+	p1 = create_process("p1", p1_main, 0, 1);
+
+
 	_Sti();
 
-	startKeyboard();
-	initVideo();
-	shellStart();
 
-	/* KeepAlive loop */
-	while (1) {
-		// Main del shell
-		shellMain();
-	}
+
+	
+	// We soon exit out of here :)
+	while (1);
 
 }
+
+///////////// Fin KMAIN

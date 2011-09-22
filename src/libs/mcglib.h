@@ -2,7 +2,7 @@
 
 #define _MCGLIBB_H_
 
-char ** sString(char* c, char ch, int* len);
+char ** split_string(char* c, char ch, int* len);
 
 #endif /* MCGLIB_H_ */
 

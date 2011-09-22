@@ -4,13 +4,13 @@
 
 #include "defs.h"
 
-// TODO: Describe this
+
 unsigned int _read_msw();
 
-// TODO: Describe this
 void _lidt(IDTR *idtr);
 
 void _restart();
+
 void _setCursor(int a);
 
 /* Writes PIC1's mask */
@@ -32,13 +32,11 @@ void _int_80_hand(int systemCall, int fd, char *buffer, int count);
 
 int _rdtsc();
 
-void _doManyCicles();
-void _doManyCicles2();
 /* System call write */
 void _write ( int fd, char *buffer, int count );
 
 /* System call read */
-//void _read ( int fd, void *buffer, size_t count );
+void _read ( int fd, void *buffer, size_t count );
 
 /* Assembly's out */
 int _out(unsigned int port, int value);

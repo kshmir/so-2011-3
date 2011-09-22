@@ -16,8 +16,9 @@ void newLine() {
 						= getVideoMode()->shell->screen[i][j + 1];
 			}
 		}
-		for (i = 0; i < getVideoMode()->width; i++)
+		for (i = 0; i < getVideoMode()->width; i++) {
 			getVideoMode()->shell->screen[i][getVideoMode()->height] = ' ';
+		}
 		reDrawLines();
 		setCursorY(getCursorY() - 1);
 		setCursorX(0);

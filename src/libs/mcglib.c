@@ -5,7 +5,7 @@
 // C: char array.
 // ch: separator.
 // len: length of the string.
-char** sString(char* c, char ch, int* len) {
+char** split_string(char* c, char ch, int* len) {
 	char** result = (char**) malloc(sizeof(char*) * 5);
 	int result_s = 5;
 	*len = 0;

@@ -1,31 +1,20 @@
-
-
 /********************************** 
  *
  *  Kernel
  *
  ***********************************/
-
 #ifndef _kernel_
 #define _kernel_
 
+#include "defs.h"
+
 #define OS_PID	0
 
-// TODO: Add description for this.
-int (*player)(void);
 int _ticks();
 
 void setCursor(int b);
 
-/** Useful typedefs */
-typedef int size_t;
-typedef short int ssize_t;
-typedef enum eINT_80 {
-	_WRITE = 0, _READ //TODO: Fix calls to make it compile
-} tINT_80;
-typedef enum eUSER {
-	U_KERNEL = 0, U_NORMAL
-} tUSERS;
+void setup_IDT_entry(DESCR_INT * item, byte selector, dword offset, byte access, byte cero);
 
 /* __write
  * Recibe como parametros:

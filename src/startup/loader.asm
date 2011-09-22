@@ -1,9 +1,13 @@
-global _loader		; making entry point visible to linker
-global eokl		; end of kernel land
-extern kmain		; _main is defined elsewhere
+;
+;	Loader.asm --- Starts up the system with GRUB.
+;
 
+global _loader		; making entry point visible to linker
+global eokl				; end of kernel land
+extern kmain			; _main is defined elsewhere
 
 ; setting up the Multiboot header - see GRUB docs for details
+
 MODULEALIGN equ  1<<0                   ; align loaded modules on page boundaries
 MEMINFO     equ  1<<1                   ; provide memory map
 FLAGS       equ  MODULEALIGN | MEMINFO  ; this is the Multiboot 'flag' field
@@ -13,23 +17,23 @@ CHECKSUM    equ -(MAGIC + FLAGS)        ; checksum required
 section .text
 align 4
 MultiBootHeader:
-	dd MAGIC
-	dd FLAGS
-	dd CHECKSUM
+		dd MAGIC
+		dd FLAGS
+		dd CHECKSUM
 
-	; reserve initial kernel stack space
-	STACKSIZE equ 0x4000		; that's 16k.
+		; reserve initial kernel stack space
+		STACKSIZE equ 0x4000				; that's 16k.
 
-	_loader:
-	mov esp, stack+STACKSIZE	; set up the stack
-	push eax									; pass Multiboot magic number
-	push ebx									; pass Multiboot info structure
+		_loader:
+		mov			esp, stack+STACKSIZE		; set up the stack
+		push		eax										; pass Multiboot magic number
+		push		ebx										; pass Multiboot info structure
 
-	call  kmain								; call kernel proper
-	hlt						; halt machine should kernel return
+		call		kmain									; call kernel proper
+		hlt													; halt machine should kernel return
 
 eokl	dd STACKSIZE + stack
 	section .bss
 	align 32
 	stack:
-	resb STACKSIZE		; reserve 16k stack on a quadword boundary
+	resb STACKSIZE								; reserve 16k stack on a quadword boundary
