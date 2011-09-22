@@ -203,6 +203,7 @@ int p1_main(int argc, char ** params) {
 			var++;
 		}
 		printf("I am the main... %d %d\n", var, thinked3);
+		_yield();
 	}	
 }
 
@@ -211,14 +212,15 @@ int kernel_main(int argc, char ** params) {
 		if(thinked3 < 102400) {
 			thinked3++;
 		}
-		_Halt();
+		_yield();
 	}
 }
 
 int idle_main(int argc, char ** params) {
 	printf("Idle Start...");		 
 	while(1) {
-		_Halt();
+		printf("HOLA\n");
+		_yield();
 	}
 }
 
@@ -232,7 +234,7 @@ int idle_main(int argc, char ** params) {
 kmain() {
 	int i, num;
 
-	_Cli();
+
 	/* CARGA DE IDT CON LA RUTINA DE ATENCION DE IRQ0    */
 
 	setup_IDT_entry(&idt[0x08], 0x08, (dword) & _int_08_hand, ACS_INT, 0);
@@ -257,24 +259,50 @@ kmain() {
 	initVideo();
 
 
-
-
+	scheduler_init();
+	_Cli();
 	/* Habilito interrupcion de timer tick*/
 	_mascaraPIC1(0xFC);
 	_mascaraPIC2(0xFF);
 	
+
 	idle = create_process("idle", idle_main, 0, 1);
 	kernel = create_process("kernel", kernel_main, 0, 1);
 	p1 = create_process("p1", p1_main, 0, 1);
-
-
+	create_process("p2", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
+	create_process("p3", p1_main, 0, 1);
 	_Sti();
 
 
 
 	
 	// We soon exit out of here :)
-	while (1);
+	while (1) { 
+		printf("I RUN!\n");
+	}
 
 }
 

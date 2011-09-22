@@ -1,5 +1,6 @@
 #include "scheduler.h"
 #include "../libs/string.h"
+#include "../libs/queue.h"
 
 int _first_time          = 0;
 int thinked              = 0;
@@ -9,19 +10,24 @@ unsigned int current_pid = 0;
 
 
 static Process				* idle;
-static Process				* kernel;
-static Process				* p1;
 static Process 				process_pool[PROCESS_MAX];
+static Process				* current_process = NULL;
+static Queue 					* ready_queue;
+static Queue 					* blocked_queue;
 
 ///////////// Inicio Funciones Scheduler
 
 // TODO: Make memcpy for this.
-void process_pool_start() {
+void scheduler_init() {
+		printf("init");
 	int i = 0;
 	char *pool = (char*)	process_pool;
 	for(; i < PROCESS_MAX * sizeof(Process); i++) {
 		*pool = (char) 0;
 	}
+
+	ready_queue = queue_init(PROCESS_MAX);
+	blocked_queue = queue_init(PROCESS_MAX);
 }
 
 unsigned int _pid_seed = 0;
@@ -93,12 +99,9 @@ Process * create_process(char * name, main_pointer _main, size_t stack_size, int
 
 	if(strcmp(name, "idle") == 0) {
 		idle = p;
-	} else 	if(strcmp(name, "kernel") == 0) {
-		kernel = p;
 	}
-	else 	if(strcmp(name, "p1") == 0) {
-		p1 = p;
-	}
+	
+	queue_enqueue(ready_queue, p);
 	
 	return p;
 }
@@ -106,14 +109,9 @@ Process * create_process(char * name, main_pointer _main, size_t stack_size, int
 
 void scheduler_save_esp (int esp)
 {
-	Process * temp;
-
-	if (current_pid != 0)
-	{
-		temp      = process_getbypid(current_pid);
-		temp->esp = esp;
+	if (current_process != NULL) {
+		current_process->esp = esp;
 	}
-	return;
 }
 
 void * scheduler_get_temp_esp (void) {
@@ -121,21 +119,12 @@ void * scheduler_get_temp_esp (void) {
 }
 
 void* scheduler_think (void) {
-
-
-	if(thinked == 0)
+	if(current_process != NULL)
 	{
-		thinked     = 1;
-		current_pid = kernel->pid;
-
-		return kernel;
-	} else {
-		thinked     = 0;
-		current_pid = p1->pid;
-
-		return p1;
-
+		queue_enqueue(ready_queue, current_process);
 	}
+	
+	return current_process = queue_dequeue(ready_queue);
 }
 
 int scheduler_load_esp(Process * proc)

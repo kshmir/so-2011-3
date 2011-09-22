@@ -16,6 +16,7 @@ GLOBAL	_rdtsc
 GLOBAL _GetCS
 GLOBAL _GetESP
 GLOBAL _Halt
+GLOBAL _yield
 
 EXTERN  int_08
 EXTERN  int_09
@@ -24,6 +25,7 @@ EXTERN	scheduler_save_esp
 EXTERN	scheduler_get_temp_esp
 EXTERN	scheduler_think
 EXTERN	scheduler_load_esp
+
 
 
 SECTION .text
@@ -81,6 +83,10 @@ _lidt:
 		pop		ebp
 		retn
 
+_yield:
+		;INT 08
+		ret
+
 ; Handler de INT 8 ( Timer tick)
 _int_08_hand:
 ;		push	ds
@@ -112,9 +118,9 @@ _int_08_hand:
 			mov esp,eax
 			;call _debug;
 		popad
-		sti
 		mov al,20h			; Envio de EOI generico al PIC
 		out 20h,al
+		sti
 		iret
 
 __stack_chk_fail:
