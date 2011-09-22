@@ -84,7 +84,7 @@ _lidt:
 		retn
 
 _yield:
-		;INT 08
+		INT 08
 		ret
 
 ; Handler de INT 8 ( Timer tick)

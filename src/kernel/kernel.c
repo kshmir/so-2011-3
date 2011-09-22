@@ -2,11 +2,12 @@
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
 
-#include "../scheduler/scheduler.h"
 #include "../startup/start.h"
 #include "../drivers/keyboard.h"
 #include "../drivers/video.h"
 #include "../shell.h"
+
+#include "scheduler.h"
 
 
 ///////////// Inicio de Variables del Kernel
@@ -219,8 +220,7 @@ int kernel_main(int argc, char ** params) {
 int idle_main(int argc, char ** params) {
 	printf("Idle Start...");		 
 	while(1) {
-		printf("HOLA\n");
-		_yield();
+		_Halt();
 	}
 }
 
@@ -261,48 +261,19 @@ kmain() {
 
 	scheduler_init();
 	_Cli();
+	
 	/* Habilito interrupcion de timer tick*/
 	_mascaraPIC1(0xFC);
 	_mascaraPIC2(0xFF);
 	
 
 	idle = create_process("idle", idle_main, 0, 1);
-	kernel = create_process("kernel", kernel_main, 0, 1);
-	p1 = create_process("p1", p1_main, 0, 1);
-	create_process("p2", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
-	create_process("p3", p1_main, 0, 1);
+	tty_init();
 	_Sti();
 
 
-
-	
 	// We soon exit out of here :)
-	while (1) { 
-		printf("I RUN!\n");
-	}
+	while (1);
 
 }
 

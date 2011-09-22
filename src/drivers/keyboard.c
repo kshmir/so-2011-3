@@ -239,7 +239,7 @@ int controlKey(int scancode) {
 			else
 				rAlt = 1;
 		} else if (scancode == 0xFFFFFFB8) {
-			if (lastkey != -32)
+			if (lastkey != -32) 
 				lAlt = 0;
 			else
 				rAlt = 0;

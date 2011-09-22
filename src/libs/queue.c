@@ -5,7 +5,7 @@ struct Queue {
 	int 		size;
 	int			write_ptr;
 	int			read_ptr;
-	int *	data;
+	int *		data;
 };
 
 Queue * queue_init(int size) {

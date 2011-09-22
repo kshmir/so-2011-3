@@ -1,3 +1,7 @@
+#include "../../include/kernel.h"
+#include "../../include/kasm.h"
+#include "../../include/defs.h"
+
 #ifndef _SCHEDULER_H_
 #define _SCHEDULER_H_
 

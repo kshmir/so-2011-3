@@ -19,7 +19,6 @@ static Queue 					* blocked_queue;
 
 // TODO: Make memcpy for this.
 void scheduler_init() {
-		printf("init");
 	int i = 0;
 	char *pool = (char*)	process_pool;
 	for(; i < PROCESS_MAX * sizeof(Process); i++) {
@@ -67,6 +66,8 @@ Process * process_getfree() {
 
 
 void process_cleaner() {
+	printf("I die...\n");
+	current_process->state = PROCESS_ZOMBIE;
 	
 }
 
@@ -119,7 +120,8 @@ void * scheduler_get_temp_esp (void) {
 }
 
 void* scheduler_think (void) {
-	if(current_process != NULL)
+	if (current_process != NULL 
+	&& current_process->state != PROCESS_ZOMBIE)
 	{
 		queue_enqueue(ready_queue, current_process);
 	}

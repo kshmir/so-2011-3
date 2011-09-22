@@ -1,5 +1,5 @@
-cd bin
-mcopy -o kernel.bin b:/boot/
+cd /Users/cristian/Dropbox/src/so-2011-2
+/opt/local/bin/mcopy -o bin/kernel.bin b:/boot/
 echo "Armado"
 VBoxManage controlvm tpe reset
 echo "Arrancando VBOX"
