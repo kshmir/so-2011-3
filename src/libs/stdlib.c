@@ -3,7 +3,7 @@
 
 //***** All the following code is just not cool, but it works ¨*****//
 
-char heap_space[1024*1024*8];
+char heap_space[1024*1024*16];
 size_t offset;
 
 // Roughly allocs some memory

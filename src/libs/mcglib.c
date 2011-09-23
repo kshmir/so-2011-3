@@ -41,3 +41,9 @@ char** split_string(char* c, char ch, int* len) {
 	}
 	return result;
 }
+
+int string_ends_with(char * str, char c) { 
+	int i = 0;
+	// I dont give a f...
+	return str[strlen(str) - 2] == c;
+}
