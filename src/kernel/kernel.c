@@ -225,7 +225,7 @@ int kernel_main(int argc, char ** params) {
 
 int idle_main(int argc, char ** params) {
 	while(1) {
-		_Halt();
+		_yield();
 	}
 }
 
