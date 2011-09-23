@@ -381,14 +381,10 @@ char getA() {
 char getC() {	
 	while (cnt()->charBufferPointer < 0 
 		   || current_tty != current_p_tty()) {
-//		printf("YIELDING %d\n", current_p_tty());
 		yield();
 	}
 
-
- 	char ret = cnt()->charBuffer[cnt()->charBufferPointer--];
-
-//	printf("got %d %d %c\n", current_tty,current_p_tty(), ret);
+	char ret = cnt()->charBuffer[cnt()->charBufferPointer--];
 	return ret;
 }
 

@@ -19,7 +19,7 @@ static Queue 				* blocked_queue;
 
 ///////////// Inicio Funciones Scheduler
 
-// TODO: Make memcpy for this.
+
 void scheduler_init() {
 	int i = 0;
 	char *pool = (char*)	process_pool;
@@ -27,15 +27,21 @@ void scheduler_init() {
 		*pool = (char) 0;
 	}
 
-	ready_queue 	= queue_init(PROCESS_MAX);
+	ready_queue   = queue_init(PROCESS_MAX);
 	blocked_queue = queue_init(PROCESS_MAX);
-	yield_queue 	= queue_init(PROCESS_MAX);
+	yield_queue   = queue_init(PROCESS_MAX);
 }
 
 unsigned int _pid_seed = 0;
 
 unsigned int process_getnextpid() {
 	return _pid_seed++;
+}
+
+void waitProcess(Process * p) {
+	while(p->state != PROCESS_ZOMBIE) { 
+		yield();
+	}
 }
 
 Process * process_getbypid(int pid) {
@@ -110,13 +116,20 @@ int	stackf_build(void * stack, main_pointer _main) {
 	return	(int)f;
 }
 
-Process * create_process(char * name, main_pointer _main, size_t stack_size, int priority, unsigned int tty) {
-	Process * p = process_getfree();
-	p->pid      = process_getnextpid();
-	p->gid      = 0;
-	p->priority = priority;
-	p->esp      = stackf_build(p->stack, _main);
-	p->state    = PROCESS_READY;
+Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
+						int is_tty, int stdin, int stderr, int stdout) {
+	Process * p            = process_getfree();
+	p->pid                 = process_getnextpid();
+	p->gid                 = 0;
+	p->ppid                = (current_process != NULL) ? current_process->pid : 0;
+	p->priority            = priority;
+	p->esp                 = stackf_build(p->stack, _main);
+	p->state               = PROCESS_READY;
+	p->file_descriptors[0] = stdin;
+	p->file_descriptors[1] = stdout;
+	p->file_descriptors[2] = stderr;
+
+
 	
 	if(tty > TTY_MAX_NUMBER) {
 		tty = 0;
@@ -151,10 +164,9 @@ void * scheduler_get_temp_esp (void) {
 	return (void*)idle->esp;
 }
 
-void* scheduler_think (void) {
+void * scheduler_think (void) {
 	
 	if(yielded == 0) {
-
 		while(!queue_isempty(yield_queue)) {
 			queue_enqueue(ready_queue, queue_dequeue(yield_queue));
 		}
@@ -168,7 +180,15 @@ void* scheduler_think (void) {
 		queue_enqueue(ready_queue, current_process);
 	}
 	
-	current_process = queue_dequeue(ready_queue);
+	if(!queue_isempty(ready_queue))
+	{
+		current_process = queue_dequeue(ready_queue);
+	} 
+	else
+	{
+		_Halt();
+	}
+
 	return current_process;
 }
 

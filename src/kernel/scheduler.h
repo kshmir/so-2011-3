@@ -26,6 +26,7 @@ typedef int (*main_pointer)(int argc, char **params);
 ////// Proper definition of Process
 typedef struct Process {
 	unsigned int 		pid;
+	unsigned int 		ppid;
 	unsigned int 		gid;
 	unsigned int 		priority;
 	char 				stack[PROCESS_STACK_SIZE];
@@ -52,7 +53,8 @@ void scheduler_init();
 
 int current_p_tty();
 
-Process * create_process(char * name, main_pointer _main, size_t stack_size, int priority, unsigned int tty_num);
+Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
+	int is_tty, int stdin, int stderr, int stdout);
 
 // Begin Context Change functions.
 
@@ -63,6 +65,10 @@ void * scheduler_get_temp_esp (void);
 void * scheduler_think (void); 
 
 int scheduler_load_esp(Process * proc);
+
+void waitProcess(Process * p);
+
+void yield();
 
 // End Context Change functions.
 

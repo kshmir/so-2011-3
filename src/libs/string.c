@@ -39,7 +39,7 @@ int strcmp(char* s1, char* s2) {
 	int c, i;
 	for (c = i = 0; s1[i] && s2[i] && (c == 0); i++)
 		c = s1[i] - s2[i];
-	return c;
+	return (strlen(s1) == strlen(s2)) ? 0 : c;
 }
 
 int strncmp(char* s1, char* s2, int n) {

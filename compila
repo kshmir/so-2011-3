@@ -1,5 +1,3 @@
-
-
 if [ $PWD == "/root" ]; then
   cd tp2so
 fi
