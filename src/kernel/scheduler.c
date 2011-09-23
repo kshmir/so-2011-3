@@ -81,9 +81,13 @@ void process_cleaner() {
 
 
 int yielded = 0;
+int yield_save_cntx = 0;
 
 void yield() {
+
+
 	queue_enqueue(yield_queue, current_process);
+	yield_save_cntx = 1;
 	yielded++;
 	_yield();
 }
@@ -135,6 +139,11 @@ void scheduler_save_esp (int esp)
 
 	if (current_process != NULL) {
 		current_process->esp = esp;
+		if(yield_save_cntx)
+		{
+			current_process = NULL;
+			yield_save_cntx = 0;
+		}
 	}
 }
 
@@ -145,6 +154,7 @@ void * scheduler_get_temp_esp (void) {
 void* scheduler_think (void) {
 	
 	if(yielded == 0) {
+
 		while(!queue_isempty(yield_queue)) {
 			queue_enqueue(ready_queue, queue_dequeue(yield_queue));
 		}
@@ -159,7 +169,6 @@ void* scheduler_think (void) {
 	}
 	
 	current_process = queue_dequeue(ready_queue);
-
 	return current_process;
 }
 

@@ -7,6 +7,8 @@ Queue * queue_init(int size);
 
 int queue_enqueue(Queue * q, void * data);
 
+int queue_count(Queue * q);
+
 int queue_isempty(Queue * q);
 
 int queue_isfull(Queue * q);

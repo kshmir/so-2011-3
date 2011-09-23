@@ -3,6 +3,7 @@
 
 struct Queue {
 	int 		size;
+	int			count;
 	int			write_ptr;
 	int			read_ptr;
 	int *		data;
@@ -13,8 +14,13 @@ Queue * queue_init(int size) {
 	q->size      = size;
 	q->write_ptr = 0;
 	q->read_ptr  = 0; 
+	q->count     = 0;
 	q->data      = (int *) malloc(sizeof(int *) * size);
 	return q;                                           	
+}
+
+int queue_count(Queue * q) {
+	return q->count;
 }
 
 int queue_enqueue(Queue * q, void * data) {
@@ -23,19 +29,18 @@ int queue_enqueue(Queue * q, void * data) {
 		if(q->write_ptr == q->size){
 			q->write_ptr = 0;
 		}
+		q->count++;
 		return 1;
 	}
 	return 0;
 }
 
 int queue_isempty(Queue * q) {
-	return q->write_ptr == q->read_ptr;
+	return q->count == 0;
 }
 
 int queue_isfull(Queue * q) { 
-	return q->write_ptr == q->read_ptr - 1 || 
-				 (q->read_ptr == q->size - 1 && 
-					q->write_ptr == 0);
+	return q->size == q->count;
 }
 
 void * queue_dequeue(Queue * q) {
@@ -44,6 +49,7 @@ void * queue_dequeue(Queue * q) {
 	}
 	
 	int ret = q->data[q->read_ptr++];
+	q->count--;
 	if(q->read_ptr == q->size){
 		q->read_ptr = 0;
 	}

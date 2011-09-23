@@ -382,7 +382,7 @@ char getC() {
 	while (cnt()->charBufferPointer < 0 
 		   || current_tty != current_p_tty()) {
 //		printf("YIELDING %d\n", current_p_tty());
-		_Halt();
+		yield();
 	}
 
 
