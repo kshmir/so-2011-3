@@ -13,7 +13,6 @@ extern int current_tty;
 int _printHelp(int size, char** args) {
 	printf("MonkeyOS 1 - MurcielagOS kernel v0.1 (i686-pc-murcielago)\n");
 	printf("These shell commands are defined internally.  Type `help' to see this list.\n");
-	getchar();
 }
 
 // Test the breakable code
@@ -84,12 +83,31 @@ int _hola_main (int argc, char ** argv)
 	return 0;
 }
 
+int writer_main (int argc, char ** argv)
+{
+	int fifo = fifo_open("teta");
+	fifo_write(fifo, "HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA", strlen("HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA"));
+	return 0;
+}
+
+int reader_main (int argc, char ** argv) {
+	int fifo = fifo_open("teta");
+	
+	char buff[128];
+	
+	fifo_read(fifo, buff, 128);
+	
+	printf("%s\n", buff);
+	
+	return 0;
+}
+
 
 // Function names
-char* _function_names[] = { "help", "test", "clear", "ssh", "hola", NULL };
+char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", NULL };
 
 // Functions
-int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, NULL };
+int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, reader_main, writer_main, NULL };
 
 int process_input(const char * input) { 
 	int piped = 0;

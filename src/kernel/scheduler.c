@@ -89,9 +89,12 @@ void process_cleaner() {
 int yielded = 0;
 int yield_save_cntx = 0;
 
+void softyield() {
+	queue_enqueue(ready_queue, current_process);
+	_yield();
+}
+
 void yield() {
-
-
 	queue_enqueue(yield_queue, current_process);
 	yield_save_cntx = 1;
 	yielded++;
@@ -164,6 +167,8 @@ void * scheduler_get_temp_esp (void) {
 	return (void*)idle->esp;
 }
 
+int c = 0;
+
 void * scheduler_think (void) {
 	
 	if(yielded == 0) {
@@ -188,7 +193,12 @@ void * scheduler_think (void) {
 	{
 		_Halt();
 	}
+	
+	if(c % 20 == 0) {
+	//	printf("%d\n", queue_count(ready_queue) + queue_count(yield_queue) + 1);
+	}
 
+	c++;
 	return current_process;
 }
 

@@ -21,12 +21,15 @@ gcc -c ../src/libs/stdio.c                -o stdio.o          -fno-builtin
 gcc -c ../src/libs/stdlib.c               -o stdlib.o         -fno-builtin
 gcc -c ../src/libs/string.c               -o string.o         -fno-builtin
 gcc -c ../src/libs/queue.c                -o queue.o          -fno-builtin
+gcc -c ../src/libs/list.c                 -o list.o          -fno-builtin
 gcc -c ../src/startup/start.c             -o start.o          -fno-builtin
 gcc -c ../src/shell.c                     -o shell.o          -fno-builtin
+gcc -c ../src/kernel/fifo.c               -o fifo.o      -fno-builtin
+gcc -c ../src/kernel/semaphore.c          -o semaphore.o      -fno-builtin
 gcc -c ../src/kernel/scheduler.c          -o scheduler.o      -fno-builtin
 gcc -c ../src/kernel/tty.c                -o tty.o            -fno-builtin
 gcc -c ../src/kernel/tty_context.c        -o tty_context.o    -fno-builtin
 
-ld -T ../include/link.ld -o kernel.bin string.o libasm.o loader.o kernel.o keyboard.o mcgio.o stdlib.o video.o start.o shell.o stdio.o internal_shell.o nInLineFront.o nInLineBack.o mcglib.o scheduler.o queue.o tty.o tty_context.o
+ld -T ../include/link.ld -o kernel.bin string.o libasm.o loader.o kernel.o keyboard.o mcgio.o stdlib.o video.o start.o shell.o stdio.o internal_shell.o nInLineFront.o nInLineBack.o mcglib.o scheduler.o queue.o tty.o tty_context.o list.o semaphore.o fifo.o
 
 echo "Compila end"

@@ -33,7 +33,7 @@ typedef struct Process {
 	int					state;
 	int					is_tty;
 	int					tty;
-	int 				esp;
+	int					esp;
 	int					file_descriptors[PROCESS_FD_SIZE];
 	int					calls;
 } Process;
@@ -69,6 +69,8 @@ int scheduler_load_esp(Process * proc);
 void waitProcess(Process * p);
 
 void yield();
+
+void softyield();
 
 // End Context Change functions.
 
