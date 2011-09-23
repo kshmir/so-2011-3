@@ -86,16 +86,16 @@ int _hola_main (int argc, char ** argv)
 int writer_main (int argc, char ** argv)
 {
 	int fifo = fifo_open("teta");
-	fifo_write(fifo, "HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA", strlen("HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA"));
+	fifo_write(fifo, "HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA", strlen("HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA"));
 	return 0;
 }
 
 int reader_main (int argc, char ** argv) {
 	int fifo = fifo_open("teta");
 	
-	char buff[128];
+	char buff[1024];
 	
-	fifo_read(fifo, buff, 128);
+	fifo_read(fifo, buff, 1024);
 	
 	printf("%s\n", buff);
 	
@@ -204,10 +204,6 @@ int tty_main (int argc, char ** argv)
 		printf("user@tty:");
 		char * input = (char *) getConsoleString(val);
 		process_input(input);
-		
-		
-		
-		
 	}
 	return 0;
 }

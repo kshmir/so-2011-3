@@ -142,9 +142,9 @@ Process * create_process(char * name, main_pointer _main, int priority, unsigned
 
 	if(strcmp(name, "idle") == 0) {
 		idle = p;
+	} else {
+		queue_enqueue(ready_queue, p);
 	}
-	
-	queue_enqueue(ready_queue, p);
 	
 	return p;
 }
@@ -191,11 +191,11 @@ void * scheduler_think (void) {
 	} 
 	else
 	{
-		_Halt();
+		current_process = idle;
 	}
 	
 	if(c % 20 == 0) {
-	//	printf("%d\n", queue_count(ready_queue) + queue_count(yield_queue) + 1);
+//		printf("%d\n", queue_count(ready_queue));
 	}
 
 	c++;

@@ -71,6 +71,7 @@ int fifo_write(int fd, char * msg, int len){
 			f->write_locked = 1;
 			softyield();
 		}
+		f->write_locked = 0;	
 
 		if(f->wr_i == FIFO_DATA_SIZE) {
 			f->wr_i = 0;

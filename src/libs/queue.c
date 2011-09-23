@@ -23,8 +23,25 @@ int queue_count(Queue * q) {
 	return q->count;
 }
 
+int queue_contains(Queue * q, void * ptr) { 
+	int reads = q->count;
+	int i = q->read_ptr;
+	for(; reads > 0; reads--, i++)
+	{
+		if(i == q->size){
+			i = 0;
+		}
+		
+		if(q->data[i] == (int) ptr) {
+			return 1;
+		}
+	}
+	
+	return 0;
+}
+
 int queue_enqueue(Queue * q, void * data) {
-	if(!queue_isfull(q)) {
+	if(!queue_isfull(q) && !queue_contains(q, data)) {
 		q->data[q->write_ptr++] = (int) data;
 		if(q->write_ptr == q->size){
 			q->write_ptr = 0;
