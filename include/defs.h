@@ -8,17 +8,21 @@
 
 /** Usado para borrar el buffer **/
 #define BORRA_BUFFER 	while (getC() != 0)
-#define EOI 					0x20
-#define NULL 					0
-#define WRITE 				0
-#define READ 					1
+#define EOI 				0x20
+#define NULL 				0
 #define KEYBOARD 			0
 #define STDOUT 				1
-#define PIC1 					2
-#define PIC2 					3
-#define ASCIICERO 		0x30
-#define TRUE 					1
+#define PIC1 				2
+#define PIC2 				3
+#define ASCIICERO 			0x30
+#define TRUE 				1
 #define FALSE 				0
+
+// Syscalls
+#define WRITE 				0
+#define READ 				1
+#define OPEN				2
+#define CLOSE 				3
 
 
 /** ASM typedefs */
