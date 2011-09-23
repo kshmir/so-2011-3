@@ -162,7 +162,13 @@ void int_09() {
 	flag = flag || (scancode >= 0x1E && scancode <= 0x29);
 	flag = flag || (scancode >= 0x2b && scancode <= 0x35);
 	if (flag) {
-		pushC(scanCodeToChar(scancode)); //guarda un char en el stack
+
+		char sc = scanCodeToChar(scancode);
+
+		if(sc != 0){
+			pushC(sc); //guarda un char en el stack
+		}
+
 	}
 	else {
 		controlKey(scancode); // Envia el scancode al analizador de control keys.
@@ -266,10 +272,9 @@ kmain() {
 	_mascaraPIC2(0xFF);
 	
 
-	idle = create_process("idle", idle_main, 0, 1);
-	tty_init();
-	tty_init();
-	tty_init();
+	idle = create_process("idle", idle_main, 0, 1,0);
+	tty_init(0);
+		tty_init(1);
 	_Sti();
 
 

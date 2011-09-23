@@ -1,4 +1,5 @@
 #include "scheduler.h"
+#include "tty.h"
 #include "../libs/string.h"
 #include "../libs/queue.h"
 
@@ -12,8 +13,9 @@ unsigned int current_pid = 0;
 static Process				* idle;
 static Process 				process_pool[PROCESS_MAX];
 static Process				* current_process = NULL;
-static Queue 					* ready_queue;
-static Queue 					* blocked_queue;
+static Queue 				* ready_queue;
+static Queue 				* yield_queue;
+static Queue 				* blocked_queue;
 
 ///////////// Inicio Funciones Scheduler
 
@@ -25,8 +27,9 @@ void scheduler_init() {
 		*pool = (char) 0;
 	}
 
-	ready_queue = queue_init(PROCESS_MAX);
+	ready_queue 	= queue_init(PROCESS_MAX);
 	blocked_queue = queue_init(PROCESS_MAX);
+	yield_queue 	= queue_init(PROCESS_MAX);
 }
 
 unsigned int _pid_seed = 0;
@@ -64,13 +67,26 @@ Process * process_getfree() {
 	return NULL;
 }
 
+int current_p_tty() {
+	return current_process->tty;
+}
+
+
 
 void process_cleaner() {
 	printf("I die...\n");
 	current_process->state = PROCESS_ZOMBIE;
-	
+	_Halt();
 }
 
+
+int yielded = 0;
+
+void yield() {
+	queue_enqueue(yield_queue, current_process);
+	yielded++;
+	_yield();
+}
 
 int	stackf_build(void * stack, main_pointer _main) {
 	
@@ -90,13 +106,19 @@ int	stackf_build(void * stack, main_pointer _main) {
 	return	(int)f;
 }
 
-Process * create_process(char * name, main_pointer _main, size_t stack_size, int priority) {
+Process * create_process(char * name, main_pointer _main, size_t stack_size, int priority, unsigned int tty) {
 	Process * p = process_getfree();
 	p->pid      = process_getnextpid();
 	p->gid      = 0;
 	p->priority = priority;
 	p->esp      = stackf_build(p->stack, _main);
 	p->state    = PROCESS_READY;
+	
+	if(tty > TTY_MAX_NUMBER) {
+		tty = 0;
+	}
+	p->tty 		= tty;
+	
 
 	if(strcmp(name, "idle") == 0) {
 		idle = p;
@@ -110,6 +132,7 @@ Process * create_process(char * name, main_pointer _main, size_t stack_size, int
 
 void scheduler_save_esp (int esp)
 {
+
 	if (current_process != NULL) {
 		current_process->esp = esp;
 	}
@@ -120,13 +143,24 @@ void * scheduler_get_temp_esp (void) {
 }
 
 void* scheduler_think (void) {
+	
+	if(yielded == 0) {
+		while(!queue_isempty(yield_queue)) {
+			queue_enqueue(ready_queue, queue_dequeue(yield_queue));
+		}
+	} else { 
+		yielded--;
+	}
+	
 	if (current_process != NULL 
-	&& current_process->state != PROCESS_ZOMBIE)
+		&& current_process->state != PROCESS_ZOMBIE)
 	{
 		queue_enqueue(ready_queue, current_process);
 	}
 	
-	return current_process = queue_dequeue(ready_queue);
+	current_process = queue_dequeue(ready_queue);
+
+	return current_process;
 }
 
 int scheduler_load_esp(Process * proc)

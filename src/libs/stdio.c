@@ -35,6 +35,7 @@ char getchar() {
 	int sy = getCursorY();
 	while ((c = getC()) != '\n') {
 		if (c != 0) {
+
 			if (c != 0x0f) {
 				if (c != '\r' || getCursorY() > sy || getCursorX() > sx)
 					putchar(c);

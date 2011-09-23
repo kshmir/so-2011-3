@@ -47,15 +47,19 @@ char* getConsoleString(int sendAutocomplete) {
 	int i = 0;
 	int sx = getCursorX();
 	int sy = getCursorY();
+//	printf("asking it...\n");
 	while ((c = getC()) != '\n') {
-		int dirKey = getA();
+		int dirKey = 0;//getA();
 
 		if (i == strlen && c != '\r') {
 			continue;
 		}
+		
+		
 
 		if (dirKey == 0) {
 			if (c != 0x0f && c != 0) {
+//				printf("got it...\n");
 				if (c != '\r' || getCursorY() > sy || getCursorX() > sx)
 					mcg_putchar(c);
 				if (c != '\r') {

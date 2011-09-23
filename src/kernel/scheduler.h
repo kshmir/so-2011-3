@@ -28,12 +28,13 @@ typedef struct Process {
 	unsigned int 		pid;
 	unsigned int 		gid;
 	unsigned int 		priority;
-	char 						stack[PROCESS_STACK_SIZE];
-	int							state;
-	int							is_tty;
-	int 						esp;
-	int							file_descriptors[PROCESS_FD_SIZE];
-	int							calls;
+	char 				stack[PROCESS_STACK_SIZE];
+	int					state;
+	int					is_tty;
+	int					tty;
+	int 				esp;
+	int					file_descriptors[PROCESS_FD_SIZE];
+	int					calls;
 } Process;
 
 ////// Stackframe, built on process creation.
@@ -49,7 +50,9 @@ typedef struct StackFrame {
 // Starts the processes n' stuff.
 void scheduler_init();
 
-Process * create_process(char * name, main_pointer _main, size_t stack_size, int priority);
+int current_p_tty();
+
+Process * create_process(char * name, main_pointer _main, size_t stack_size, int priority, unsigned int tty_num);
 
 // Begin Context Change functions.
 
