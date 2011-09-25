@@ -18,15 +18,6 @@ int tty_init(int tty_num);
 // Moves TTY to a direction.
 void switch_tty(int direction); 
 
-
-
-
-
-
-
-
-
-
 void startKeyboard(int id);
 
 char scanCodeToChar(char scanCode);

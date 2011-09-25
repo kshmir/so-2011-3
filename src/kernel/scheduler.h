@@ -54,7 +54,7 @@ void scheduler_init();
 int current_p_tty();
 
 Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
-	int is_tty, int stdin, int stderr, int stdout);
+	int is_tty, int stdin, int stderr, int stdout, int argc, void * params);
 
 // Begin Context Change functions.
 

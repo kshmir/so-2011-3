@@ -2,8 +2,10 @@
 #include "../../include/kernel.h"
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
+#include "../libs/mcglib.h"
 #include "../libs/queue.h"
 #include "scheduler.h"
+
 
 static int 	tty_index = 0;
 
@@ -85,19 +87,36 @@ int _hola_main (int argc, char ** argv)
 
 int writer_main (int argc, char ** argv)
 {
-	int fifo = fifo_open("teta");
-	fifo_write(fifo, "HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA", strlen("HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA HOLA! HARABARA"));
+	if(argc > 1)
+	{
+		int fifo = fifo_open("teta");
+		int i = 1;
+		for(; i < argc; ++i)
+		{
+			printf("param %d %s\n", i, argv[i]);
+			fifo_write(fifo, argv[i], strlen(argv[i]));
+		}
+
+	} else { 
+		printf("Not enough params\n");
+	}
+
 	return 0;
 }
 
 int reader_main (int argc, char ** argv) {
 	int fifo = fifo_open("teta");
+
 	
 	char buff[1024];
-	
-	fifo_read(fifo, buff, 1024);
-	
-	printf("%s\n", buff);
+	int len = fifo_read(fifo, buff, 1024);	
+	int i = 0;
+	printf("I READ RAW:");
+	for(;i < len; i++)
+	{
+		printf("%c", buff[i], i);
+	}
+	printf("\n");
 	
 	return 0;
 }
@@ -173,11 +192,13 @@ int process_input(const char * input) {
 		for (index = 0; _function_names[index] != NULL; ++index) {
 			int n = 0;
 			if (!strcmp(file_call_buffer, _function_names[index]) && strlen(file_call_buffer) >= strlen(_function_names[index])) {
+				int n = 0;
+				char** strs = split_string(file_call_buffer, ' ', &n);
 				if(!string_ends_with(file_call_buffer, '&'))
 				{
-					waitProcess(create_process(file_call_buffer, _functions[index], 0, current_tty, 0, 0, 0 ,0));
+					waitProcess(create_process(file_call_buffer, _functions[index], 0, current_tty, 0, 0, 0 ,0, n, strs));
 				} else	{
-					create_process(file_call_buffer, _functions[index], 0, current_tty, 0, 0, 0 ,0);
+					create_process(file_call_buffer, _functions[index], 0, current_tty, 0, 0, 0 ,0, n, strs);
 				}
 				 
 				break;
@@ -210,5 +231,5 @@ int tty_main (int argc, char ** argv)
 
 // Creates TTY process
 int tty_init(int tty_num) { 
-	create_process("tty", tty_main, 0, tty_num, 1, 0, 0, 0);
+	create_process("tty", tty_main, 0, tty_num, 1, 0, 0, 0, 0, NULL);
 }

@@ -101,7 +101,7 @@ void yield() {
 	_yield();
 }
 
-int	stackf_build(void * stack, main_pointer _main) {
+int	stackf_build(void * stack, main_pointer _main, int argc, void * argv) {
 	
 	void * bottom 	= (void *)((int)stack + PROCESS_STACK_SIZE -1);
 	
@@ -113,20 +113,20 @@ int	stackf_build(void * stack, main_pointer _main) {
 	
 	f->EFLAGS		=	0x202;
 	f->retaddr	=	process_cleaner;
-	f->argc			=	0;
-	f->argv			=	NULL;
+	f->argc			=	argc;
+	f->argv			=	argv;
 	
 	return	(int)f;
 }
 
 Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
-						int is_tty, int stdin, int stderr, int stdout) {
+						int is_tty, int stdin, int stderr, int stdout, int argc, void * params) {
 	Process * p            = process_getfree();
 	p->pid                 = process_getnextpid();
 	p->gid                 = 0;
 	p->ppid                = (current_process != NULL) ? current_process->pid : 0;
 	p->priority            = priority;
-	p->esp                 = stackf_build(p->stack, _main);
+	p->esp                 = stackf_build(p->stack, _main, argc, params);
 	p->state               = PROCESS_READY;
 	p->file_descriptors[0] = stdin;
 	p->file_descriptors[1] = stdout;

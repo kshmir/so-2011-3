@@ -271,7 +271,7 @@ kmain() {
 	_mascaraPIC1(0xFC);
 	_mascaraPIC2(0xFF);
 	
-	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0);
+	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0, 0, NULL);
 	tty_init(0);
 	tty_init(1);
 	tty_init(2);

@@ -26,10 +26,14 @@ void * calloc(size_t size, size_t cols)
 }
 
 // Roughly reallocs some memory
-void * realloc(void * ptr, size_t size)
+void * realloc(void * ptr, size_t size,size_t old_size)
 {
-     char* ret = (char*)malloc(size);
-     int i = 0;
+    char * ret = (char*)malloc(size);
+    int i = 0;
+	for(; i < old_size; ++i) {
+		ret[i] = ((char*)ptr)[i];
+	}
+
      return ret;
 }
 

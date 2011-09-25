@@ -13,8 +13,8 @@ char** split_string(char* c, char ch, int* len) {
 	int start = i;
 	char* currentbuilder = 0;
 	while (*(c + i) != 0) {
-		if (*len >= result_s) {
-			result = (char**) realloc(result, sizeof(char*) * (result_s + 5));
+		if (*len >= result_s - 1) {
+			result = (char**) realloc(result, sizeof(char*) * (result_s + 5), sizeof(char*) * (*len));
 			result_s = *len + 5;
 		}
 		if (*(c + i) == ch) {

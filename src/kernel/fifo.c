@@ -7,7 +7,7 @@
 #include "semaphore.h"
 #include "fifo.h"
 
-#define FIFO_DATA_SIZE 4
+#define FIFO_DATA_SIZE 1024
 
 typedef struct fifo {
 	int inode;
@@ -64,21 +64,20 @@ int fifo_open(char * file_name) {
 int fifo_write(int fd, char * msg, int len){ 
 	fifo * f = (fifo *) fd;
 	size_t i = 0;
-	for(; i < len; i++, f->wr_i++)
-	{
+	for(; i < len; i++, f->wr_i++)	{
 		f->write_locked = 0;		
 		while(f->writes == FIFO_DATA_SIZE) {
 			f->write_locked = 1;
 			softyield();
 		}
-		f->write_locked = 0;	
-
+		f->write_locked = 0;
 		if(f->wr_i == FIFO_DATA_SIZE) {
 			f->wr_i = 0;
 		}
 		f->data[f->wr_i] = msg[i];
 		f->writes++;
 	}	
+
 }
 
 int fifo_read(int fd, char * buffer, int read_size){	
@@ -99,7 +98,7 @@ int fifo_read(int fd, char * buffer, int read_size){
 		buffer[i] = f->data[f->rd_i];
 		f->writes--;
 	}
-	return 1;
+	return i;
 }
 
 int fifo_close(int fd){
