@@ -12,12 +12,12 @@ void newLine() {
 		int last_len = 0, current_len;
 		for (j = 0; j < getVideoMode()->height; j++) {
 			for (i = 0; i < getVideoMode()->width; i++) {
-				getVideoMode()->shell->screen[i][j]
-						= getVideoMode()->shell->screen[i][j + 1];
+				getVideoMode()->screen[i][j]
+						= getVideoMode()->screen[i][j + 1];
 			}
 		}
 		for (i = 0; i < getVideoMode()->width; i++) {
-			getVideoMode()->shell->screen[i][getVideoMode()->height] = ' ';
+			getVideoMode()->screen[i][getVideoMode()->height] = ' ';
 		}
 		reDrawLines();
 		setCursorY(getCursorY() - 1);
@@ -34,7 +34,7 @@ void reDrawLines() {
 	for (j = 0; j < getVideoMode()->height; j++) {
 		setCursorX(0);
 		for (i = 0; i < getVideoMode()->width; i++) {
-			putC(getVideoMode()->shell->screen[i][j]);
+			putC(getVideoMode()->screen[i][j]);
 		}
 		setCursorY(getCursorY() + 1);
 	}
@@ -45,7 +45,7 @@ void reDrawLines() {
 // Puts a space
 void putSpace() {
 	putC(getC());
-	getVideoMode()->shell->screen[getCursorX() + 1][getCursorY()] = ' ';
+	getVideoMode()->screen[getCursorX() + 1][getCursorY()] = ' ';
 }
 
 // Inserts a tab
@@ -56,7 +56,7 @@ void putTab() {
 // Makes a backspace
 void backSpace() {
 	if (getCursorX() % 4 == 0
-			&& getVideoMode()->shell->screen[getCursorX() - 1][getCursorY()]
+			&& getVideoMode()->screen[getCursorX() - 1][getCursorY()]
 					== 0x0f) {
 		removeTab();
 	} else {
@@ -70,8 +70,8 @@ void removeTab() {
 	int oneStep = 1;
 	int x = getCursorX();
 	while (x % 4 > 0 || oneStep) {
-		if (getVideoMode()->shell->screen[x - 1][getCursorY()] == 0x0f
-				|| getVideoMode()->shell->screen[x - 1][getCursorY()] == 0) {
+		if (getVideoMode()->screen[x - 1][getCursorY()] == 0x0f
+				|| getVideoMode()->screen[x - 1][getCursorY()] == 0) {
 			removeLastC();
 		}
 		oneStep = 0;
@@ -85,12 +85,13 @@ void putChar(char c) {
 	int x = getCursorX();
 	int y = getCursorY();
 	if (x <= getVideoMode()->width) {
-		if (c != '\r')
-			getVideoMode()->shell->screen[x][y] = c;
+		if (c != '\r')	{
+			getVideoMode()->screen[x][y] = c;
+		}
 		x += (c != '\r') ? 1 : -1;
 	} else {
 		newLine();
-		getVideoMode()->shell->screen[x][y] = c;
+		getVideoMode()->screen[x][y] = c;
 	}
 }
 

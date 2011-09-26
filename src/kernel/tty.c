@@ -136,6 +136,7 @@ int process_input(const char * input) {
 	
 	int read_ptr = 0;
 	
+
 	do {
 		int i = 0;
 		int write_i = 0;
@@ -217,19 +218,27 @@ int tty_main (int argc, char ** argv)
 	}
 	
 	char cadena[50];
-	int 	tty_id = tty_index++;
-	init_context(tty_id);
-
+	
+	init_context(tty_index);
+	tty_index++;
 	while(1) {
 		int val = 0;
-		printf("user@tty:");
+		printf("user@tty%s:", argv[1]);
 		char * input = (char *) getConsoleString(val);
 		process_input(input);
 	}
 	return 0;
 }
 
+
+
+static char * process_name = "tty";
 // Creates TTY process
 int tty_init(int tty_num) { 
-	create_process("tty", tty_main, 0, tty_num, 1, 0, 0, 0, 0, NULL);
+	char ** _params = (char **)malloc(sizeof(char *) * 2);
+	char * _num = (char *)malloc(sizeof(char) * 9);
+	_params[0] = process_name;
+	_params[1] = _num;
+	itoa(tty_num, _num);
+	create_process("tty", tty_main, 0, tty_num, 1, 0, 0, 0, 1, _params);
 }

@@ -14,25 +14,42 @@ int defaultStyle = 0x07;
 
 VIDEO_MODE_INFO* current_video_mode;
 
+void setVideoMode(VIDEO_MODE_INFO * m) {
+	current_video_mode = m;
+}
+
 VIDEO_MODE_INFO* getVideoMode() {
 	return current_video_mode;
 }
-// For future use.
-static VIDEO_MODE_INFO* buildVideoMode(int height, int width, int cursorX,
-		int cursorY, int cursorEnabled, int textMode);
 
 // Starts default video.
 void initVideo() {
-	int i = 0;
-	VIDEO_MODE_INFO* default_video = NULL;
-	default_video = buildVideoMode(25, 80, 1, 10, 10, 1);
-	current_video_mode = default_video;
-
 	clear_screen();
+	setCursorX(0);
+	setCursorY(0);
+}
+
+void video_reload() { 
+	int x, y;
+	int old_x = getCursorX();
+	int old_y = getCursorY();
+	setCursor(FALSE);
+	for(x = 0; x < current_video_mode->width; ++x)
+	{
+		for(y = 0; y < current_video_mode->height; ++y)
+		{
+			setCursorX(x);
+			setCursorY(y);
+			putC(current_video_mode->screen[x][y]);
+		}
+	}
+	setCursor(TRUE);
+	setCursorX(old_x);
+	setCursorY(old_y);
 }
 
 // For future use, builds a given video mode.
-static VIDEO_MODE_INFO* buildVideoMode(int height, int width, int cursorX,
+VIDEO_MODE_INFO* buildVideoMode(int height, int width, int cursorX,
 		int cursorY, int cursorEnabled, int textMode) {
 	VIDEO_MODE_INFO* video = NULL;
 	int i = 0;
@@ -43,24 +60,33 @@ static VIDEO_MODE_INFO* buildVideoMode(int height, int width, int cursorX,
 	video->curY = cursorY;
 	video->cursorEnabled = cursorEnabled;
 	video->textMode = textMode;
-	video->shell = (SHELL_INFO*) malloc(sizeof(SHELL_INFO));
-	video->shell->screen = (char**) malloc(sizeof(char**) * width);
+	video->visible = 0;
+	video->screen = (char**) malloc(sizeof(char**) * width);
 	for (i = 0; i < width; i++) {
-		video->shell->screen[i] = (char*) malloc(sizeof(char*) * height);
+		video->screen[i] = (char*) malloc(sizeof(char*) * height);
 	}
-	video->shell->style = (char**) malloc(sizeof(char**) * width);
+	video->style = (char**) malloc(sizeof(char**) * width);
 	for (i = 0; i < width; i++) {
-		video->shell->style[i] = (char*) malloc(sizeof(char*) * height);
+		video->style[i] = (char*) malloc(sizeof(char*) * height);
 	}
 	return video;
 }
 
 // Puts a character to stdout
 void putC(char c) {
-	char a[] = { c, defaultStyle };
-	_write(STDOUT,a,2);
-	incrementCursor();
+	if(current_video_mode->visible)	{
+		char a[] = { c, defaultStyle };
+		_write(STDOUT,a,2);
+		incrementCursor();
+	} else if(!current_video_mode->visible)
+	{
+		setCursor(FALSE);
+		incrementCursor();
+		setCursor(TRUE);
+	}
+
 }
+
 
 int getCursorX() {
 	return current_video_mode->curX;
@@ -123,7 +149,7 @@ void clear_screen() {
 	moveCursorToStart();
 	setCursor(FALSE);
 	while (i++ < (current_video_mode->width * (current_video_mode->height))) {
-		putC(' ');
+		putchar(' ');
 	}
 	setCursor(TRUE);
 	moveCursorToStart();

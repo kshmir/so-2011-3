@@ -80,9 +80,8 @@ int current_p_tty() {
 
 
 void process_cleaner() {
-	printf("I die...\n");
 	current_process->state = PROCESS_ZOMBIE;
-	_Halt();
+	_yield();
 }
 
 
@@ -107,14 +106,15 @@ int	stackf_build(void * stack, main_pointer _main, int argc, void * argv) {
 	
 	StackFrame * f	= (StackFrame *)(bottom - sizeof(StackFrame));
 	
-	f->EBP		=	0;
-	f->EIP		=	(int)_main;
-	f->CS			=	0x08;
+	f->EBP     = 0;
+	f->EIP     = (int)_main;
+	f->CS      = 0x08;
 	
-	f->EFLAGS		=	0x202;
-	f->retaddr	=	process_cleaner;
-	f->argc			=	argc;
-	f->argv			=	argv;
+	f->EFLAGS  = 0x202;
+	f->retaddr = process_cleaner;
+	f->argc    = argc;
+	f->argv    = argv;
+
 	
 	return	(int)f;
 }
@@ -131,12 +131,8 @@ Process * create_process(char * name, main_pointer _main, int priority, unsigned
 	p->file_descriptors[0] = stdin;
 	p->file_descriptors[1] = stdout;
 	p->file_descriptors[2] = stderr;
-
-
+	p->is_tty 			   = is_tty;
 	
-	if(tty > TTY_MAX_NUMBER) {
-		tty = 0;
-	}
 	p->tty 		= tty;
 	
 
@@ -195,10 +191,13 @@ void * scheduler_think (void) {
 	}
 	
 	if(c % 20 == 0) {
+		//printf("TTY: %d\n", current_process->tty);
 //		printf("%d\n", queue_count(ready_queue));
 	}
 
 	c++;
+
+	switch_tty(current_process->tty);
 	return current_process;
 }
 

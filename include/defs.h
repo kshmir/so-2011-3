@@ -64,22 +64,17 @@ typedef struct {
 	word limit, base_l;byte base_m, access, attribs, base_h;
 } DESCR_SEG;
 
-/** Might be used for the video driver in a future. */
-typedef struct {
-	char** jumpmap;
-	char** screen;
-	char** style;
-} SHELL_INFO;
-
 /** Creado para poder extender los modos de video en un uso futuro */
 typedef struct {
 	int height, 
-			width;
+		width;
 	int curX, 
-			curY;
+		curY;
 	int cursorEnabled, 
-			textMode;
-	SHELL_INFO * shell;
+		textMode;
+	char** screen;
+	char** style;
+	int	visible;
 } VIDEO_MODE_INFO;
 
 /* Interrupt descriptor */

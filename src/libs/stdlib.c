@@ -67,3 +67,12 @@ int rand()
 }
 // We needed all this weird code to build something "random".
 
+
+void memcpy(void *s, char* c, int n) {
+	unsigned char *p = s;
+	int i;
+
+	for (i = 0; i < n; i++) {
+		p[i] = (char) c[i];
+	}
+}

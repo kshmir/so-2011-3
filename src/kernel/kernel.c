@@ -3,6 +3,9 @@
 #include "../../include/defs.h"
 
 #include "../startup/start.h"
+
+#include "../libs/stdlib.h"
+
 #include "../drivers/keyboard.h"
 #include "../drivers/video.h"
 #include "../shell.h"
@@ -54,8 +57,9 @@ void setCursor(int b) {
 // TODO: Move me.
 void setVideoPos(int a) {
 	videoPos = a;
-	if (cursorEnabled)
+	if (cursorEnabled) { 
 		_setCursor(a / 2);
+	}
 }
 
 // This method can be cleaned up...
@@ -106,16 +110,6 @@ double* getFrequency(int precision, int tcks) {
 	return &cpuFreq;
 }
 
-// Escribre sobre s la cantidad n de data que se le manda desde c
-void setBytes(void *s, char* c, int n) {
-	unsigned char *p = s;
-	int i;
-
-	for (i = 0; i < n; i++) {
-		p[i] = (char) c[i];
-	}
-}
-
 /*
  *	setup_IDT_entry
  * 		Inicializa un descriptor de la IDT
@@ -143,10 +137,12 @@ void int_08() {
 	cursor_ticks++;
 	if (hardCursorEnabled && cursor_ticks % 5 == 0) {
 		cursorEnabled = !cursorEnabled;
-		if (cursorEnabled)
+		if (cursorEnabled) { 
 			_setCursor(videoPos / 2);
-		else
+		}
+		else { 
 			_setCursor(-1);
+		}
 	}
 
 }
@@ -161,14 +157,11 @@ void int_09() {
 	flag = flag || (scancode >= 0x10 && scancode <= 0x1b);
 	flag = flag || (scancode >= 0x1E && scancode <= 0x29);
 	flag = flag || (scancode >= 0x2b && scancode <= 0x35);
-	if (flag) {
-
+	if (flag)	{
 		char sc = scanCodeToChar(scancode);
-
-		if(sc != 0){
+		if(sc != 0)	{
 			pushC(sc); //guarda un char en el stack
 		}
-
 	}
 	else {
 		controlKey(scancode); // Envia el scancode al analizador de control keys.
@@ -182,9 +175,8 @@ void int_80(int systemCall, int fd, char *buffer, int count) {
 
 	if (systemCall == WRITE) //write
 	{
-		if (fd == STDOUT) //PANTALL
-		{
-			setBytes(vidmem + videoPos, buffer, count);
+		if (fd == STDOUT) {
+			memcpy(vidmem + videoPos, buffer, count);
 		} else if (fd == PIC1) {
 			_out(0x20, buffer[0]);
 		}
@@ -260,8 +252,7 @@ kmain() {
 
 	_lidt(&idtr);
 
-	startKeyboard();
-	initVideo();
+
 
 
 	scheduler_init();

@@ -3,6 +3,7 @@
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
 #include "../libs/queue.h"
+#include "../drivers/video.h"
 #include "scheduler.h"
 
 #define MAX 0xff
@@ -105,47 +106,58 @@ unsigned char keyboard[][2] = { { NPRTBL, NPRTBL },//000
 		//Para asegurarme podria llenar con NPRTBL lo que queda
 };
 
-
-
 #define		TTY_KEYBOARD_BUFFER	256
 
 typedef struct TTY_Context { 
-	Queue * char_buffer;
-	char direction;
-	char numLock;
-	char capsLock;
-	char lShift;
-	char rShift;
-	char lCtrl;
-	char rCtrl;
-	char lAlt;
-	char rAlt;
-	char del;
-	char _escPressed;
-	int lastlastkey;
-	int lastkey;
-	int charBufferPointer;
-	int arrowBufferPointer;
-	char arrowBuffer[BUFFER_SIZE];
-	char charBuffer[BUFFER_SIZE];
+	// Keyboard Context
+	char	direction;
+	char	numLock;
+	char	capsLock;
+	char	lShift;
+	char	rShift;
+	char	lCtrl;
+	char	rCtrl;
+	char	lAlt;
+	char	rAlt;
+	char	del;
+	char	_escPressed;
+	int		lastlastkey;
+	int		lastkey;
+	int		charBufferPointer;
+	int		arrowBufferPointer;
+	char	arrowBuffer[BUFFER_SIZE];
+	char	charBuffer[BUFFER_SIZE];
+	
+	// Video Context
+	VIDEO_MODE_INFO *	video_context;
 } TTY_Context;
 
 static TTY_Context	tty_contexts[TTY_MAX_NUMBER];
 int					current_tty = 0;
 
-
-void init_context(int id) {
-	TTY_Context * cont = &tty_contexts[id]; 
-	startKeyboard(id);
+void switch_tty(int number) {
+	TTY_Context * cont = &tty_contexts[number]; 	
+	setVideoMode(tty_contexts[number].video_context);
 }
 
+int aux = 0;
+void init_context(int id) {
+	aux = current_tty;
+	TTY_Context * cont = &tty_contexts[id]; 
+	startKeyboard(id);
+	cont->video_context = buildVideoMode(25, 80, 1, 10, 10, 1);
+	cont->video_context->visible = (id == 0);
+	
+	current_tty = id;
 
-
+	setVideoMode(tty_contexts[current_tty].video_context);
+	initVideo();
+	current_tty = aux;
+}
 
 static TTY_Context * cnt() { 
 	return &tty_contexts[current_tty];
 }
-
 
 int escPressed() {
 	return cnt()->_escPressed;
@@ -175,7 +187,6 @@ void startKeyboard(int id)
 	tty_contexts[id].arrowBufferPointer = -1;
 }
 
-
 // Buffer for arrows
 void pushArr(char c) {
 	if (cnt()->arrowBufferPointer >= BUFFER_SIZE - 1) {
@@ -194,6 +205,7 @@ void pushC(char c) {
 char scanCodeToChar(char scanCode) {
 	if ((cnt()->lCtrl || cnt()->rCtrl)) {
 		int in = FALSE;
+		tty_contexts[current_tty].video_context->visible = 0;
 		switch(keyboard[scanCode][0]) {
 			case '1':
 				current_tty = 0;
@@ -228,9 +240,11 @@ char scanCodeToChar(char scanCode) {
 				in = TRUE;
 				break;
 		}
+		tty_contexts[current_tty].video_context->visible = 1;
 		if(in)
 		{
-			printf("context change\n");
+			setVideoMode(tty_contexts[current_tty].video_context);
+			video_reload();
 			return 0;
 		}
 
@@ -240,8 +254,6 @@ char scanCodeToChar(char scanCode) {
 		return keyboard[scanCode][isShifted()];
 	return keyboard[scanCode][isCapital()];
 }
-
-
 
 int controlKey(int scancode) {
 	
@@ -377,7 +389,6 @@ char getA() {
 	return cnt()->arrowBuffer[cnt()->arrowBufferPointer--];
 }
 
-
 char getC() {	
 	while (cnt()->charBufferPointer < 0 
 		   || current_tty != current_p_tty()) {
@@ -396,6 +407,7 @@ int isCapital() {
 	return ((cnt()->lShift || cnt()->rShift) && !cnt()->capsLock) 
 			|| cnt()->capsLock && !(cnt()->lShift || cnt()->rShift);
 }
+
 int isShifted() {
 	return cnt()->lShift || cnt()->rShift;
 }

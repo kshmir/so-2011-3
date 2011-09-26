@@ -18,5 +18,6 @@ void free(void* ptr);
 int time(void *ptr);
 int srand(int i);
 int rand();
+void memcpy(void *s, char* c, int n);
 
 #endif /* STDLIB_H_ */
