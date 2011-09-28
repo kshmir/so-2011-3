@@ -197,6 +197,7 @@ int process_input(const char * input) {
 				char** strs = split_string(file_call_buffer, ' ', &n);
 				if(!string_ends_with(file_call_buffer, '&'))
 				{
+					// SYSCALL.
 					waitProcess(create_process(file_call_buffer, _functions[index], 0, current_tty, 0, 0, 0 ,0, n, strs));
 				} else	{
 					create_process(file_call_buffer, _functions[index], 0, current_tty, 0, 0, 0 ,0, n, strs);
