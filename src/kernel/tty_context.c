@@ -377,11 +377,8 @@ int controlKey(int scancode) {
 }
 
 char getA() {
-	if (cnt()->arrowBufferPointer < 0  && current_tty != current_p_tty()) {
-		return 0;
-	}
-
-	return cnt()->arrowBuffer[cnt()->arrowBufferPointer--];
+	return 0; 
+	
 }
 
 char getC() {	
@@ -393,6 +390,22 @@ char getC() {
 	char ret = cnt()->charBuffer[cnt()->charBufferPointer--];
 	return ret;
 }
+
+// int tty_read(char * buf, int len) {
+// 	if(cnt()->charBufferPointer < 0 || current_tty != current_p_tty()) {
+// 		return SYSR_BLOCK;
+// 	}
+// 	char ret = cnt()->charBuffer[cnt()->charBufferPointer--];
+// 	* buf = ret;
+// 	return 1;
+// }
+// 
+// 
+// char getC() {	
+// 	char ret[1];
+// 	read(STDIN, ret, 1);
+// 	return *ret;
+// }
 
 int capsOn() {
 	return cnt()->capsLock;

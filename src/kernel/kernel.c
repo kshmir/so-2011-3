@@ -5,6 +5,7 @@
 #include "video.h"
 #include "kernel.h"
 #include "scheduler.h"
+#include "fd.h"
 
 
 ///////////// Inicio de Variables del Kernel
@@ -15,6 +16,7 @@ DESCR_INT idt[0x81];
 IDTR idtr; 
 
 #define KERNEL_BUFFER_SIZE 16
+#define	KERNEL_RETURN      (KERNEL_BUFFER_SIZE - 1)
 
 int kernel_buffer[KERNEL_BUFFER_SIZE]; 
 
@@ -73,11 +75,15 @@ void int_09() {
 
 }
 
+int krn = 0;
 
-
+int in_kernel(){
+	return krn;
+}
 
 void int_80() {
 	
+	krn = 1;
 	int systemCall = kernel_buffer[0];
 	int fd         = kernel_buffer[1];
 	int buffer     = kernel_buffer[2];
@@ -88,15 +94,43 @@ void int_80() {
 
 	if (systemCall == WRITE) {
 		Process * current = getp();
-		fd_write(current->file_descriptors[fd],buffer,count);
+		kernel_buffer[KERNEL_RETURN] = fd_write(current->file_descriptors[fd],(char *)buffer,count);
 	} else if (systemCall == READ) {
 		Process * current = getp();
-		fd_read(current->file_descriptors[fd],buffer,count);
-	} else if (systemCall == OPEN) {
-		fd_open((char *) systemCall, fd);
+		kernel_buffer[KERNEL_RETURN] = fd_read(current->file_descriptors[fd],(char *)buffer,count);
+	} else if (systemCall == MKFIFO) {		
+		int _fd = process_getfreefd();
+		if(_fd != -1)
+		{
+			int fd = fd_open(_FD_FIFO, (void *)kernel_buffer[1],kernel_buffer[2]);
+			getp()->file_descriptors[_fd] = fd;
+			kernel_buffer[KERNEL_RETURN] = _fd;
+		}
+		else {
+			kernel_buffer[KERNEL_RETURN] = -1;
+		}
+		
+		
 	} else if (systemCall == CLOSE) {
-		fd_close((char *) systemCall, fd);
+		fd_close(fd);
 	}
+	else if (systemCall == PCREATE) {
+		kernel_buffer[KERNEL_RETURN] = sched_pcreate(kernel_buffer[1],kernel_buffer[2],kernel_buffer[3]);
+	}
+	else if (systemCall == PRUN) {
+		kernel_buffer[KERNEL_RETURN] = sched_prun(kernel_buffer[1]);
+	}
+	else if (systemCall == PDUP2) {
+		kernel_buffer[KERNEL_RETURN] = sched_pdup2(kernel_buffer[1],kernel_buffer[2],kernel_buffer[3]);
+	}
+	else if (systemCall == GETPID) {
+		kernel_buffer[KERNEL_RETURN] = sched_getpid();
+	}
+	else if (systemCall == WAITPID) {
+		kernel_buffer[KERNEL_RETURN] = sched_waitpid(kernel_buffer[1]);
+	}
+	
+	krn = 0;
 }
 
 ///////////// Fin Handlers de interrupciones.
@@ -150,7 +184,7 @@ kmain() {
 	/* Habilito interrupcion de timer tick*/
 	_mascaraPIC1(0xFC);
 	_mascaraPIC2(0xFF);
-	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0, 0, NULL);
+	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0, 0, NULL, 0);
 	tty_init(0);
 	tty_init(1);
 	tty_init(2);

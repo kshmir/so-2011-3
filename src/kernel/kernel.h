@@ -16,16 +16,22 @@
 #define FD_TTY4      24
 #define FD_TTY5      25
 
+#define FD_FIFO      100
+
+#define FD_FILE      1000
+
 // Syscalls based on http://docs.cs.up.ac.za/programming/asm/derick_tut/syscalls.html
 #define READ         3
 #define WRITE        4
 #define OPEN         5
 #define CLOSE        6
 #define MKFIFO       7
-#define FORK         8
-#define EXEC         9
-#define DUP2         10
+#define PCREATE      8
+#define PRUN         9
+#define PDUP2        10
+#define GETPID       11
+#define WAITPID      12
 
-#define FD_PIPE      100
 
-#define FD_FILE      1000
+#define SYSR_ERR     -1
+#define SYSR_BLOCK   -2

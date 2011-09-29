@@ -13,7 +13,7 @@ int fs_write (int fd, char * buffer, int len);
 
 int fs_close (int fd);
 
-int fs_instance_open ();			// FS Instance sirve para navegar por el fs. Cada proceso tiene 1.
+int fs_instance_open ();                        // FS Instance sirve para navegar por el fs. Cada proceso tiene 1.
 
 int fs_instance_close (int instance);
 
@@ -21,9 +21,9 @@ int fs_pwd     (int fs_inst);
 
 int fs_mkdir   (char * name, int len);
 
-int fs_link    (char * name, int len); // Hard link
+int fs_link    (char * name, int len);          // Hard link
 
-int fs_symlink (char * name, int len); // Symlink
+int fs_symlink (char * name, int len);          // Symlink
 
 int fs_rm (char * name);
 

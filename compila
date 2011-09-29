@@ -17,6 +17,8 @@ ccache gcc -c ../src/kernel/tty.c                -o tty.o            -fno-builti
 ccache gcc -c ../src/kernel/tty_context.c        -o tty_context.o    -fno-builtin
 ccache gcc -c ../src/kernel/kernel.c             -o kernel.o         -fno-builtin
 
+
+ccache gcc -c ../src/software/user_programs.c    -o user_programs.o  -fno-builtin
 ccache gcc -c ../src/software/nInLineFront.c     -o nInLineFront.o   -fno-builtin
 ccache gcc -c ../src/software/nInLineBack.c      -o nInLineBack.o    -fno-builtin
 ccache gcc -c ../src/libs/internal_shell.c       -o internal_shell.o -fno-builtin

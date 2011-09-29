@@ -2,6 +2,8 @@
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
 
+#include "../libs/queue.h"
+
 #ifndef _SCHEDULER_H_
 #define _SCHEDULER_H_
 
@@ -17,6 +19,7 @@
 #define	PROCESS_FD_SIZE			64
 #define PROCESS_STACK_SIZE		4096
 #define PROCESS_MAX				64
+#define PROCESS_WAIT_MAX		64
 
 ////// End defines for PROCESS
 
@@ -35,7 +38,9 @@ typedef struct Process {
 	int					tty;
 	int					esp;
 	int					file_descriptors[PROCESS_FD_SIZE];
+	int					open_fds;
 	int					calls;
+	Queue				* wait_queue;
 } Process;
 
 ////// Stackframe, built on process creation.
@@ -43,7 +48,7 @@ typedef struct StackFrame {
 	int 		EDI, ESI, EBP, ESP, EBX, EDX, ECX, EAX,  EIP, CS, EFLAGS;
 	void	*	retaddr;
 	int 		argc;
-	char** 	argv;
+	char	** 	argv;
 } StackFrame;
 
 ////// Begin Scheduler functions
@@ -55,8 +60,11 @@ Process * getp();
 
 int current_p_tty();
 
+int process_getfreefd();
+
+
 Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
-	int is_tty, int stdin, int stdout, int stderr, int argc, void * params);
+	int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queue_block);
 
 // Begin Context Change functions.
 
@@ -68,7 +76,17 @@ void scheduler_think (void);
 
 int scheduler_load_esp();
 
-void waitProcess(Process * p);
+int sched_fork();
+
+int sched_getpid();
+
+main_pointer sched_ptr_from_string(char * string);
+
+int sched_pdup2(int pid, int fd1, int fd2);
+
+int sched_prun(int pid);
+
+
 
 void yield();
 

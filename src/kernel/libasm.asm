@@ -19,6 +19,13 @@ GLOBAL _yield
 ; Syscalls
 GLOBAL	read
 GLOBAL	write
+GLOBAL	mkfifo
+GLOBAL	close
+GLOBAL	pcreate
+GLOBAL	prun
+GLOBAL	pdup2
+GLOBAL	getpid
+GLOBAL	waitpid
 
 EXTERN  int_08
 EXTERN  int_09
@@ -28,6 +35,7 @@ EXTERN	kernel_buffer
 EXTERN	scheduler_get_temp_esp
 EXTERN	scheduler_think
 EXTERN	scheduler_load_esp
+EXTERN	releaseyield
 
 
 
@@ -112,9 +120,12 @@ _int_08_hand:
 			push eax
 				call scheduler_save_esp
 			pop eax
-				call scheduler_get_temp_esp
+			
+			call scheduler_get_temp_esp
 			mov esp, eax
-				call scheduler_think
+			
+			call scheduler_think
+			
 			call scheduler_load_esp
 			mov esp,eax
 			;call _debug;
@@ -182,19 +193,13 @@ _int_80_hand:
 		push eax
 			call scheduler_save_esp
 		pop eax
-			call scheduler_get_temp_esp
+		
+		call scheduler_get_temp_esp
 		mov esp, eax
 		
 		call int_80									; Make the syscall
-			
-		mov 	[kernel_buffer + 12], 0h			; Clear the kernel buffer, just for imaginary security
-		mov 	[kernel_buffer + 8],  0h
-		mov 	[kernel_buffer + 4],  0h
-		mov 	[kernel_buffer],      0h
 		
-		push eax									; Make the syscall
-			call scheduler_load_esp
-		pop ebx
+		call scheduler_load_esp
 		mov esp,eax
 		
 		
@@ -216,6 +221,15 @@ write:
 		popa
 		mov 	esp,ebp
 		pop 	ebp
+		
+		mov		eax, [kernel_buffer + 60]
+
+		cmp		eax, -2
+		jne		_write_jmp_0
+		call	_yield
+		jmp		write
+	_write_jmp_0:
+		
 		ret
 
 read:
@@ -230,6 +244,101 @@ read:
 		popa
 		mov 	esp, ebp
 		pop 	ebp
+		
+		mov		eax, [kernel_buffer + 60]
+		cmp		eax, -2
+		jne		_read_jmp_0
+		call	_yield
+		jmp		read
+	_read_jmp_0:
+	
+		ret
+
+mkfifo:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov 	eax, 7				; eax en 8 para pcreate
+		mov 	ebx, [ebp+8]		; fifo name
+		mov 	ecx, [ebp+12]		; perms
+		int 	80h
+		popa
+		mov 	esp, ebp
+		pop 	ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+pcreate:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov 	eax, 8				; eax en 8 para pcreate
+		mov 	ebx, [ebp+8]		; file descriptor
+		mov 	ecx, [ebp+12]		; buffer donde escribir
+		mov 	edx, [ebp+16]		; cantidad
+		int 	80h
+		popa
+		mov 	esp, ebp
+		pop 	ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+prun:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov 	eax, 9				; eax en 9 para prun
+		mov 	ebx, [ebp+8]		; pid
+		int 	80h
+		popa
+		mov 	esp, ebp
+		pop 	ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+pdup2:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov 	eax, 10				; eax en 3 para read
+		mov 	ebx, [ebp+8]		; file descriptor
+		mov 	ecx, [ebp+8]		; file descriptor
+		int 	80h
+		popa
+		mov 	esp, ebp
+		pop 	ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+getpid:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov 	eax, 11				; eax en 11 para getpid
+		int 	80h
+		popa
+		mov 	esp, ebp
+		pop 	ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+waitpid:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov 	eax, 12				; eax en 9 para prun
+		mov 	ebx, [ebp+8]		; pid
+		int 	80h
+		popa
+		mov 	esp, ebp
+		pop 	ebp
+		mov		eax, [kernel_buffer + 60]
+		
+		cmp		eax, -1	
+		je		_waitpid_jmp_0
+		call	_yield
+	_waitpid_jmp_0:
+	
 		ret
 
 _setCursor:

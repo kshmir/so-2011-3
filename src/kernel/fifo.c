@@ -6,6 +6,7 @@
 #include "scheduler.h"
 #include "semaphore.h"
 #include "fifo.h"
+#include "kernel.h"
 
 #define FIFO_DATA_SIZE 1024
 
@@ -14,6 +15,8 @@ typedef struct fifo {
 	char data[FIFO_DATA_SIZE];
 	int	wr_i;
 	int rd_i;
+	int buf_rd_i;
+	int buf_wr_i;
 	int write_locked;
 	int writes;
 } fifo;
@@ -29,7 +32,22 @@ static fifo * fifo_find(int inode) {
 	return NULL;
 }
 
-int fifo_open(char * file_name) {
+
+int fifo_exists(char * file_name) {
+	int n = 31; 
+	
+	// TODO: Use a filesystem function.
+	int i = 0;
+	int len = strlen(file_name);
+	for(i = 0; i < len; ++i) {
+		n += file_name[i] * file_name[i] * i;
+	}	
+	return (int)fifo_find(n);
+}
+
+
+
+int fifo_make(char * file_name) {
 	if(fifos == NULL)	{
 		fifos = list_init();
 	}
@@ -40,7 +58,7 @@ int fifo_open(char * file_name) {
 	int i = 0;
 	int len = strlen(file_name);
 	for(i = 0; i < len; ++i) {
-		n += file_name[i] * file_name[i] * file_name[i];
+		n += file_name[i] * file_name[i] * i;
 	}
 	
 	fifo * f = NULL;
@@ -52,6 +70,8 @@ int fifo_open(char * file_name) {
 		f->rd_i         = 0;
 		f->writes       = 0;
 		f->write_locked = 0;
+		f->buf_wr_i     = 0;
+		f->buf_rd_i     = 0;
 		i = 0;
 		for(; i < FIFO_DATA_SIZE; ++i)	{
 			f->data[i] = 0;
@@ -61,42 +81,65 @@ int fifo_open(char * file_name) {
 	return (int)f;
 }
 
+int	fifo_open(char * file_name) {
+	int n = 31; 
+	
+	// TODO: Use a filesystem function.
+	int i = 0;
+	int len = strlen(file_name);
+	for(i = 0; i < len; ++i) {
+		n += file_name[i] * file_name[i] * i;
+	}
+	
+	fifo * f = NULL;
+	if((f = fifo_find(n)) == NULL) {
+		return -1;
+	} else {
+		return (int)f;
+	}
+	
+}
+
 int fifo_write(int fd, char * msg, int len){ 
 	fifo * f = (fifo *) fd;
-	size_t i = 0;
-	for(; i < len; i++, f->wr_i++)	{
+
+	for(; f->buf_wr_i < len; f->buf_wr_i++, f->wr_i++)	{
 		f->write_locked = 0;		
-		while(f->writes == FIFO_DATA_SIZE) {
+		if(f->writes == FIFO_DATA_SIZE) {
 			f->write_locked = 1;
-			softyield();
+			return SYSR_BLOCK;
 		}
 		f->write_locked = 0;
 		if(f->wr_i == FIFO_DATA_SIZE) {
 			f->wr_i = 0;
 		}
-		f->data[f->wr_i] = msg[i];
+		f->data[f->wr_i] = msg[f->buf_wr_i];
 		f->writes++;
 	}	
+	
+	
+	f->buf_wr_i     = 0;
 }
 
 int fifo_read(int fd, char * buffer, int read_size){	
 	fifo * f = (fifo *) fd;
 	while(f->writes == 0) {
-		softyield();
+		return SYSR_BLOCK;
 	}
-	size_t i = 0;
-	for(; i < read_size && (f->writes > 0 || f->write_locked); i++, f->rd_i++)
+	for(; f->buf_rd_i < read_size && (f->writes > 0 || f->write_locked); f->buf_rd_i++, f->rd_i++)
 	{
-		while(f->writes == 0) {
-			softyield();
+		if(f->writes == 0) {
+			return SYSR_BLOCK;
 		}
 		
 		if(f->rd_i == FIFO_DATA_SIZE) {
 			f->rd_i = 0;
 		}
-		buffer[i] = f->data[f->rd_i];
+		buffer[f->buf_rd_i] = f->data[f->rd_i];
 		f->writes--;
 	}
+	int i = f->buf_rd_i;
+	f->buf_rd_i = 0;
 	return i;
 }
 

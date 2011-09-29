@@ -113,7 +113,13 @@ VIDEO_MODE_INFO* buildVideoMode(int height, int width, int cursorX,
 void putC(char c) {
 	if(current_video_mode->visible)	{
 		char a[] = { c, defaultStyle };
-		write(STDOUT,a,2);
+		if(!in_kernel())
+		{
+			write(STDOUT,a,2);
+		} else { 
+			video_write(a,2);
+		}
+
 		incrementCursor();
 	} else if(!current_video_mode->visible)
 	{
