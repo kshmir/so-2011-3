@@ -4,8 +4,6 @@ GLOBAL  _int_09_hand
 GLOBAL	_int_80_hand
 GLOBAL  _mascaraPIC1,_mascaraPIC2,_Cli,_Sti
 GLOBAL  _debug
-GLOBAL	_read
-GLOBAL	_write
 GLOBAL	_setCursor
 GLOBAL	_restart
 GLOBAL	_in
@@ -18,10 +16,15 @@ GLOBAL _GetESP
 GLOBAL _Halt
 GLOBAL _yield
 
+; Syscalls
+GLOBAL	read
+GLOBAL	write
+
 EXTERN  int_08
 EXTERN  int_09
 EXTERN	int_80
 EXTERN	scheduler_save_esp
+EXTERN	kernel_buffer
 EXTERN	scheduler_get_temp_esp
 EXTERN	scheduler_think
 EXTERN	scheduler_load_esp
@@ -84,7 +87,7 @@ _lidt:
 		retn
 
 _yield:
-		INT 08
+		int 08h
 		ret
 
 ; Handler de INT 8 ( Timer tick)
@@ -112,9 +115,7 @@ _int_08_hand:
 				call scheduler_get_temp_esp
 			mov esp, eax
 				call scheduler_think
-			push eax
-				call scheduler_load_esp
-			pop ebx
+			call scheduler_load_esp
 			mov esp,eax
 			;call _debug;
 		popad
@@ -148,30 +149,66 @@ _int_09_hand:
 ; edx -> cantidad de caracteres a escribir
 
 _int_80_hand:
+;   	cli
+;   	push	ds
+;   	push	es
+;   	pusha
+;   	push	edx             ; cantidad de caracteres a escribir
+;   	push	ecx             ; direccion de la cadena a escribir
+;   	push	ebx             ; file descriptor
+;   	push	eax             ; system call
+;   	call int_80
+;   	pop		eax             ; saco parametros
+;   	pop		eax
+;   	pop		eax
+;   	pop		eax
+;   	popa
+;   	pop		es
+;   	pop		ds
+;   	sti
+;   	iret
+		
 		cli
 		push	ds
 		push	es
-		pusha
-		push	edx             ; cantidad de caracteres a escribir
-		push	ecx             ; direccion de la cadena a escribir
-		push	ebx             ; file descriptor
-		push	eax							; system call
-		call int_80
-		pop		eax             ; saco parametros
-		pop		eax
-		pop		eax
-		pop		eax
-		popa
+		pushad										; We push everything
+		
+		mov 	[kernel_buffer + 12], edx			; Write to the kernel.
+		mov 	[kernel_buffer + 8],  ecx
+		mov 	[kernel_buffer + 4],  ebx
+		mov 	[kernel_buffer],      eax
+		
+		mov eax, esp								; Save ESP, get Kernel's one.
+		push eax
+			call scheduler_save_esp
+		pop eax
+			call scheduler_get_temp_esp
+		mov esp, eax
+		
+		call int_80									; Make the syscall
+			
+		mov 	[kernel_buffer + 12], 0h			; Clear the kernel buffer, just for imaginary security
+		mov 	[kernel_buffer + 8],  0h
+		mov 	[kernel_buffer + 4],  0h
+		mov 	[kernel_buffer],      0h
+		
+		push eax									; Make the syscall
+			call scheduler_load_esp
+		pop ebx
+		mov esp,eax
+		
+		
+		popad
 		pop		es
 		pop		ds
 		sti
 		iret
 
-_write:
+write:
 		push 	ebp
 		mov 	ebp, esp
 		pusha
-		mov		eax, 0					; eax en 0 para write
+		mov		eax, 4				; eax en 4 para write
 		mov 	ebx, [ebp+8]		; file descriptor
 		mov 	ecx, [ebp+12]		; buffer a escribiar
 		mov 	edx, [ebp+16]		; cantidad
@@ -181,11 +218,11 @@ _write:
 		pop 	ebp
 		ret
 
-_read:
+read:
 		push 	ebp
 		mov 	ebp, esp
 		pusha
-		mov 	eax, 1					; eax en 1 para read
+		mov 	eax, 3				; eax en 3 para read
 		mov 	ebx, [ebp+8]		; file descriptor
 		mov 	ecx, [ebp+12]		; buffer donde escribir
 		mov 	edx, [ebp+16]		; cantidad

@@ -8,5 +8,5 @@ timeout 0
 
 # Primera entrada
 
-title Kernel de prueba
+title MonkeyOS 
 kernel /boot/kernel.bin

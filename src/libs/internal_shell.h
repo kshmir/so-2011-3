@@ -2,7 +2,7 @@
 
 #define _INTERNAL_SHELL_H_
 
-#include "../drivers/video.h"
+#include "../kernel/video.h"
 #define CLSIZE 4
 
 

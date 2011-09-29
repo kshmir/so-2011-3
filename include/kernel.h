@@ -1,35 +1,72 @@
-/********************************** 
+/*****************************************************************************
  *
- *  Kernel
+ *  MonkeyOS Kernel System Calls - "MONIX, like POSIX but smaller"
  *
- ***********************************/
-#ifndef _kernel_
-#define _kernel_
+ *****************************************************************************/
+#ifndef _MONIX_H_
+#define _MONIX_H_
 
 #include "defs.h"
 
-#define OS_PID	0
 
-int _ticks();
-
-void setCursor(int b);
-
-void setup_IDT_entry(DESCR_INT * item, byte selector, dword offset, byte access, byte cero);
-
-/* __write
- * Recibe como parametros:
+/* write
+ * Parameters:
  * - File Descriptor
- * - Buffer del source
- * - Cantidad
+ * - Buffer to write
+ * - Length of the buffer
  **/
-size_t __write(int fd, const void* buffer, size_t count);
+int write(unsigned int fd, const void* buffer, size_t count);
 
-/* __read
- * Recibe como parametros:
+/* read
+ * Parameters:
  * - File Descriptor
- * - Buffer a donde escribir
- * - Cantidad
+ * - Buffer to read
+ * - Length of the buffer
  **/
-size_t __read(int fd, void* buffer, size_t count);
+int read(unsigned int fd, void* buffer, size_t count);
+
+/* open
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+int open(const char * fname, int perms);
+
+/* close
+ * Parameters:
+ * - File Descriptor to close.
+ **/
+int close(int fd);
+
+/* mkfifo
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the fifo.
+ **/
+int mkfifo(const char * fname, int perms);
+
+/* fork
+ * Returns:
+ * - -1 if it's the new process, the child's PID if it's the parent.
+ **/
+int fork();
+
+/* exec
+ * Returns:
+ * - Does not return to the process :)
+ **/
+int exec(const char * fname, const char * args);
+ 
+/* dup2
+ * Params:
+ * - File Descriptor to change into fd2.
+ * - File Descriptor to close and replace.
+ **/
+int dup2(int fd1, int fd2);
+
 
 #endif

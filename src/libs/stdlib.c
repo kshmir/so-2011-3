@@ -49,7 +49,7 @@ int _time = 0;
 // Lies
 int time(void *ptr)
 {
-	_time += 10 * _ticks(); // Well, this is kinda random right?
+	_time += 10 * 12312331111; // Well, this is kinda random right? // TODO: Count ticks back!!!
 	return  _time;
 }
 // Lies

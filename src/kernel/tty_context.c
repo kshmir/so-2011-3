@@ -3,7 +3,7 @@
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
 #include "../libs/queue.h"
-#include "../drivers/video.h"
+#include "video.h"
 #include "scheduler.h"
 
 #define MAX 0xff
@@ -371,17 +371,12 @@ int controlKey(int scancode) {
 	if ((cnt()->lAlt || cnt()->rAlt) && (cnt()->lCtrl || cnt()->rCtrl) && cnt()->del)
 		_restart(); // Handles direct restart
 
-
-
 	cnt()->lastlastkey = cnt()->lastkey;
 	cnt()->lastkey = scancode;
-
 	return 0;
 }
 
 char getA() {
-	
-	
 	if (cnt()->arrowBufferPointer < 0  && current_tty != current_p_tty()) {
 		return 0;
 	}

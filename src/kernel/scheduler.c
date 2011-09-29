@@ -77,6 +77,9 @@ int current_p_tty() {
 	return current_process->tty;
 }
 
+Process * getp() {
+	return current_process;
+}
 
 
 void process_cleaner() {
@@ -120,7 +123,7 @@ int	stackf_build(void * stack, main_pointer _main, int argc, void * argv) {
 }
 
 Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
-						int is_tty, int stdin, int stderr, int stdout, int argc, void * params) {
+						int is_tty, int stdin, int stdout, int stderr, int argc, void * params) {
 	Process * p            = process_getfree();
 	p->pid                 = process_getnextpid();
 	p->gid                 = 0;
@@ -160,12 +163,20 @@ void scheduler_save_esp (int esp)
 }
 
 void * scheduler_get_temp_esp (void) {
-	return (void*)idle->esp;
+	if(idle != NULL)
+	{
+		return (void*)idle->esp;
+	} 
+	else
+	{
+		return NULL;
+	}
+
 }
 
 int c = 0;
 
-void * scheduler_think (void) {
+void scheduler_think (void) {
 	
 	if(yielded == 0) {
 		while(!queue_isempty(yield_queue)) {
@@ -198,12 +209,15 @@ void * scheduler_think (void) {
 	c++;
 
 	switch_tty(current_process->tty);
-	return current_process;
 }
 
-int scheduler_load_esp(Process * proc)
+int scheduler_load_esp()
 {
-	return proc->esp;
+	if(current_process == NULL)
+	{
+		return 0;
+	}
+	return current_process->esp;
 }
 
 ///////////// Fin Funciones Scheduler

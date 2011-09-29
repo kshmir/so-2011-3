@@ -1,5 +1,5 @@
 #include "mcglib.h"
-#include "video.h"
+#include "../kernel/video.h"
 
 // Splits an string, returns the length of the splitted array
 // C: char array.

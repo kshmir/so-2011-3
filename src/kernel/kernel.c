@@ -2,14 +2,8 @@
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
 
-#include "../startup/start.h"
-
-#include "../libs/stdlib.h"
-
-#include "../drivers/keyboard.h"
-#include "../drivers/video.h"
-#include "../shell.h"
-
+#include "video.h"
+#include "kernel.h"
 #include "scheduler.h"
 
 
@@ -20,95 +14,20 @@ DESCR_INT idt[0x81];
 /* IDTR */
 IDTR idtr; 
 
-// Counter of IRQ8 ticks since start.
-int ticks = 0;
-int cursor_ticks = 0;
+#define KERNEL_BUFFER_SIZE 16
 
-// Counter of the video position
-int videoPos = 0;
+int kernel_buffer[KERNEL_BUFFER_SIZE]; 
 
-// Sets or not the cursor
-int cursorEnabled = 1;
-int hardCursorEnabled = 1;
-
-// Direction to the video memory.
-char *vidmem = (char *) 0xb8000;
-
-// Stores the CPU frequency.
-double cpuFreq = 0;
-
-int fix_flag = 0;
+void clear_kernel_buffer() {
+	int i = 0;
+	for(i = 0; i < KERNEL_BUFFER_SIZE; ++i)	{
+		kernel_buffer[i] = 0;
+	}
+}
 
 ///////////// Fin de Variables del Kernel
 
 ///////////// Inicio de funciones auxiliares del Kernel.
-
-// TODO: Move me
-int _ticks() {
-	return cursor_ticks;
-}
-
-// TODO: Move me.
-void setCursor(int b) {
-	cursorEnabled = b;
-	hardCursorEnabled = b;
-}
-
-// TODO: Move me.
-void setVideoPos(int a) {
-	videoPos = a;
-	if (cursorEnabled) { 
-		_setCursor(a / 2);
-	}
-}
-
-// This method can be cleaned up...
-double* getFrequency(int precision, int tcks) {
-	// Precision gives us the amount of times it'll be approximated.
-	// Tcks gives us the amount of ticks to try to get the frecuency
-	// 2 is the minimum value.
-	int it = 0, n = precision, c = 0;
-	unsigned long counter = 0;
-
-	// We check limits...
-	if (tcks > 18)
-		tcks = 18;
-	if (tcks < 2)
-		tcks = 2;
-
-	// Startup variables
-	double cpuFreqs;
-	cpuFreq = 0;
-
-	// Iterate for elements.
-	for (it = 0; it < n; it++) {
-		ticks = 0;
-		int oldticks = 1;
-		// Waiting for a tick change helps us solve
-		// Any redundancy in the numbers
-		// "Syncing" the counter with the ticks is really helpful
-		while (ticks != oldticks)
-			;
-		counter = _rdtsc();
-		// Wait for another tick change, one is usually enough.
-		while (ticks < tcks)
-			;
-		counter = _rdtsc() - counter;
-		// Normalizes to Mhz
-		cpuFreqs = counter / ((ticks - 1) * 54925.40115);
-		cpuFreq += cpuFreqs;
-		if (!fix_flag)
-		{
-			fix_flag++;
-			cpuFreq = 0;
-			it--;
-		}
-	}
-
-	// Average if needed.
-	cpuFreq /= n;
-	return &cpuFreq;
-}
 
 /*
  *	setup_IDT_entry
@@ -132,25 +51,10 @@ void setup_IDT_entry(DESCR_INT *item, byte selector, dword offset, byte access, 
 
 ///////////// Inicio Handlers de interrupciones.
 
-void int_08() {
-	ticks++;
-	cursor_ticks++;
-	if (hardCursorEnabled && cursor_ticks % 5 == 0) {
-		cursorEnabled = !cursorEnabled;
-		if (cursorEnabled) { 
-			_setCursor(videoPos / 2);
-		}
-		else { 
-			_setCursor(-1);
-		}
-	}
-
-}
 
 void int_09() {
 	char scancode;
-	char eoi = EOI;
-	_read(KEYBOARD, &scancode, 1);
+	scancode = _in(0x60);
 
 	// We check if the scancode is a char or a control key.
 	int flag = scancode >= 0x02 && scancode <= 0x0d;
@@ -167,24 +71,31 @@ void int_09() {
 		controlKey(scancode); // Envia el scancode al analizador de control keys.
 	}
 
-	_write(PIC1, &eoi, 1);
 }
 
-void int_80(int systemCall, int fd, char *buffer, int count) {
+
+
+
+void int_80() {
+	
+	int systemCall = kernel_buffer[0];
+	int fd         = kernel_buffer[1];
+	int buffer     = kernel_buffer[2];
+	int count      = kernel_buffer[3];
+
+	
 	int i, j;
 
-	if (systemCall == WRITE) //write
-	{
-		if (fd == STDOUT) {
-			memcpy(vidmem + videoPos, buffer, count);
-		} else if (fd == PIC1) {
-			_out(0x20, buffer[0]);
-		}
-	} else if (systemCall == READ) //read
-	{
-		if (fd == KEYBOARD) {
-			buffer[0] = _in(0x60);
-		}
+	if (systemCall == WRITE) {
+		Process * current = getp();
+		fd_write(current->file_descriptors[fd],buffer,count);
+	} else if (systemCall == READ) {
+		Process * current = getp();
+		fd_read(current->file_descriptors[fd],buffer,count);
+	} else if (systemCall == OPEN) {
+		fd_open((char *) systemCall, fd);
+	} else if (systemCall == CLOSE) {
+		fd_close((char *) systemCall, fd);
 	}
 }
 
@@ -193,27 +104,7 @@ void int_80(int systemCall, int fd, char *buffer, int count) {
 
 Process * p1, * idle, * kernel;
 
-int thinked3 = 0;
 
-int p1_main(int argc, char ** params) {
-	int var = 0;
-	while(1) {
-		if(var < 10240) {
-			var++;
-		}
-		printf("I am the main... %d %d\n", var, thinked3);
-		_yield();
-	}	
-}
-
-int kernel_main(int argc, char ** params) {
-	while(1) {
-		if(thinked3 < 102400) {
-			thinked3++;
-		}
-		_yield();
-	}
-}
 
 int idle_main(int argc, char ** params) {
 	while(1) {
@@ -253,15 +144,12 @@ kmain() {
 	_lidt(&idtr);
 
 
-
-
 	scheduler_init();
 	_Cli();
 	
 	/* Habilito interrupcion de timer tick*/
 	_mascaraPIC1(0xFC);
 	_mascaraPIC2(0xFF);
-	
 	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0, 0, NULL);
 	tty_init(0);
 	tty_init(1);

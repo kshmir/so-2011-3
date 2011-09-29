@@ -77,7 +77,6 @@ int fifo_write(int fd, char * msg, int len){
 		f->data[f->wr_i] = msg[i];
 		f->writes++;
 	}	
-
 }
 
 int fifo_read(int fd, char * buffer, int read_size){	

@@ -5,7 +5,7 @@
 #include "libs/mcglib.h"
 #include "libs/stdio.h"
 #include "libs/string.h"
-#include "drivers/video.h"
+#include "kernel/video.h"
 #include "software/nInLineFront.h"
 
 
@@ -180,11 +180,11 @@ int cpuSpeed(int size, char** args) {
 		ticks = 2;
 
 
-	double* a = (double*)getFrequency(precision, ticks);
+	double a = 2400.0;
 
 
 	if (approx) {
-		int b = (int) *a;
+		int b = (int) a;
 		if (b % 5 >= 3)
 			b = b - b % 5 + 5;
 		else
@@ -193,7 +193,7 @@ int cpuSpeed(int size, char** args) {
 	}
 	else
 	{
-		printf("\nSpeed: %f Mhz\n", *a);
+		printf("\nSpeed: %f Mhz\n", a);
 	}
 }
 

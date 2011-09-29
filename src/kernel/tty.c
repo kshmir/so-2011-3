@@ -5,6 +5,8 @@
 #include "../libs/mcglib.h"
 #include "../libs/queue.h"
 #include "scheduler.h"
+#include "kernel.h"
+#include "fd.h"
 
 
 static int 	tty_index = 0;
@@ -128,7 +130,7 @@ char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "w
 // Functions
 int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, reader_main, writer_main, NULL };
 
-int process_input(const char * input) { 
+int process_input(const char * input, int tty_number) { 
 	int piped = 0;
 	char file_call_buffer[1024];
 	char stdout_call_buffer[128];
@@ -198,9 +200,9 @@ int process_input(const char * input) {
 				if(!string_ends_with(file_call_buffer, '&'))
 				{
 					// SYSCALL.
-					waitProcess(create_process(file_call_buffer, _functions[index], 0, current_tty, 0, 0, 0 ,0, n, strs));
+					waitProcess(create_process(file_call_buffer, _functions[index], 0, current_tty, 0, FD_TTY0 + tty_number, FD_TTY0 + tty_number ,FD_TTY0 + tty_number, n, strs));
 				} else	{
-					create_process(file_call_buffer, _functions[index], 0, current_tty, 0, 0, 0 ,0, n, strs);
+					create_process(file_call_buffer, _functions[index], 0, current_tty, 0, FD_TTY0 + tty_number, FD_TTY0 + tty_number ,FD_TTY0 + tty_number, n, strs);
 				}
 				 
 				break;
@@ -224,9 +226,11 @@ int tty_main (int argc, char ** argv)
 	tty_index++;
 	while(1) {
 		int val = 0;
+		int tty_number = atoi(argv[1]);
 		printf("user@tty%s:", argv[1]);
+
 		char * input = (char *) getConsoleString(val);
-		process_input(input);
+		process_input(input, tty_number);
 	}
 	return 0;
 }
@@ -241,5 +245,6 @@ int tty_init(int tty_num) {
 	_params[0] = process_name;
 	_params[1] = _num;
 	itoa(tty_num, _num);
-	create_process("tty", tty_main, 0, tty_num, 1, 0, 0, 0, 1, _params);
+	fd_open_with_index(FD_TTY0 + tty_num, _FD_TTY, NULL);
+	create_process("tty", tty_main, 0, tty_num, 1, FD_TTY0 + tty_num, FD_TTY0 + tty_num, FD_TTY0 + tty_num, 1, _params);
 }

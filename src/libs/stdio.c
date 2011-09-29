@@ -1,7 +1,6 @@
 #include "stdio.h"
 #include "internal_shell.h"
-#include "../drivers/video.h"
-#include "../drivers/keyboard.h"
+#include "../kernel/video.h"
 #include <stdarg.h>
 
 // Standard putchar

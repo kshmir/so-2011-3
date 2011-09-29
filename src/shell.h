@@ -1,5 +1,4 @@
 #ifndef _START_H_
-#include "../src/drivers/video.h"
 #include "../src/libs/string.h"
 #include <stdarg.h>
 #define _START_H_

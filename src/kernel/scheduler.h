@@ -15,8 +15,8 @@
 
 // Process' attributes
 #define	PROCESS_FD_SIZE			64
-#define PROCESS_STACK_SIZE	4096
-#define PROCESS_MAX 1024
+#define PROCESS_STACK_SIZE		4096
+#define PROCESS_MAX				64
 
 ////// End defines for PROCESS
 
@@ -51,10 +51,12 @@ typedef struct StackFrame {
 // Starts the processes n' stuff.
 void scheduler_init();
 
+Process * getp();
+
 int current_p_tty();
 
 Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
-	int is_tty, int stdin, int stderr, int stdout, int argc, void * params);
+	int is_tty, int stdin, int stdout, int stderr, int argc, void * params);
 
 // Begin Context Change functions.
 
@@ -62,9 +64,9 @@ void scheduler_save_esp (int esp);
 
 void * scheduler_get_temp_esp (void);
 
-void * scheduler_think (void); 
+void scheduler_think (void); 
 
-int scheduler_load_esp(Process * proc);
+int scheduler_load_esp();
 
 void waitProcess(Process * p);
 
