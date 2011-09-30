@@ -54,7 +54,6 @@ int fd_open (int type, void * data, int perms) {
 
 	if(type == _FD_FIFO) {
 		int key = fifo_exists(data);
-		printf("key %d\n", key);
 		if(key) {
 			return fd_find(type, key);
 		}

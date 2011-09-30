@@ -8,7 +8,7 @@
 #include "fifo.h"
 #include "kernel.h"
 
-#define FIFO_DATA_SIZE 1024
+#define FIFO_DATA_SIZE 4
 
 typedef struct fifo {
 	int inode;
@@ -103,10 +103,10 @@ int	fifo_open(char * file_name) {
 int fifo_write(int fd, char * msg, int len){ 
 	fifo * f = (fifo *) fd;
 
-	for(; f->buf_wr_i < len; f->buf_wr_i++, f->wr_i++)	{
-		f->write_locked = 0;		
+	for(; f->buf_wr_i < len; f->buf_wr_i++, f->wr_i++)	{		
 		if(f->writes == FIFO_DATA_SIZE) {
 			f->write_locked = 1;
+			printf("I should lock\n");
 			return SYSR_BLOCK;
 		}
 		f->write_locked = 0;
@@ -117,18 +117,20 @@ int fifo_write(int fd, char * msg, int len){
 		f->writes++;
 	}	
 	
-	
+	printf("I end :D\n");
 	f->buf_wr_i     = 0;
 }
 
 int fifo_read(int fd, char * buffer, int read_size){	
 	fifo * f = (fifo *) fd;
 	while(f->writes == 0) {
+		printf("Waiting for write\n");
 		return SYSR_BLOCK;
 	}
 	for(; f->buf_rd_i < read_size && (f->writes > 0 || f->write_locked); f->buf_rd_i++, f->rd_i++)
 	{
 		if(f->writes == 0) {
+			printf("Waiting for more...\n");
 			return SYSR_BLOCK;
 		}
 		

@@ -53,8 +53,10 @@ void setup_IDT_entry(DESCR_INT *item, byte selector, dword offset, byte access, 
 
 ///////////// Inicio Handlers de interrupciones.
 
+int krn = 0;
 
 void int_09() {
+	krn = 1;
 	char scancode;
 	scancode = _in(0x60);
 
@@ -72,10 +74,10 @@ void int_09() {
 	else {
 		controlKey(scancode); // Envia el scancode al analizador de control keys.
 	}
-
+	krn = 0;
 }
 
-int krn = 0;
+
 
 int in_kernel(){
 	return krn;

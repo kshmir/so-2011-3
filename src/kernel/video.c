@@ -99,11 +99,11 @@ VIDEO_MODE_INFO* buildVideoMode(int height, int width, int cursorX,
 	video->textMode = textMode;
 	video->visible = 0;
 	video->screen = (char**) malloc(sizeof(char**) * width);
-	for (i = 0; i < width; i++) {
+	for (i = 0; i < width; i++)	{
 		video->screen[i] = (char*) malloc(sizeof(char*) * height);
 	}
 	video->style = (char**) malloc(sizeof(char**) * width);
-	for (i = 0; i < width; i++) {
+	for (i = 0; i < width; i++)	{
 		video->style[i] = (char*) malloc(sizeof(char*) * height);
 	}
 	return video;
@@ -113,13 +113,11 @@ VIDEO_MODE_INFO* buildVideoMode(int height, int width, int cursorX,
 void putC(char c) {
 	if(current_video_mode->visible)	{
 		char a[] = { c, defaultStyle };
-		if(!in_kernel())
-		{
+		if(!in_kernel()) {
 			write(STDOUT,a,2);
 		} else { 
 			video_write(a,2);
-		}
-
+		}		
 		incrementCursor();
 	} else if(!current_video_mode->visible)
 	{
@@ -140,17 +138,23 @@ int getCursorY() {
 void setCursorX(int x) {
 	if (x >= 0 && x <= current_video_mode->width) {
 		current_video_mode->curX = x;
-		setVideoPos(
-				(current_video_mode->width * current_video_mode->curY
-						+ current_video_mode->curX) * 2);
+		if(current_video_mode->visible)
+		{
+			setVideoPos(
+					(current_video_mode->width * current_video_mode->curY
+							+ current_video_mode->curX) * 2);
+		}
 	}
 }
 void setCursorY(int y) {
 	if (y >= 0 && y <= current_video_mode->height) {
 		current_video_mode->curY = y;
-		setVideoPos(
-				(current_video_mode->width * current_video_mode->curY
+		if(current_video_mode->visible)
+		{
+			setVideoPos(
+					(current_video_mode->width * current_video_mode->curY
 						+ current_video_mode->curX) * 2);
+		}
 	}
 }
 
