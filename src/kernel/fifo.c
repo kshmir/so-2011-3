@@ -19,6 +19,8 @@ typedef struct fifo {
 	int buf_wr_i;
 	int write_locked;
 	int writes;
+	Process * wr_lck_p;
+	Process * rd_lck_p;
 } fifo;
 
 static list fifos = NULL;
@@ -72,6 +74,8 @@ int fifo_make(char * file_name) {
 		f->write_locked = 0;
 		f->buf_wr_i     = 0;
 		f->buf_rd_i     = 0;
+		f->wr_lck_p     = NULL;
+		f->rd_lck_p     = NULL;
 		i = 0;
 		for(; i < FIFO_DATA_SIZE; ++i)	{
 			f->data[i] = 0;
@@ -103,10 +107,16 @@ int	fifo_open(char * file_name) {
 int fifo_write(int fd, char * msg, int len){ 
 	fifo * f = (fifo *) fd;
 
-	for(; f->buf_wr_i < len; f->buf_wr_i++, f->wr_i++)	{		
+	for(; f->buf_wr_i < len; f->buf_wr_i++, f->wr_i++)	{
+		
+		if(f->writes > 0 && f->rd_lck_p != NULL) {
+			process_setready(f->rd_lck_p);
+			f->rd_lck_p = NULL;
+		}
 		if(f->writes == FIFO_DATA_SIZE) {
 			f->write_locked = 1;
-			printf("I should lock\n");
+			f->wr_lck_p = getp();
+			getp()->state = PROCESS_BLOCKED;
 			return SYSR_BLOCK;
 		}
 		f->write_locked = 0;
@@ -116,21 +126,29 @@ int fifo_write(int fd, char * msg, int len){
 		f->data[f->wr_i] = msg[f->buf_wr_i];
 		f->writes++;
 	}	
-	
-	printf("I end :D\n");
 	f->buf_wr_i     = 0;
+	if(f->rd_lck_p != NULL) {
+		process_setready(f->rd_lck_p);
+		f->rd_lck_p = NULL;
+	}
 }
 
 int fifo_read(int fd, char * buffer, int read_size){	
 	fifo * f = (fifo *) fd;
 	while(f->writes == 0) {
-		printf("Waiting for write\n");
+		f->rd_lck_p = getp();
+		getp()->state = PROCESS_BLOCKED;
 		return SYSR_BLOCK;
 	}
 	for(; f->buf_rd_i < read_size && (f->writes > 0 || f->write_locked); f->buf_rd_i++, f->rd_i++)
 	{
-		if(f->writes == 0) {
-			printf("Waiting for more...\n");
+		if(f->writes > 0 && f->wr_lck_p != NULL) {
+			process_setready(f->wr_lck_p);
+			f->wr_lck_p = NULL;
+		}
+		else if(f->writes == 0 && f->buf_wr_i > 0) {
+			f->rd_lck_p = getp();
+			getp()->state = PROCESS_BLOCKED;
 			return SYSR_BLOCK;
 		}
 		

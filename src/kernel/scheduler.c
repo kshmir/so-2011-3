@@ -26,6 +26,10 @@ int rd_queue_size() {
 	return queue_count(ready_queue);
 }
 
+void process_setready(Process * p) { 
+	queue_enqueue(ready_queue,p);
+}
+
 int out = 0;
 
 void scheduler_init() {

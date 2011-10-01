@@ -132,10 +132,9 @@ int fd_write(int fd, char * buffer, int block_size) {
 	switch(files[fd].type) {
 		case _FD_TTY:
 			video_write(buffer, block_size);
-			return 1;
 		break;
 		case _FD_FIFO:
-			fifo_write((int)files[fd].data, buffer, block_size);
+			return fifo_write((int)files[fd].data, buffer, block_size);
 		break;
 		case _FD_FILE:
 			// hdd_write

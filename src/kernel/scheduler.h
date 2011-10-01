@@ -62,6 +62,7 @@ int current_p_tty();
 
 int process_getfreefd();
 
+void process_setready(Process * p);
 
 Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
 	int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queue_block);
