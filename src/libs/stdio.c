@@ -5,27 +5,27 @@
 
 // Standard putchar
 void putchar(char c) {
-
-	if (c == '\r') {
-		backSpace();
-	} else if (c == '\n') {
-		newLine();
-	} else if (c == 0x0f || c == '\t') {
-		if (getCursorX() % 4 == 0) {
-			int i = 0;
-			for (i = 0; i < 4; ++i) {
-				putChar(c);
-				putC(' ');
-			}
-		} else
-			while (getCursorX() % 4 != 0) {
-				putChar(c);
-				putC(' ');
-			}
-	} else if (c != 0) {
-		putChar(c);
-		putC(c);
-	}
+	putC(c);
+	// if (c == '\r') {
+	// 	backSpace();
+	// } else if (c == '\n') {
+	// 	newLine();
+	// } else if (c == 0x0f || c == '\t') {
+	// 	if (getCursorX() % 4 == 0) {
+	// 		int i = 0;
+	// 		for (i = 0; i < 4; ++i) {
+	// 			putChar(c);
+	// 			putC(' ');
+	// 		}
+	// 	} else
+	// 		while (getCursorX() % 4 != 0) {
+	// 			putChar(c);
+	// 			putC(' ');
+	// 		}
+	// } else if (c != 0) {
+	// 	putChar(c);
+	// 	putC(c);
+	// }
 }
 // Standard getchar
 char getchar() {

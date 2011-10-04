@@ -106,6 +106,8 @@ void int_80() {
 		{
 			int fd = fd_open(_FD_FIFO, (void *)kernel_buffer[1],kernel_buffer[2]);
 			getp()->file_descriptors[_fd] = fd;
+
+
 			kernel_buffer[KERNEL_RETURN] = _fd;
 		}
 		else {

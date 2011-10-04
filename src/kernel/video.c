@@ -30,6 +30,36 @@ char *vidmem = (char *) 0xb8000;
 
 int fix_flag = 0;
 
+void video_write_c(char * data) {
+	char a[] = { *data, defaultStyle };
+	char c = *data;
+
+	if (c == '\r') {
+		backSpace();
+	} else if (c == '\n') {
+		newLine();
+	} else if (c == 0x0f || c == '\t') {
+		if (getCursorX() % 4 == 0) {
+			int i = 0;
+			for (i = 0; i < 4; ++i) {
+				putChar(c);
+				*a = ' ';
+				video_write(a, 2);
+			}
+		} else
+			while (getCursorX() % 4 != 0) {
+				putChar(c);
+				*a = ' ';
+				video_write(a,2);
+				incrementCursor();
+			}
+	} else if (c != 0) {
+		putChar(c);
+		video_write(a,2);
+		incrementCursor();
+	}
+}
+
 void video_write(char * data, int count) {
 	memcpy(vidmem + videoPos, data, count);
 }
@@ -112,13 +142,13 @@ VIDEO_MODE_INFO* buildVideoMode(int height, int width, int cursorX,
 // Puts a character to stdout
 void putC(char c) {
 	if(current_video_mode->visible)	{
-		char a[] = { c, defaultStyle };
 		if(!in_kernel()) {
-			write(STDOUT,a,2);
+			write(STDOUT,&c,1);
 		} else { 
+			char a[] = { c, defaultStyle };
 			video_write(a,2);
+			incrementCursor();
 		}		
-		incrementCursor();
 	} else if(!current_video_mode->visible)
 	{
 		setCursor(FALSE);

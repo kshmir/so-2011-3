@@ -70,4 +70,14 @@ int pdup2(int pid, int fd1, int fd2);
 int getpid();
 
 int waitpid(int pid);
+
+
+/* open
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+int openfifo(int fifo_id);
 #endif

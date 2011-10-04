@@ -5,6 +5,7 @@
 #include "../libs/queue.h"
 #include "video.h"
 #include "scheduler.h"
+#include "kernel.h"
 
 #define MAX 0xff
 /* Pongo 2 coordenadas. 1: tecla normal. 2: Shift. */
@@ -381,31 +382,31 @@ char getA() {
 	
 }
 
-char getC() {	
-	while (cnt()->charBufferPointer < 0 
-		   || current_tty != current_p_tty()) {
-		yield();
-	}
+// char getC() {	
+// 	while (cnt()->charBufferPointer < 0 
+// 		   || current_tty != current_p_tty()) {
+// 		yield();
+// 	}
+// 
+// 	char ret = cnt()->charBuffer[cnt()->charBufferPointer--];
+// 	return ret;
+// }
 
+int tty_read(char * buf, int len) {
+	if(cnt()->charBufferPointer < 0 || current_tty != current_p_tty()) {
+		return SYSR_BLOCK;
+	}
 	char ret = cnt()->charBuffer[cnt()->charBufferPointer--];
-	return ret;
+	* buf = ret;
+	return 1;
 }
 
-// int tty_read(char * buf, int len) {
-// 	if(cnt()->charBufferPointer < 0 || current_tty != current_p_tty()) {
-// 		return SYSR_BLOCK;
-// 	}
-// 	char ret = cnt()->charBuffer[cnt()->charBufferPointer--];
-// 	* buf = ret;
-// 	return 1;
-// }
-// 
-// 
-// char getC() {	
-// 	char ret[1];
-// 	read(STDIN, ret, 1);
-// 	return *ret;
-// }
+
+char getC() {	
+	char ret[1];
+	read(STDIN, ret, 1);
+	return *ret;
+}
 
 int capsOn() {
 	return cnt()->capsLock;

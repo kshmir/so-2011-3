@@ -300,9 +300,25 @@ pdup2:
 		push 	ebp
 		mov 	ebp, esp
 		pusha
-		mov 	eax, 10				; eax en 3 para read
+		mov 	eax, 10				; eax en 10 para pdup2
 		mov 	ebx, [ebp+8]		; file descriptor
-		mov 	ecx, [ebp+8]		; file descriptor
+		mov 	ecx, [ebp+12]		; file descriptor
+		mov 	edx, [ebp+16]		; file descriptor
+		int 	80h
+		popa
+		mov 	esp, ebp
+		pop 	ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+openfifo:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov 	eax, 10				; eax en 10 para pdup2
+		mov 	ebx, [ebp+8]		; file descriptor
+		mov 	ecx, [ebp+12]		; file descriptor
+		mov 	edx, [ebp+16]		; file descriptor
 		int 	80h
 		popa
 		mov 	esp, ebp

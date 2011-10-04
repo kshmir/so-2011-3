@@ -20,8 +20,8 @@ int process_input(const char * input, int tty_number) {
 	char stdin_call_buffer[128];
 	
 	int read_ptr = 0;
-	
-
+	int stdin = 0;
+	int stdout = 0;
 	do {
 		int i = 0;
 		int write_i = 0;
@@ -36,8 +36,7 @@ int process_input(const char * input, int tty_number) {
 		i = read_ptr;
 		
 		char * file_call;
-		int stdin = 0;
-		int stdout = 0;
+
 		
 		int valid_input = 0;
 		char * current_buffer = file_call_buffer;
@@ -83,8 +82,23 @@ int process_input(const char * input, int tty_number) {
 		
 		if(pid != -1)
 		{
+			if(stdin){
+				pdup2(pid, stdin, STDIN);
+			}
+			
+			if(piped)
+			{
+				char cad[20];
+				itoa(pid, cad);
+				stdout = mkfifo(cad);
+				pdup2(pid,stdout,STDOUT);
+				
+				stdin = stdout;
+				stdout = 0;
+			}
+			
 			prun(pid);
-			if(!string_ends_with(file_call_buffer, '&')) {
+			if(!string_ends_with(file_call_buffer, '&') && !piped) {
 				waitpid(pid);
 			}
 		}

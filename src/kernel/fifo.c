@@ -131,6 +131,7 @@ int fifo_write(int fd, char * msg, int len){
 		process_setready(f->rd_lck_p);
 		f->rd_lck_p = NULL;
 	}
+//	printf("Written len %d\n", len);
 }
 
 int fifo_read(int fd, char * buffer, int read_size){	

@@ -31,6 +31,7 @@
 #define PDUP2        10
 #define GETPID       11
 #define WAITPID      12
+#define OPENFIFO     13
 
 
 #define SYSR_ERR     -1

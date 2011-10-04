@@ -101,17 +101,36 @@ int reader_main (int argc, char ** argv) {
 	int len = read(fifo, buff, 1024);	
 	int i = 0;
 	printf("I READ RAW:");
-	for(;i < len; i++)
-	{
+	for(;i < len; i++)	{
 		printf("%c", buff[i], i);
+	}
+	printf("\n");
+	return 0;
+}
+
+
+int putc_main (int argc, char ** argv) {
+	if(argc > 1) {
+		printf("%s\n", argv[1]);
+	}
+
+	
+	return 0;
+}
+
+int getc_main (int argc, char ** argv) {	
+	int c;
+	while((c = getC()) != '\n') {
+		printf("%c", c);
 	}
 	printf("\n");
 	
 	return 0;
 }
 
+
 int _fork (int argc, char ** argv)
 {
-	printf("I am a ninja\n");
+
 	return 0;
 }

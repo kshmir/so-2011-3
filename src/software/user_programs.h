@@ -24,4 +24,8 @@ int reader_main (int argc, char ** argv);
 
 int _fork (int argc, char ** argv);
 
+int putc_main (int argc, char ** argv);
+
+int getc_main (int argc, char ** argv);
+
 #endif

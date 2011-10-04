@@ -115,10 +115,10 @@ int fd_type (int fd) {
 int fd_read (int fd, char * buffer, int block_size) {
 	switch(files[fd].type) {
 		case _FD_TTY:
-	//		tty_read(buffer, block_size);
+			return tty_read(buffer, block_size);
 		break;
 		case _FD_FIFO:
-			fifo_read((int)files[fd].data, buffer, block_size);
+			return fifo_read((int)files[fd].data, buffer, block_size);
 		break;
 		case _FD_FILE:
 			// hdd_read
@@ -129,9 +129,15 @@ int fd_read (int fd, char * buffer, int block_size) {
 }
 
 int fd_write(int fd, char * buffer, int block_size) {
+
+
 	switch(files[fd].type) {
 		case _FD_TTY:
+		if(block_size == 1)	{
+			video_write_c(buffer);
+		} else {
 			video_write(buffer, block_size);
+		}
 		break;
 		case _FD_FIFO:
 			return fifo_write((int)files[fd].data, buffer, block_size);
@@ -147,4 +153,5 @@ int fd_write(int fd, char * buffer, int block_size) {
 
 int fd_close(int fd) {
 	files[fd].used = 0;
+	// TODO: Make the remaining clears
 }

@@ -88,7 +88,7 @@ int process_getfreefd() {
 	}
 	int i = 0;
 	for(; i < PROCESS_FD_SIZE; ++i) {
-		if(current_process->file_descriptors[i] != -1) {
+		if(current_process->file_descriptors[i] == -1) {
 			return i;
 		}
 		if(i == PROCESS_FD_SIZE - 1)	{
@@ -138,6 +138,9 @@ void yield() {
 }
 
 int sched_pdup2(int pid, int fd1, int fd2) {
+	Process * p = process_getbypid(pid);
+	fd_close(p->file_descriptors[fd2]);
+	p->file_descriptors[fd2] = current_process->file_descriptors[fd1];
 	return 0;
 }
 
@@ -172,10 +175,10 @@ int sched_pcreate(char * name, int argc, void * params) {
 }
 
 // Function names
-char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", "fork", NULL };
+char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", "fork", "getc", "putc", NULL };
 
 // Functions
-int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, reader_main, writer_main, _fork, NULL };
+int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, reader_main, writer_main, _fork, getc_main, putc_main, NULL };
 
 main_pointer sched_ptr_from_string(char * string) {
 	int index;
@@ -297,10 +300,7 @@ void scheduler_think (void) {
 		current_process = idle;
 	}
 	
-	if(current_process->pid == 1 && ran) {
-		printf("A");
-	}
-
+	
 	switch_tty(current_process->tty);
 }
 
