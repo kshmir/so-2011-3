@@ -5,6 +5,7 @@
 
 // Standard putchar
 void putchar(char c) {
+	
 	putC(c);
 	// if (c == '\r') {
 	// 	backSpace();

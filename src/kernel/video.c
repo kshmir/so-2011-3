@@ -14,6 +14,7 @@
 
 int defaultStyle = 0x07;
 
+VIDEO_MODE_INFO* current_video_mode;
 // Counter of IRQ8 ticks since start.
 int ticks = 0;
 int cursor_ticks = 0;
@@ -31,6 +32,7 @@ char *vidmem = (char *) 0xb8000;
 int fix_flag = 0;
 
 void video_write_c(char * data) {
+	make_atomic();
 	char a[] = { *data, defaultStyle };
 	char c = *data;
 
@@ -51,13 +53,26 @@ void video_write_c(char * data) {
 				putChar(c);
 				*a = ' ';
 				video_write(a,2);
-				incrementCursor();
+				// if(current_video_mode->visible)	{
+					incrementCursor();
+				// } else {
+				// 	setCursor(FALSE);
+				// 	incrementCursor();
+				// 	setCursor(TRUE);
+				// }
 			}
 	} else if (c != 0) {
 		putChar(c);
-		video_write(a,2);
-		incrementCursor();
+		if(current_video_mode->visible)	{
+			video_write(a,2);
+			incrementCursor();
+		} else {
+			setCursor(FALSE);
+			incrementCursor();
+			setCursor(TRUE);
+		}
 	}
+	release_atomic();
 }
 
 void video_write(char * data, int count) {
@@ -77,9 +92,6 @@ void setVideoPos(int a) {
 		_setCursor(a / 2);
 	}
 }
-
-
-VIDEO_MODE_INFO* current_video_mode;
 
 void setVideoMode(VIDEO_MODE_INFO * m) {
 	current_video_mode = m;
@@ -141,21 +153,13 @@ VIDEO_MODE_INFO* buildVideoMode(int height, int width, int cursorX,
 
 // Puts a character to stdout
 void putC(char c) {
-	if(current_video_mode->visible)	{
-		if(!in_kernel()) {
-			write(STDOUT,&c,1);
-		} else { 
-			char a[] = { c, defaultStyle };
-			video_write(a,2);
-			incrementCursor();
-		}		
-	} else if(!current_video_mode->visible)
-	{
-		setCursor(FALSE);
+	if(!in_kernel()) {
+		write(STDOUT,&c,1);
+	} else if(current_video_mode->visible)	{
+		char a[] = { c, defaultStyle };
+		video_write(a,2);
 		incrementCursor();
-		setCursor(TRUE);
 	}
-
 }
 
 
@@ -198,7 +202,7 @@ void incrementCursor() {
 		setCursorX(0);
 		if (getCursorY() >= current_video_mode->height - 1)
 		{
-			newLine(); // This is not the happiest of the fixes... We can do better
+			newLine();
 			setCursorY(current_video_mode->height - 1);
 		}
 		else

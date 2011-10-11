@@ -78,7 +78,7 @@ Process * process_getfree() {
 			i = 0;
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -95,7 +95,7 @@ int process_getfreefd() {
 			i = 0;
 		}
 	}
-	
+
 	return -1;
 }
 
@@ -116,7 +116,7 @@ void process_cleaner() {
 		p->state = PROCESS_READY;
 		queue_enqueue(ready_queue,p);
 	}
-	
+
 	current_process->state = PROCESS_ZOMBIE;
 	_yield();
 }
@@ -163,14 +163,14 @@ int sched_waitpid(int pid) {
 }
 
 int sched_pcreate(char * name, int argc, void * params) {
-	
+
 	void * ptr = sched_ptr_from_string(name);
 	if(ptr == NULL)	{
 		return -1;
 	}
 	Process * p = create_process(name, ptr, current_process->priority, current_process->tty, 0, 
-					FD_TTY0 + current_process->tty, FD_TTY0 + current_process->tty, FD_TTY0 + current_process->tty, 
-					argc, params, 1);
+		FD_TTY0 + current_process->tty, FD_TTY0 + current_process->tty, FD_TTY0 + current_process->tty, 
+		argc, params, 1);
 	return p->pid;
 }
 
@@ -277,7 +277,21 @@ void * scheduler_get_temp_esp (void) {
 
 long c = 0;
 
+int atomic = 0;
+
+void make_atomic() {
+	atomic++;
+}
+
+void release_atomic() {
+	atomic--;
+}
+
 void scheduler_think (void) {
+
+	if(atomic) {
+		return;
+	}
 
 	if(yielded == 0) {
 		while(!queue_isempty(yield_queue)) {
@@ -299,8 +313,8 @@ void scheduler_think (void) {
 	else {
 		current_process = idle;
 	}
-	
-	
+
+
 	switch_tty(current_process->tty);
 }
 

@@ -1,28 +1,33 @@
 #include "internal_shell.h"
+#include "../kernel/scheduler.h"
 #include "stdlib.h"
 #include "../../include/kasm.h"
 
 // Makes a new line
 void newLine() {
+	make_atomic();
 	setCursorX(0);
 	if (!(getCursorY() >= getVideoMode()->height - 1)) {
 		setCursorY(getCursorY() + 1);
 	} else {
 		int i, j;
 		int last_len = 0, current_len;
+
 		for (j = 0; j < getVideoMode()->height; j++) {
 			for (i = 0; i < getVideoMode()->width; i++) {
 				getVideoMode()->screen[i][j]
-						= getVideoMode()->screen[i][j + 1];
+					= getVideoMode()->screen[i][j + 1];
 			}
 		}
 		for (i = 0; i < getVideoMode()->width; i++) {
 			getVideoMode()->screen[i][getVideoMode()->height] = ' ';
 		}
 		reDrawLines();
+
 		setCursorY(getCursorY() - 1);
 		setCursorX(0);
 	}
+	release_atomic();
 }
 
 /**	Copia todo lo que hay en el BUFFER DE PANTALLA (no en la placa de
@@ -82,6 +87,7 @@ void removeTab() {
 
 // Puts a char
 void putChar(char c) {
+	make_atomic();
 	int x = getCursorX();
 	int y = getCursorY();
 	if (x <= getVideoMode()->width) {
@@ -93,6 +99,7 @@ void putChar(char c) {
 		newLine();
 		getVideoMode()->screen[x][y] = c;
 	}
+	release_atomic();
 }
 
 // Escape trigger, deprecated

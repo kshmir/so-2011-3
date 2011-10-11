@@ -75,6 +75,7 @@ void int_09() {
 		controlKey(scancode); // Envia el scancode al analizador de control keys.
 	}
 	krn = 0;
+	
 }
 
 
@@ -188,6 +189,8 @@ kmain() {
 	/* Habilito interrupcion de timer tick*/
 	_mascaraPIC1(0xFC);
 	_mascaraPIC2(0xFF);
+	_Sti();
+
 	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0, 0, NULL, 0);
 	tty_init(0);
 	tty_init(1);
@@ -195,8 +198,6 @@ kmain() {
 	tty_init(3);
 	tty_init(4);
 	tty_init(5);
-	_Sti();
-
 
 	// We soon exit out of here :)
 	while (1);

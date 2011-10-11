@@ -68,7 +68,7 @@ int _hola_main (int argc, char ** argv)
 {
 	int i = 0;
 	for(; i < 100; ++i) {
-		printf("HOLA :)\n");
+		printf("HOLA :) %d\n",i);
 	}
 
 	return 0;
