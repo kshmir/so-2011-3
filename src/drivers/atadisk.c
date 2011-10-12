@@ -53,6 +53,10 @@ typedef struct disk_cmd{
 
 typedef struct disk_cmd * disk_cmd_t;
 
+
+static int sem_ata_rw=-1;
+
+
 /* I/O Ports used by winchester disk controller. */
 
 #define ATA0 0x1f0
@@ -97,7 +101,6 @@ typedef struct disk_cmd * disk_cmd_t;
 #define PART_TABLE     0x1C6	/* IBM partition table starts here in sect 0 */
 #define DEV_PER_DRIVE      5	/* hd0 + hd1 + hd2 + hd3 + hd4 = 5 */
 
-typedef unsigned long long int fpos_t;
 typedef unsigned int uint16_t;
 typedef unsigned char uint8_t;
 enum{
@@ -107,9 +110,13 @@ enum{
 	ERROR_DISK
 };
 
+typedef struct fpos_t {
+	int dim1;
+	} fpos_t;
 struct disk_data {
 	fpos_t pos;
 };
+
 
 
 static void sendComm(int ata, int rdwr, unsigned short sector){
@@ -151,6 +158,7 @@ static uint16_t getDataRegister(int ata){
 
 	ans = _inw(ata + WIN_REG0);
 
+
 	return ans;
 }
 
@@ -167,6 +175,8 @@ static char read_tmp[512];
  * read)
  */
 static void _disk_read(int ata, char * ans, unsigned short sector, int offset, int count){
+	identifyDevice();
+	sem_down(sem_ata_rw, 1);
 	ata=ATA0;
 	// Just a small town sector... living in a lonely world
 	if(count > 512 - offset)
@@ -186,19 +196,22 @@ static void _disk_read(int ata, char * ans, unsigned short sector, int offset, i
 	for ( i=0; i<count; i++ ) {
 		ans[i] = read_tmp[offset+i];
 	}
+	sem_up(sem_ata_rw, 1);
 }
 
 static char write_tmp[512];
 
 // Single sector write.
 static void _disk_write(int ata, char * msg, int bytes, unsigned short sector, int offset){
-	ata=ATA0;
-	int i = 0;
+	identifyDevice();
 
 	if (offset || bytes < 512) {
 		_disk_read(ata, write_tmp, sector, 0, 512);
 	}
-
+	
+	sem_down(sem_ata_rw, 1);
+	ata=ATA0;
+	int i = 0;
 	// Prepare sectors with new data
 	for ( i = 0; i < bytes; i++ ) {
 		write_tmp[ offset + i ] = msg[i];
@@ -212,6 +225,7 @@ static void _disk_write(int ata, char * msg, int bytes, unsigned short sector, i
 	for (b=0; b<512; b+=2) {
 		writeDataToRegister(ata, write_tmp[b+1], write_tmp[b]);
 	}
+	sem_up(sem_ata_rw, 1);
 }
 
 // Q: what are these here for?? (the next 3 functions)
@@ -231,9 +245,13 @@ static unsigned short getStatusRegister( void ){
 }
 
 static void identifyDevice( void ){
-	int ata  = ATA0;
-	_out(ata + WIN_REG6, 0);
-	_out(ata + WIN_REG7, WIN_IDENTIFY);
+	if(sem_ata_rw == -1){
+		sem_ata_rw=sem_create(ATA0);
+		sem_up(sem_ata_rw, 1);
+		int ata  = ATA0;
+		_out(ata + WIN_REG6, 0);
+		_out(ata + WIN_REG7, WIN_IDENTIFY);
+	}
 }
 
 static size_t getDeviceCapacity( void ){

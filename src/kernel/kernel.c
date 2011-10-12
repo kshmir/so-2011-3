@@ -8,6 +8,7 @@
 
 #include "../drivers/keyboard.h"
 #include "../drivers/video.h"
+#include "../drivers/atadisk.h"
 #include "../shell.h"
 
 #include "scheduler.h"

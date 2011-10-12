@@ -1,5 +1,6 @@
 #include "tty.h"
 #include "../../include/kernel.h"
+#include "../drivers/atadisk.c"
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
 #include "../libs/mcglib.h"
@@ -59,14 +60,24 @@ int _test(int size, char** args) {
 
 // Just to have more functions in the autocomplete
 int _ssh(int size, char** args) {
-	printf("Attempting to connect...\n");
+	/*printf("Attempting to connect...\n");
 	printf("Oooops we forgot our internals don't have any TCP/IP backend...\n");
 	printf("You'll have to wait for MurcielagOS 2.0 or maybe 11.0 to see this working\n");
 	printf("Take a seat and wait!!!\n");
 	printf("...\n");
 	printf("...\n");
 	printf("...\n");
-	printf("Our autocomplete looked just empty so we made this :)\n");
+	printf("Our autocomplete looked just empty so we made this :)\n");*/
+		int i=0;
+	for (i=0;i<450000;i++);
+	unsigned short sector=12;
+	int offset=0;
+	int count=512;
+	int ata=1;
+	//char *msg = malloc(512);
+	char msg[512];
+	_disk_read(ata, msg, sector, offset, count);
+	printf("res: %s.\n",msg);
 }
 
 // Clears the screen
@@ -77,12 +88,29 @@ int _clear(int size, char** args) {
 
 int _hola_main (int argc, char ** argv)
 {
-	int i = 0;
-	for(; i < 100; ++i) {
-		printf("HOLA :)\n");
-	}
+		char ans[512];
+		unsigned short sector = 12;
+		int offset            = 0;
+		int count             = 512;
+		int ata               = 1;
+	//	_disk_read(ata, ans, sector, offset, count);
+		int i;
+		for (i = 0; i < 511; i++) {
+			ans[i++] = 'h';
+			ans[i++] = 'o';
+			ans[i++] = 'l';
+			ans[i] = 'a';
+		}
+		ans[511] = '\0';
 
-	return 0;
+		int bytes=512;
+		_disk_write(ata, ans, bytes, sector, offset);
+		printf("escribo: %s.\n",ans);	
+		/*int i = 0;
+		for(; i < 100; ++i) {
+			printf("HOLA :)\n");
+		}*/
+		return 0;
 }
 
 int writer_main (int argc, char ** argv)

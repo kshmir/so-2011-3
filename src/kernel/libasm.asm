@@ -8,8 +8,12 @@ GLOBAL	_read
 GLOBAL	_write
 GLOBAL	_setCursor
 GLOBAL	_restart
+GLOBAL	_Cli
+GLOBAL	_Sti
 GLOBAL	_in
 GLOBAL	_out
+GLOBAL	_inw
+GLOBAL	_outw
 GLOBAL  __stack_chk_fail
 GLOBAL	_rdtsc
 
@@ -236,6 +240,25 @@ _out:
 		out		dx, al
 		pop		ebp
 		ret
+
+_inw:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		edx, [ebp+8]    ; Puerto
+		mov		eax, 0          ; Limpio eax
+		in		ax, dx
+		pop		ebp
+		ret
+
+_outw:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		edx, [ebp+8]   	; Puerto
+		mov		eax, [ebp+12]  	; Lo que se va a mandar
+		out		dx, ax
+		pop		ebp
+		ret
+
 
 _rdtsc:
 		push	ebp

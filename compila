@@ -10,6 +10,7 @@ nasm -f aout ../src/startup/loader.asm  -o loader.o
 
 gcc -c ../src/kernel/kernel.c             -o kernel.o         -fno-builtin
 
+gcc -c ../src/drivers/atadisk.c             -o atadisk.o          -fno-builtin
 gcc -c ../src/drivers/video.c             -o video.o          -fno-builtin
 gcc -c ../src/drivers/keyboard.c          -o keyboard.o       -fno-builtin
 gcc -c ../src/software/nInLineFront.c     -o nInLineFront.o   -fno-builtin
@@ -30,6 +31,6 @@ gcc -c ../src/kernel/scheduler.c          -o scheduler.o      -fno-builtin
 gcc -c ../src/kernel/tty.c                -o tty.o            -fno-builtin
 gcc -c ../src/kernel/tty_context.c        -o tty_context.o    -fno-builtin
 
-ld -T ../include/link.ld -o kernel.bin string.o libasm.o loader.o kernel.o keyboard.o mcgio.o stdlib.o video.o start.o shell.o stdio.o internal_shell.o nInLineFront.o nInLineBack.o mcglib.o scheduler.o queue.o tty.o tty_context.o list.o semaphore.o fifo.o
+ld -T ../include/link.ld -o kernel.bin string.o libasm.o loader.o kernel.o keyboard.o mcgio.o stdlib.o video.o atadisk.o start.o shell.o stdio.o internal_shell.o nInLineFront.o nInLineBack.o mcglib.o scheduler.o queue.o tty.o tty_context.o list.o semaphore.o fifo.o
 
 echo "Compila end"
