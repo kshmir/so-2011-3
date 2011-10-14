@@ -1,6 +1,6 @@
 #include "tty.h"
 #include "../../include/kernel.h"
-#include "../drivers/atadisk.c"
+#include "../drivers/atadisk.h"
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
 #include "../libs/mcglib.h"
@@ -16,6 +16,7 @@ extern int current_tty;
 int _printHelp(int size, char** args) {
 	printf("MonkeyOS 1 - MurcielagOS kernel v0.1 (i686-pc-murcielago)\n");
 	printf("These shell commands are defined internally.  Type `help' to see this list.\n");
+	check_drive(ATA0);
 }
 
 // Test the breakable code
@@ -70,14 +71,21 @@ int _ssh(int size, char** args) {
 	printf("Our autocomplete looked just empty so we made this :)\n");*/
 		int i=0;
 	for (i=0;i<450000;i++);
-	unsigned short sector=12;
+	i=25;
+		char msg[2048];
+	for(i=12;i<18;i+=4){
+	unsigned short sector=i;
 	int offset=0;
-	int count=512;
-	int ata=1;
-	//char *msg = malloc(512);
-	char msg[512];
-	_disk_read(ata, msg, sector, offset, count);
-	printf("res: %s.\n",msg);
+	int count=2048;
+	int ata=ATA0;
+
+	disk_read(ata, msg, sector, offset, count);
+	//msg[0]='a';
+	msg[511]='O';
+	msg[1023]='O';
+	msg[1535]='O';
+	printf("res %d: %s.\n",i,msg);
+}
 }
 
 // Clears the screen
@@ -88,24 +96,33 @@ int _clear(int size, char** args) {
 
 int _hola_main (int argc, char ** argv)
 {
-		char ans[512];
-		unsigned short sector = 12;
-		int offset            = 0;
-		int count             = 512;
-		int ata               = 1;
-	//	_disk_read(ata, ans, sector, offset, count);
-		int i;
-		for (i = 0; i < 511; i++) {
-			ans[i++] = 'h';
-			ans[i++] = 'o';
-			ans[i++] = 'l';
-			ans[i] = 'a';
-		}
-		ans[511] = '\0';
 
-		int bytes=512;
-		_disk_write(ata, ans, bytes, sector, offset);
+
+		// char * ans=(char*)malloc(2048);
+		char ans[2048];
+		int j;
+		for(j=12;j<18;j+=4){
+		unsigned short sector = j;
+		int offset            = 0;
+		// int count             = 512;
+		int ata               = ATA0;
+		int i;
+		for (i = 0; i < 2047; i++) {
+			ans[i++] = 'A';
+			ans[i++] = 'X';
+			ans[i++] = 'A';
+			ans[i] = ' ';
+		}
+		
+		ans[511]=0;
+		ans[1023]=0;
+		ans[1535]=0;
+		ans[2047]=0;
+		
+		int bytes=2048;
+		disk_write(ata, ans, bytes, sector, offset);
 		printf("escribo: %s.\n",ans);	
+		}
 		/*int i = 0;
 		for(; i < 100; ++i) {
 			printf("HOLA :)\n");
