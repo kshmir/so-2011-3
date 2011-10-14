@@ -1,5 +1,5 @@
 #include "stdio.h"
-#include "internal_shell.h"
+#include "../kernel/internal_shell.h"
 #include "../kernel/video.h"
 #include <stdarg.h>
 

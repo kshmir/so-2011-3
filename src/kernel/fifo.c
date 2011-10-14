@@ -8,7 +8,7 @@
 #include "fifo.h"
 #include "kernel.h"
 
-#define FIFO_DATA_SIZE 4
+#define FIFO_DATA_SIZE 1024
 
 typedef struct fifo {
 	int inode;

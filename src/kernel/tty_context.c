@@ -128,17 +128,20 @@ typedef struct TTY_Context {
 	int		arrowBufferPointer;
 	char	arrowBuffer[BUFFER_SIZE];
 	char	charBuffer[BUFFER_SIZE];
-	
+	Queue	* read_pblocks;
+	Queue	* write_pblocks;
 	// Video Context
 	VIDEO_MODE_INFO *	video_context;
 } TTY_Context;
 
 static TTY_Context	tty_contexts[TTY_MAX_NUMBER];
 int					current_tty = 0;
+int					kb_tty      = 0;
 
 void switch_tty(int number) {
 	TTY_Context * cont = &tty_contexts[number]; 	
 	setVideoMode(tty_contexts[number].video_context);
+	current_tty = number;
 }
 
 int aux = 0;
@@ -146,10 +149,13 @@ void init_context(int id) {
 	aux = current_tty;
 	TTY_Context * cont = &tty_contexts[id]; 
 	startKeyboard(id);
-	cont->video_context = buildVideoMode(25, 80, 1, 10, 10, 1);
-	cont->video_context->visible = (id == 0);
 	
-	current_tty = id;
+	cont->video_context          = buildVideoMode(25, 80, 1, 10, 10, 1);
+	cont->video_context->visible = (id == 0);
+	cont->read_pblocks           = queue_init(PROCESS_MAX);
+	cont->write_pblocks          = queue_init(PROCESS_MAX);
+	current_tty                  = id;
+
 
 	setVideoMode(tty_contexts[current_tty].video_context);
 	initVideo();
@@ -159,6 +165,30 @@ void init_context(int id) {
 static TTY_Context * cnt() { 
 	return &tty_contexts[current_tty];
 }
+
+void unlock_all_contexts() {
+	int i = 0;
+	for(; i < TTY_MAX_NUMBER; ++i)
+	{
+		TTY_Context * cnt = &tty_contexts[i];
+
+		while(!queue_isempty(cnt->read_pblocks)) {
+			process_setready(queue_dequeue(cnt->read_pblocks));
+		}
+
+	}
+}
+
+void unlock_contexts() {
+	while(!queue_isempty(cnt()->read_pblocks)) {
+		
+		Process * p = queue_dequeue(cnt()->read_pblocks);
+		process_setready(p);
+	}
+
+}
+
+
 
 int escPressed() {
 	return cnt()->_escPressed;
@@ -197,10 +227,20 @@ void pushArr(char c) {
 }
 
 void pushC(char c) {
+
+	int aux = current_tty;
+	
+	current_tty = kb_tty;
+
+	
 	if (cnt()->charBufferPointer >= BUFFER_SIZE - 1){
 		cnt()->charBufferPointer = BUFFER_SIZE - 2;
 	}
 	cnt()->charBuffer[++cnt()->charBufferPointer] = c;
+	
+	unlock_contexts();
+	
+	current_tty = aux;
 }
 
 char scanCodeToChar(char scanCode) {
@@ -244,8 +284,10 @@ char scanCodeToChar(char scanCode) {
 		tty_contexts[current_tty].video_context->visible = 1;
 		if(in)
 		{
-			setVideoMode(tty_contexts[current_tty].video_context);
+			switch_tty(current_tty);
 			video_reload();
+			unlock_contexts();
+			kb_tty = current_tty;
 			return 0;
 		}
 
@@ -257,6 +299,8 @@ char scanCodeToChar(char scanCode) {
 }
 
 int controlKey(int scancode) {
+	
+
 	
 	if (scancode == 42) //SHIFT IZQ
 		cnt()->lShift = 1;
@@ -394,6 +438,8 @@ char getA() {
 
 int tty_read(char * buf, int len) {
 	if(cnt()->charBufferPointer < 0 || current_tty != current_p_tty()) {
+		getp()->state = PROCESS_BLOCKED;
+		queue_enqueue(cnt()->read_pblocks, getp());
 		return SYSR_BLOCK;
 	}
 	char ret = cnt()->charBuffer[cnt()->charBufferPointer--];

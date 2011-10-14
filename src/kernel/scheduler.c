@@ -27,6 +27,7 @@ int rd_queue_size() {
 }
 
 void process_setready(Process * p) { 
+	p->state = PROCESS_READY;
 	queue_enqueue(ready_queue,p);
 }
 
@@ -125,11 +126,17 @@ void process_cleaner() {
 int yielded = 0;
 int yield_save_cntx = 0;
 
+/*
+	Switches cards, allows the process to wait for something to come soon. It does NOT save CPU.
+*/
 void softyield() {
 	queue_enqueue(ready_queue, current_process);
 	_yield();
 }
 
+/*
+	Allows the process to wait for the next tick, it saves CPU.
+*/
 void yield() {
 	queue_enqueue(yield_queue, current_process);
 	yield_save_cntx = 1;

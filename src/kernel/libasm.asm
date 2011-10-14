@@ -35,7 +35,7 @@ EXTERN	kernel_buffer
 EXTERN	scheduler_get_temp_esp
 EXTERN	scheduler_think
 EXTERN	scheduler_load_esp
-EXTERN	releaseyield
+EXTERN	yield
 
 
 

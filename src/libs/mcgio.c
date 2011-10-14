@@ -44,9 +44,9 @@ char* getConsoleString(int sendAutocomplete) {
 	char* str = NULL;
 	str = (char*) malloc(sizeof(char) * 255 + 1); // TODO: This should increment on hit
 	int strlen = 255;
-	int i = 0;
-	int sx = getCursorX();
-	int sy = getCursorY();
+	int i      = 0;
+	int sx     = getCursorX();
+	int sy     = getCursorY();
 //	printf("asking it...\n");
 	while ((c = getC()) != '\n') {
 		int dirKey = 0;//getA();
