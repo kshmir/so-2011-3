@@ -31,7 +31,12 @@
 #define PDUP2        10
 #define GETPID       11
 #define WAITPID      12
-#define OPENFIFO     13
+#define PTICKS       13
+#define PNAME        14
+#define PSTATUS      15
+#define PPRIORITY    16
+#define PGID         17
+#define PGETPID_AT   18
 
 
 #define SYSR_ERR     -1

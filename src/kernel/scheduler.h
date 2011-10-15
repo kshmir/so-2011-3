@@ -3,36 +3,22 @@
 #include "../../include/defs.h"
 
 #include "../libs/queue.h"
+#include "../monix/monix.h"
 
 #ifndef _SCHEDULER_H_
 #define _SCHEDULER_H_
-
-////// Begin defines for PROCESS
-
-// Process' states
-#define PROCESS_RUNNING 		3
-#define PROCESS_READY 			2
-#define PROCESS_BLOCKED 		1
-#define PROCESS_ZOMBIE 			0
-
-// Process' attributes
-#define	PROCESS_FD_SIZE			64
-#define PROCESS_STACK_SIZE		4096
-#define PROCESS_MAX				64
-#define PROCESS_WAIT_MAX		64
-
-////// End defines for PROCESS
 
 ////// Definition of process main.
 typedef int (*main_pointer)(int argc, char **params);
 
 ////// Proper definition of Process
 typedef struct Process {
-	unsigned int 		pid;
-	unsigned int 		ppid;
-	unsigned int 		gid;
-	unsigned int 		priority;
-	char 				stack[PROCESS_STACK_SIZE];
+	unsigned int		pid;
+	unsigned int		ppid;
+	unsigned int		gid;
+	unsigned int		priority;
+	char *				name;
+	char				stack[PROCESS_STACK_SIZE];
 	int					state;
 	int					is_tty;
 	int					tty;
@@ -85,13 +71,17 @@ int sched_fork();
 
 int sched_getpid();
 
+Process * process_getbypid(int pid);
+
+Process * process_getbypindex(int index);
+
 main_pointer sched_ptr_from_string(char * string);
 
 int sched_pdup2(int pid, int fd1, int fd2);
 
 int sched_prun(int pid);
 
-
+void * storage_index();
 
 void yield();
 

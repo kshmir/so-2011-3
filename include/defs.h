@@ -15,6 +15,7 @@
 #define ASCIICERO 			0x30
 #define TRUE 				1
 #define FALSE 				0
+#define EOF					1
 
 /** ASM typedefs */
 

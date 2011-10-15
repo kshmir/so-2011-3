@@ -124,9 +124,9 @@ typedef struct TTY_Context {
 	char	_escPressed;
 	int		lastlastkey;
 	int		lastkey;
-	int		charBufferPointer;
-	int		arrowBufferPointer;
-	char	arrowBuffer[BUFFER_SIZE];
+	int		charBufferSize;
+	int		charBufferRIndex;
+	int		charBufferWIndex;
 	char	charBuffer[BUFFER_SIZE];
 	Queue	* read_pblocks;
 	Queue	* write_pblocks;
@@ -198,32 +198,29 @@ void startKeyboard(int id)
 {
 	int i = 0;
 	for (i = 0; i < BUFFER_SIZE; ++i) {
-		tty_contexts[id].arrowBuffer[i] = 0;
 		tty_contexts[id].charBuffer[i] = 0;
 	}
-	tty_contexts[id].direction          = 0;
-	tty_contexts[id].numLock            = 0;
-	tty_contexts[id].capsLock           = 0;
-	tty_contexts[id].lShift             = 0;
-	tty_contexts[id].rShift             = 0;
-	tty_contexts[id].lCtrl              = 0;
-	tty_contexts[id].rCtrl              = 0;
-	tty_contexts[id].lAlt               = 0;
-	tty_contexts[id].rAlt               = 0;
-	tty_contexts[id].del                = 0;
-	tty_contexts[id]._escPressed        = 0;
-	tty_contexts[id].lastlastkey        = 0;
-	tty_contexts[id].lastkey            = 0;
-	tty_contexts[id].charBufferPointer  = -1;
-	tty_contexts[id].arrowBufferPointer = -1;
+	tty_contexts[id].direction        = 0;
+	tty_contexts[id].numLock          = 0;
+	tty_contexts[id].capsLock         = 0;
+	tty_contexts[id].lShift           = 0;
+	tty_contexts[id].rShift           = 0;
+	tty_contexts[id].lCtrl            = 0;
+	tty_contexts[id].rCtrl            = 0;
+	tty_contexts[id].lAlt             = 0;
+	tty_contexts[id].rAlt             = 0;
+	tty_contexts[id].del              = 0;
+	tty_contexts[id]._escPressed      = 0;
+	tty_contexts[id].lastlastkey      = 0;
+	tty_contexts[id].lastkey          = 0;
+	tty_contexts[id].charBufferSize   = 0;
+	tty_contexts[id].charBufferRIndex = 0;
+	tty_contexts[id].charBufferWIndex = 0;
+
 }
 
 // Buffer for arrows
 void pushArr(char c) {
-	if (cnt()->arrowBufferPointer >= BUFFER_SIZE - 1) {
-		cnt()->arrowBufferPointer = BUFFER_SIZE - 2;
-	}
-	cnt()->arrowBuffer[++cnt()->arrowBufferPointer] = c;
 }
 
 void pushC(char c) {
@@ -232,11 +229,13 @@ void pushC(char c) {
 	
 	current_tty = kb_tty;
 
+	cnt()->charBuffer[cnt()->charBufferWIndex++] = c;
 	
-	if (cnt()->charBufferPointer >= BUFFER_SIZE - 1){
-		cnt()->charBufferPointer = BUFFER_SIZE - 2;
+	if(cnt()->charBufferWIndex == BUFFER_SIZE) {
+		cnt()->charBufferWIndex = 0;
 	}
-	cnt()->charBuffer[++cnt()->charBufferPointer] = c;
+	
+	cnt()->charBufferSize++;
 	
 	unlock_contexts();
 	
@@ -282,8 +281,7 @@ char scanCodeToChar(char scanCode) {
 				break;
 		}
 		tty_contexts[current_tty].video_context->visible = 1;
-		if(in)
-		{
+		if(in)	{
 			switch_tty(current_tty);
 			video_reload();
 			unlock_contexts();
@@ -292,6 +290,7 @@ char scanCodeToChar(char scanCode) {
 		}
 
 	}
+
 	
 	if (scanCode >= 0x02 && scanCode <= 0x0d)
 		return keyboard[scanCode][isShifted()];
@@ -437,12 +436,16 @@ char getA() {
 // }
 
 int tty_read(char * buf, int len) {
-	if(cnt()->charBufferPointer < 0 || current_tty != current_p_tty()) {
+	if(cnt()->charBufferSize == 0 || current_tty != current_p_tty()) {
 		getp()->state = PROCESS_BLOCKED;
 		queue_enqueue(cnt()->read_pblocks, getp());
 		return SYSR_BLOCK;
 	}
-	char ret = cnt()->charBuffer[cnt()->charBufferPointer--];
+	char ret = cnt()->charBuffer[cnt()->charBufferRIndex++];
+	if(cnt()->charBufferRIndex == BUFFER_SIZE) {
+		cnt()->charBufferRIndex = 0;
+	}
+	cnt()->charBufferSize--;
 	* buf = ret;
 	return 1;
 }

@@ -8,6 +8,18 @@
 
 #include "../../include/defs.h"
 
+// Process' states
+#define PROCESS_RUNNING 		3
+#define PROCESS_READY 			2
+#define PROCESS_BLOCKED 		1
+#define PROCESS_ZOMBIE 			0
+
+// Process' attributes
+#define	PROCESS_FD_SIZE			64
+#define PROCESS_STACK_SIZE		4096
+#define PROCESS_MAX				64
+#define PROCESS_WAIT_MAX		64
+#define PROCESS_HISTORY_SIZE	100
 
 /* write
  * Parameters:
@@ -71,7 +83,6 @@ int getpid();
 
 int waitpid(int pid);
 
-
 /* open
  * Parameters:
  * - Filename
@@ -80,4 +91,59 @@ int waitpid(int pid);
  * - File Descriptor to the file, whichever type it has.
  **/
 int openfifo(int fifo_id);
+
+/* open
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+int * pticks();
+
+/* pname
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+char * pname(int pid);
+
+/* pname
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+int pstatus(int pid);
+
+/* pname
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+int ppriority(int pid);
+
+/* pname
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+int pgid(int pid);
+
+
+/* pname
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+int pgetpid_at(int index);
 #endif

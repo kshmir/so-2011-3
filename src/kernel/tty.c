@@ -90,7 +90,7 @@ int process_input(const char * input, int tty_number) {
 			{
 				char cad[20];
 				itoa(pid, cad);
-				stdout = mkfifo(cad);
+				stdout = mkfifo(cad, 0600);
 				pdup2(pid,stdout,STDOUT);
 				
 				stdin = stdout;

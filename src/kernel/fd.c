@@ -87,7 +87,6 @@ int fd_open_with_index (int fd, int type, void * data, int perms) {
 		files_alloc();
 	}
 	if(!files[fd].used)		{
-		files[fd].used = 1;
 		files[fd].type = type;
 		files[fd].data = data;
 		files[fd].perms = perms;
@@ -104,7 +103,9 @@ int fd_open_with_index (int fd, int type, void * data, int perms) {
 			default:
 			return -1;
 		}
-	}	
+	}
+	files[fd].used++;
+
 	return fd;
 }
 
@@ -129,13 +130,11 @@ int fd_read (int fd, char * buffer, int block_size) {
 }
 
 int fd_write(int fd, char * buffer, int block_size) {
-
-
 	switch(files[fd].type) {
 		case _FD_TTY:
-		if(block_size == 1)	{
+		if(block_size == 1 && *buffer != EOF)	{
 			video_write_c(buffer);
-		} else {
+		} else if (*buffer != EOF){
 			video_write(buffer, block_size);
 		}
 		break;
@@ -152,6 +151,12 @@ int fd_write(int fd, char * buffer, int block_size) {
 }
 
 int fd_close(int fd) {
-	files[fd].used = 0;
+	
+	if (fd != -1 && files[fd].used) {
+		char c = EOF;
+		fd_write(fd, &c, 1);
+		files[fd].used--;
+	} else if (fd != -1){
+	}
 	// TODO: Make the remaining clears
 }

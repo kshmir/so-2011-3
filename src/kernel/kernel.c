@@ -78,14 +78,11 @@ void int_09() {
 	
 }
 
-
-
 int in_kernel(){
 	return krn;
 }
 
 void int_80() {
-	
 	krn = 1;
 	int systemCall = kernel_buffer[0];
 	int fd         = kernel_buffer[1];
@@ -103,12 +100,9 @@ void int_80() {
 		kernel_buffer[KERNEL_RETURN] = fd_read(current->file_descriptors[fd],(char *)buffer,count);
 	} else if (systemCall == MKFIFO) {		
 		int _fd = process_getfreefd();
-		if(_fd != -1)
-		{
+		if(_fd != -1)	{
 			int fd = fd_open(_FD_FIFO, (void *)kernel_buffer[1],kernel_buffer[2]);
 			getp()->file_descriptors[_fd] = fd;
-
-
 			kernel_buffer[KERNEL_RETURN] = _fd;
 		}
 		else {
@@ -117,7 +111,7 @@ void int_80() {
 		
 		
 	} else if (systemCall == CLOSE) {
-		fd_close(fd);
+		kernel_buffer[KERNEL_RETURN] = fd_close(getp()->file_descriptors[fd]);
 	}
 	else if (systemCall == PCREATE) {
 		kernel_buffer[KERNEL_RETURN] = sched_pcreate(kernel_buffer[1],kernel_buffer[2],kernel_buffer[3]);
@@ -133,24 +127,63 @@ void int_80() {
 	}
 	else if (systemCall == WAITPID) {
 		kernel_buffer[KERNEL_RETURN] = sched_waitpid(kernel_buffer[1]);
+	} else if (systemCall == PTICKS) {
+		kernel_buffer[KERNEL_RETURN] = (int) storage_index();
+	} else if (systemCall == PNAME) {
+		Process * p = process_getbypid(kernel_buffer[1]);
+		if(p == NULL)
+		{
+			kernel_buffer[KERNEL_RETURN] = (int) NULL;
+		} else {
+			kernel_buffer[KERNEL_RETURN] = (int) p->name;
+		}
+	} else if (systemCall == PSTATUS) {
+		Process * p = process_getbypid(kernel_buffer[1]);
+		if(p == NULL)
+		{
+			kernel_buffer[KERNEL_RETURN] = (int) -1;
+		} else {
+			kernel_buffer[KERNEL_RETURN] = (int) p->state;
+		}
+	}	else if (systemCall == PPRIORITY) {
+		Process * p = process_getbypid(kernel_buffer[1]);
+		if(p == NULL)
+		{
+			kernel_buffer[KERNEL_RETURN] = (int) -1;
+		} else {
+			kernel_buffer[KERNEL_RETURN] = (int) p->priority;
+		}
+	}	else if (systemCall == PGID) {
+		Process * p = process_getbypid(kernel_buffer[1]);
+		if(p == NULL)
+		{
+			kernel_buffer[KERNEL_RETURN] = (int) -1;
+		} else {
+			kernel_buffer[KERNEL_RETURN] = (int) p->gid;
+		}
+	}	else if (systemCall == PGETPID_AT) {
+		Process * p = process_getbypindex(kernel_buffer[1]);
+		if (p->state != -1) {
+			kernel_buffer[KERNEL_RETURN] = (int) p->pid;
+		} else {
+			kernel_buffer[KERNEL_RETURN] = -1;
+		}
+
 	}
+
 	
 	krn = 0;
 }
 
 ///////////// Fin Handlers de interrupciones.
 
-
 Process * p1, * idle, * kernel;
-
-
 
 int idle_main(int argc, char ** params) {
 	while(1) {
 		_Halt();
 	}
 }
-
 
 ///////////// Inicio KMAIN
 
@@ -181,7 +214,6 @@ kmain() {
 	idtr.limit = sizeof(idt) - 1;
 
 	_lidt(&idtr);
-
 
 	scheduler_init();
 	_Cli();

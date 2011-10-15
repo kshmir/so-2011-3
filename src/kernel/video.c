@@ -44,22 +44,16 @@ void video_write_c(char * data) {
 		if (getCursorX() % 4 == 0) {
 			int i = 0;
 			for (i = 0; i < 4; ++i) {
-				putChar(c);
+				putChar(' ');
 				*a = ' ';
 				video_write(a, 2);
 			}
 		} else
 			while (getCursorX() % 4 != 0) {
-				putChar(c);
+				putChar(' ');
 				*a = ' ';
 				video_write(a,2);
-				// if(current_video_mode->visible)	{
-					incrementCursor();
-				// } else {
-				// 	setCursor(FALSE);
-				// 	incrementCursor();
-				// 	setCursor(TRUE);
-				// }
+				incrementCursor();
 			}
 	} else if (c != 0) {
 		putChar(c);

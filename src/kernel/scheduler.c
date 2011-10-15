@@ -5,6 +5,7 @@
 #include "../software/user_programs.c"
 #include "../libs/string.h"
 #include "../libs/queue.h"
+#include "../monix/monix.h"
 
 int _first_time          = 0;
 int thinked              = 0;
@@ -12,6 +13,8 @@ int _processes_available = PROCESS_MAX;
 
 unsigned int current_pid = 0;
 
+static int	think_storage_index = 0;
+static int	think_storage[PROCESS_HISTORY_SIZE];
 
 static Process				* idle;
 static Process 				process_pool[PROCESS_MAX];
@@ -27,7 +30,6 @@ int rd_queue_size() {
 }
 
 void process_setready(Process * p) { 
-	p->state = PROCESS_READY;
 	queue_enqueue(ready_queue,p);
 }
 
@@ -39,10 +41,19 @@ void scheduler_init() {
 	for(; i < PROCESS_MAX * sizeof(Process); i++) {
 		*pool = (char) 0;
 	}
-
+	
+	i = 0;
+	for(; i < PROCESS_MAX; ++i)	{
+		process_pool[i].state = -1;
+	}
 	ready_queue   = queue_init(PROCESS_MAX);
 	blocked_queue = queue_init(PROCESS_MAX);
 	yield_queue   = queue_init(PROCESS_MAX);
+	
+	i = 0;
+	for(; i < PROCESS_HISTORY_SIZE; ++i) {
+		think_storage[i] = -1;
+	}
 }
 
 unsigned int _pid_seed = 0;
@@ -51,13 +62,15 @@ unsigned int process_getnextpid() {
 	return _pid_seed++;
 }
 
+
+Process * process_getbypindex(int index) {
+	return &process_pool[index];
+}
+
 Process * process_getbypid(int pid) {
 	int i = 0;
-	for(; i < PROCESS_MAX; ++i)
-	{
-		if(process_pool[i].state != PROCESS_ZOMBIE
-			&& process_pool[i].pid == pid)
-		{
+	for(; i < PROCESS_MAX; ++i)	{
+		if(process_pool[i].pid == pid)	{
 			return &process_pool[i];
 		}
 	}
@@ -69,13 +82,16 @@ Process * process_getfree() {
 	if(_processes_available == 0) {
 		return NULL; // Big problem.
 	}
-	int i = 0;
+	int i = _pid_seed;
+	if(i >= PROCESS_MAX - 1)	{
+		i = 0;
+	}
 	for(; i < PROCESS_MAX; ++i) {
-		if(process_pool[i].state == PROCESS_ZOMBIE) {
+		if(process_pool[i].state == PROCESS_ZOMBIE || process_pool[i].state == -1) {
 			_processes_available--;
 			return process_pool + i;
 		}
-		if(i == PROCESS_MAX - 1)	{
+		if(i >= PROCESS_MAX - 1)	{
 			i = 0;
 		}
 	}
@@ -118,19 +134,28 @@ void process_cleaner() {
 		queue_enqueue(ready_queue,p);
 	}
 
+	int i = 0;
+	for(; i < PROCESS_FD_SIZE; ++i)	{
+		close(i);
+	}
+
 	current_process->state = PROCESS_ZOMBIE;
-	_yield();
+	_processes_available++;
+	softyield();
 }
 
 
 int yielded = 0;
 int yield_save_cntx = 0;
+int soft_yielded = 0;
 
 /*
 	Switches cards, allows the process to wait for something to come soon. It does NOT save CPU.
+	THe process must be saved somewhere else!!!
 */
 void softyield() {
-	queue_enqueue(ready_queue, current_process);
+//	queue_enqueue(ready_queue, current_process);
+	soft_yielded = 1;
 	_yield();
 }
 
@@ -175,17 +200,29 @@ int sched_pcreate(char * name, int argc, void * params) {
 	if(ptr == NULL)	{
 		return -1;
 	}
-	Process * p = create_process(name, ptr, current_process->priority, current_process->tty, 0, 
+	
+	char * _name = (char *) malloc(sizeof(char) * (strlen(name) + 1));
+	int i = 0, len = strlen(name);
+	for(; i < len; ++i)
+	{
+		_name[i] = name[i];
+	}
+	
+	
+
+	Process * p = create_process(_name, ptr, current_process->priority, current_process->tty, 0, 
 		FD_TTY0 + current_process->tty, FD_TTY0 + current_process->tty, FD_TTY0 + current_process->tty, 
 		argc, params, 1);
 	return p->pid;
 }
 
 // Function names
-char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", "fork", "getc", "putc", NULL };
+char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", 
+	"fork", "getc", "putc", "top", NULL };
 
 // Functions
-int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, reader_main, writer_main, _fork, getc_main, putc_main, NULL };
+int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, 
+	reader_main, writer_main, _fork, getc_main, putc_main, top_main, NULL };
 
 main_pointer sched_ptr_from_string(char * string) {
 	int index;
@@ -226,24 +263,25 @@ int	stackf_build(void * stack, main_pointer _main, int argc, void * argv) {
 Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
 int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queue_block) {
 	Process * p            = process_getfree();
+	p->name                = name;
 	p->pid                 = process_getnextpid();
 	p->gid                 = 0;
 	p->ppid                = (current_process != NULL) ? current_process->pid : 0;
 	p->priority            = priority;
 	p->esp                 = stackf_build(p->stack, _main, argc, params);
 	p->state               = PROCESS_READY;
-	p->file_descriptors[0] = stdin;
-	p->file_descriptors[1] = stdout;
-	p->file_descriptors[2] = stderr;
-	p->is_tty 			   = is_tty;
-	p->wait_queue		   = queue_init(PROCESS_WAIT_MAX);
+	p->file_descriptors[0] = fd_open_with_index(stdin,0,0,0);
+	p->file_descriptors[1] = fd_open_with_index(stdout,0,0,0);
+	p->file_descriptors[2] = fd_open_with_index(stderr,0,0,0);
+	p->is_tty              = is_tty;
+	p->wait_queue          = queue_init(PROCESS_WAIT_MAX);
 
 	int i;
 	for(i = 3; i < PROCESS_FD_SIZE; ++i) {
 		p->file_descriptors[i] = -1;
 	}
 
-	p->tty 		= tty;
+	p->tty = tty;
 
 
 	if(strcmp(name, "idle") == 0) {
@@ -294,6 +332,7 @@ void release_atomic() {
 	atomic--;
 }
 
+
 void scheduler_think (void) {
 
 	if(atomic) {
@@ -309,20 +348,41 @@ void scheduler_think (void) {
 	}
 
 	if (current_process != NULL 
-		&& current_process->state == PROCESS_READY)
+		&& current_process->state == PROCESS_RUNNING && current_process != idle)
 	{
+		current_process->state = PROCESS_READY;
 		queue_enqueue(ready_queue, current_process);
 	}
 
 	if(!queue_isempty(ready_queue)) {
 		current_process = queue_dequeue(ready_queue);
+		if (current_process->state == PROCESS_BLOCKED) {
+			current_process->state = PROCESS_READY;
+			soft_yielded = 1;
+		}
 	} 
 	else {
 		current_process = idle;
+		
+	}
+	
+	if (soft_yielded) {
+		soft_yielded = 0;
+	} else {
+		think_storage[think_storage_index++] = current_process->pid;
+		if (think_storage_index == PROCESS_HISTORY_SIZE) {
+			think_storage_index = 0;
+		}
 	}
 
-
 	switch_tty(current_process->tty);
+	if (current_process != idle) {
+		current_process->state = PROCESS_RUNNING;
+	}
+}
+
+void * storage_index() {
+	return think_storage;
 }
 
 int scheduler_load_esp()

@@ -15,6 +15,7 @@ int _ssh(int size, char** args);
 // Clears the screen
 int _clear(int size, char** args);
 
+int top_main  (int argc, char ** argv);
 
 int _hola_main (int argc, char ** argv);
 

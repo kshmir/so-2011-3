@@ -26,6 +26,13 @@ GLOBAL	prun
 GLOBAL	pdup2
 GLOBAL	getpid
 GLOBAL	waitpid
+GLOBAL	pticks
+GLOBAL	pname
+GLOBAL	ppriority
+GLOBAL	pstatus
+GLOBAL	pgid
+GLOBAL	pgetpid_at
+
 
 EXTERN  int_08
 EXTERN  int_09
@@ -35,7 +42,7 @@ EXTERN	kernel_buffer
 EXTERN	scheduler_get_temp_esp
 EXTERN	scheduler_think
 EXTERN	scheduler_load_esp
-EXTERN	yield
+EXTERN	softyield
 
 
 
@@ -141,16 +148,24 @@ __stack_chk_fail:
 
 _int_09_hand:
 		cli
-		push	ds
-		push	es      	; Se salvan los registros
-		pusha           	; Carga de DS y ES con el valor del selector
-		call	int_09		; Se llama a la funcion en C
-		popa
-		pop		es
-		pop		ds
-		sti
+		pushad
+			mov eax, esp
+			push eax
+				call scheduler_save_esp
+			pop eax
+	
+			call scheduler_get_temp_esp
+			mov esp, eax
+	
+			call int_09
+	
+			call scheduler_load_esp
+			mov esp,eax
+			;call _debug;
+		popad
 		mov al,20h			; Envio de EOI generico al PIC
 		out 20h,al
+		sti
 		iret
 
 ; recibe parametros a traves de los registros
@@ -226,7 +241,7 @@ write:
 
 		cmp		eax, -2
 		jne		_write_jmp_0
-		call	_yield
+		call	softyield
 		jmp		write
 	_write_jmp_0:
 		
@@ -248,10 +263,23 @@ read:
 		mov		eax, [kernel_buffer + 60]
 		cmp		eax, -2
 		jne		_read_jmp_0
-		call	_yield
+		call	softyield
 		jmp		read
 	_read_jmp_0:
 	
+		ret
+		
+close:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov 	eax, 6				; eax en 6 para close
+		mov 	ebx, [ebp+8]		; file descriptor
+		int 	80h
+		popa
+		mov 	esp, ebp
+		pop 	ebp
+		mov		eax, [kernel_buffer + 60]			
 		ret
 
 mkfifo:
@@ -354,7 +382,83 @@ waitpid:
 		je		_waitpid_jmp_0
 		call	_yield
 	_waitpid_jmp_0:
-	
+		ret
+
+pticks:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov		eax, 13				; eax en 13 para pticks
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+
+pname:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 14				; eax en 14 para pname
+		mov 	ebx, [ebp+8]		; pid
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+pstatus:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 15				; eax en 15 para pstatus
+		mov 	ebx, [ebp+8]		; pid
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+ppriority:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 16				; eax en 16 para ppriority
+		mov 	ebx, [ebp+8]		; pid
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+pgid:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 17				; eax en 17 para pgid
+		mov 	ebx, [ebp+8]		; pid
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+pgetpid_at:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 18				; eax en 18 para pgetpid_at
+		mov 	ebx, [ebp+8]		; pid
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
 		ret
 
 _setCursor:

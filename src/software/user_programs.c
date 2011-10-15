@@ -1,4 +1,5 @@
 #include "user_programs.h"
+#include "../monix/monix.h"
 
 // Helps teachers to understand a bit our mess, well, no
 int _printHelp(int size, char** args) {
@@ -114,16 +115,129 @@ int putc_main (int argc, char ** argv) {
 		printf("%s\n", argv[1]);
 	}
 
+	return 0;
+}
+
+
+int top_main  (int argc, char ** argv) {
+
+
+	int allow_zombies = 0;
+	
+	if (argc > 1 && !strcmp(argv[1], "zombies")) {
+		allow_zombies = 1;
+	}
+	
+	int len = 0;
+	int i = 0;
+	int active_pids[PROCESS_MAX];
+	int	active_pids_ticks[PROCESS_MAX];
+	int active_pids_n = 0;
+
+	for(; i < PROCESS_MAX; ++i)
+	{
+		active_pids[i] = -1;
+		active_pids_ticks[i] = 0;
+	}
+
+	int tick_history[PROCESS_HISTORY_SIZE];
+	int * _pticks = pticks();
+	
+	i = 0;
+	
+	for(; i < PROCESS_HISTORY_SIZE; i++) {
+		if(_pticks[i] == -1) {
+			break;
+		}
+		tick_history[i] = _pticks[i];
+	}
+	
+	
+	len = i;
+	i = 0;
+	int zombs = 0;
+	for(; i < len; ++i)
+	{
+		int pid = tick_history[i];
+		int _pid_index = -1, j = 0;
+		for(; j < active_pids_n; j++)	{
+			if(active_pids[j] == pid) {
+				_pid_index = j;
+				break;
+			}
+		}
+		if(_pid_index == -1)	{
+			_pid_index = active_pids_n;
+			active_pids[_pid_index] = pid;
+			active_pids_n++;
+		}
+		if (pstatus(pid) != PROCESS_ZOMBIE) {
+			active_pids_ticks[_pid_index]++;
+		} else {
+			zombs++;
+		}
+	}
+	
+	if (!allow_zombies) {
+		len -= zombs;
+	}
+	
+	i = 0;
+	for(; i < PROCESS_MAX; ++i)	{
+		int pid = pgetpid_at(i);
+		if (pid != -1){
+			int j = -1;
+			for(; j < active_pids_n; j++)	{
+				if(active_pids[j] == pid) {
+					break;
+				}
+			}
+			
+			char * _pname = pname(pid);
+			char * status = NULL;
+
+
+			int stat = pstatus(pid);
+			switch(stat){
+				case PROCESS_READY:
+				status = "READY";
+				break;
+				case PROCESS_BLOCKED:
+				status = "BLOCKED";
+				break;
+				case PROCESS_ZOMBIE:
+				status = "ZOMBIE ";
+				break;
+				case PROCESS_RUNNING:
+				status = "RUNNING";
+				break;
+				default:
+				status = "UNKNOWN";
+			}
+
+			int priority = ppriority(pid);
+
+			int ticks = ( j == -1 ) ? 0 : active_pids_ticks[j];
+			
+			len = (!len) ? 1 : len;
+			
+			if (stat != PROCESS_ZOMBIE || (stat == PROCESS_ZOMBIE && allow_zombies) ) {
+				printf("PID: %d \t NAME: %s \t CPU:%% %d \t STATUS: %s \t PRIORITY: %d\n",
+					pid, _pname, 
+					(100 * ticks) / len, status, priority);
+			}
+		}
+	}
+	
 	
 	return 0;
 }
 
 int getc_main (int argc, char ** argv) {	
 	int c;
-	while((c = getC()) != '\n') {
-		printf("%c", c);
+	while((c = getC()) != 1) {
+		printf("%c", c + 1);
 	}
-	printf("\n");
 	
 	return 0;
 }
@@ -131,6 +245,6 @@ int getc_main (int argc, char ** argv) {
 
 int _fork (int argc, char ** argv)
 {
-
+	while(1);
 	return 0;
 }
