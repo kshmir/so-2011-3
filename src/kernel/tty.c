@@ -1,5 +1,6 @@
 #include "tty.h"
 #include "../../include/kernel.h"
+#include "../drivers/atadisk.h"
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
 #include "../libs/mcglib.h"
@@ -14,6 +15,7 @@ static int tty_index = 0;
 extern int current_tty;
 
 int process_input(const char * input, int tty_number) { 
+
 	int piped = 0;
 	char file_call_buffer[1024];
 	char stdout_call_buffer[128];

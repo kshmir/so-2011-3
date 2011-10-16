@@ -301,12 +301,12 @@ int sched_pcreate(char * name, int argc, void * params) {
 
 // Function names
 char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", 
-	"kill", "getc", "putc", "top", "hang", "setp", "setsched", NULL };
+	"kill", "getc", "putc", "top", "hang", "setp", "setsched", "dcheck", "dread", "dwrite", NULL };
 
 // Functions
 int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, 
 	reader_main, writer_main, _kill, getc_main, putc_main, top_main, _hang, 
-	_setp, _setsched, NULL };
+	_setp, _setsched, _dcheck, _dread, _dwrite, NULL };
 
 main_pointer sched_ptr_from_string(char * string) {
 	int index;

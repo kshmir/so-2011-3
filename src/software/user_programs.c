@@ -1,6 +1,7 @@
 #include "user_programs.h"
 #include "../monix/monix.h"
 #include "../libs/pqueue.h"
+#include "../drivers/atadisk.h"
 
 // Helps teachers to understand a bit our mess, well, no
 int _printHelp(int size, char** args) {
@@ -301,5 +302,76 @@ int _setsched (int argc, char ** argv)
 int _hang (int argc, char ** argv)
 {
 	while(1);
+	return 0;
+}
+
+
+
+int _dcheck(int size, char** args) {
+	printf("MonkeyOS 1 - MurcielagOS kernel v0.1 (i686-pc-murcielago)\n");
+	printf("These shell commands are defined internally.  Type `help' to see this list.\n");
+	check_drive(ATA0);
+}
+
+
+int _dread(int argc, char** argv) {
+	int i; 
+	char msg[2048];
+	for(i = 0; i < 2048; ++i)
+	{
+		msg[i] = 0;
+	}
+
+	unsigned short sector = 2;	
+	if(argc > 1)	{
+		sector = atoi(argv[1]);
+	}
+
+
+	int offset            = 0;
+	int count             = 512;
+	int ata               = ATA0;
+
+	_disk_read(ata, msg, count, sector, offset);
+
+	i = 0;
+	for(; i < count; ++i) {
+		printf("%c", msg[i]);
+	}
+		printf("\n");
+}
+
+
+int _dwrite (int argc, char ** argv)
+{
+	char ans[2048] = "HARA BARA";
+	int bytes = 512;
+	int sector = 1;
+	if(argc > 2)
+	{
+		int i;
+		int len = strlen(argv[1]);
+		sector = atoi(argv[2]);
+		if(len < 512)
+		{
+			for(i = 0; i < len; ++i)	{
+				ans[i] = argv[1][i];
+			}
+			for(; i < 512; ++i)
+			{
+				ans[i] = 0;
+			}
+		}
+	}
+	
+
+
+	int offset = 0;
+	int ata = ATA0;
+		
+	_disk_write(ata, ans, bytes, sector, offset);
+	printf("escribo: %s.\n",ans);	
+	printf("\n");
+
 	return 0;
 }

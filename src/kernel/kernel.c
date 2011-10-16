@@ -2,8 +2,10 @@
 #include "../../include/kasm.h"
 #include "../../include/defs.h"
 
+
 #include "video.h"
 #include "kernel.h"
+
 #include "scheduler.h"
 #include "fd.h"
 
@@ -259,6 +261,8 @@ kmain() {
 	tty_init(3);
 	tty_init(4);
 	tty_init(5);
+	
+	
 
 	// We soon exit out of here :)
 	while (1);
