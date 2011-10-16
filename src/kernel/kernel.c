@@ -166,6 +166,18 @@ void int_80() {
 	}	else if (systemCall == KILL) {
 		kernel_buffer[KERNEL_RETURN - 1] = kernel_buffer[1];
 		kernel_buffer[KERNEL_RETURN - 2] = kernel_buffer[2];
+	}	else if (systemCall == PSETP) {
+		Process * p = process_getbypid(kernel_buffer[1]);
+		if(p == NULL)	{
+			kernel_buffer[KERNEL_RETURN] = (int) -1;
+		} else {
+			if(kernel_buffer[2] <= 4 && kernel_buffer[2] >= 0)	{
+				p->priority = kernel_buffer[2];
+			}
+			kernel_buffer[KERNEL_RETURN] = (int) p->gid;
+		}
+	}	else if (systemCall == SETSCHED) {
+		sched_set_mode(kernel_buffer[1]);
 	}
 	
 	krn = 0;

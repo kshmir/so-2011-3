@@ -161,4 +161,22 @@ int pgetpid_at(int index);
  **/
 int kill(int signal, int pid);
 
+/* pname
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+int psetp(int pid, int priority);
+
+/* pname
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+int psetsched(int schedmode, int priority);
+
 #endif

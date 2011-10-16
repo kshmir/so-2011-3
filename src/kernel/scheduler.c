@@ -22,16 +22,76 @@ static Process 				process_pool[PROCESS_MAX];
 static Process				* current_process = NULL;
 static Queue 				* ready_queue;
 static Queue 				* yield_queue;
-static Queue 				* blocked_queue;
+static PQueue 				* priority_queue;
 
 ///////////// Inicio Funciones Scheduler
 
-int rd_queue_size() {
-	return queue_count(ready_queue);
+#define	MODE_ROUNDR		0
+#define	MODE_PRIORITY	1
+
+int sched_mode = MODE_ROUNDR;
+
+void sched_set_mode(int m) {
+	if (m == 0 || m == 1) {
+		sched_mode = m;
+		
+		Process * p;		
+		if (m == 1) {
+			while(!queue_isempty(ready_queue)) {
+				p = queue_dequeue(ready_queue);
+				pqueue_enqueue(priority_queue,p,p->priority);
+			}
+		} else if (m == 0){
+			while(!pqueue_isempty(priority_queue)) {
+				p = pqueue_dequeue(priority_queue);
+				queue_enqueue(ready_queue,p);
+			}
+		}
+		
+	}
+}
+
+int sched_isempty() {
+	switch(sched_mode) {
+		case MODE_PRIORITY:
+			return pqueue_isempty(priority_queue);
+			break;
+		case MODE_ROUNDR:
+		default:
+			return queue_isempty(ready_queue);		
+			break;
+	}
+}
+
+void sched_enqueue(Process * p) {
+	switch(sched_mode) {
+		case MODE_PRIORITY:
+//			printf("Enqueuing in pq %d %d %d\n", priority_queue, p, p->priority);
+			pqueue_enqueue(priority_queue,p,p->priority);
+			break;
+		case MODE_ROUNDR:
+		default:
+			queue_enqueue(ready_queue,p);		
+			break;
+	}
+}
+
+void * sched_dequeue() {
+	switch(sched_mode) {
+		case MODE_PRIORITY:
+//					printf("Dequeuing in pq\n");
+			return pqueue_dequeue(priority_queue);
+			break;
+		case MODE_ROUNDR:
+		default:
+			return queue_dequeue(ready_queue);		
+			break;
+	}
 }
 
 void process_setready(Process * p) { 
-	queue_enqueue(ready_queue,p);
+	
+	sched_enqueue(p);
 }
 
 int out = 0;
@@ -48,8 +108,8 @@ void scheduler_init() {
 		process_pool[i].state = -1;
 	}
 	ready_queue   = queue_init(PROCESS_MAX);
-	blocked_queue = queue_init(PROCESS_MAX);
 	yield_queue   = queue_init(PROCESS_MAX);
+	priority_queue = pqueue_init(10, PROCESS_MAX);
 	
 	i = 0;
 	for(; i < PROCESS_HISTORY_SIZE; ++i) {
@@ -134,7 +194,7 @@ void process_cleanpid(int pid) {
 	while(!queue_isempty(_curr->wait_queue)) {
 		Process * p = queue_dequeue(_curr->wait_queue);
 		p->state = PROCESS_READY;
-		queue_enqueue(ready_queue,p);
+		sched_enqueue(p);
 	}
 
 	int i = 0;
@@ -152,7 +212,7 @@ void process_cleaner() {
 	while(!queue_isempty(current_process->wait_queue)) {
 		Process * p = queue_dequeue(current_process->wait_queue);
 		p->state = PROCESS_READY;
-		queue_enqueue(ready_queue,p);
+		sched_enqueue(p);
 	}
 
 	int i = 0;
@@ -175,7 +235,6 @@ int soft_yielded = 0;
 	THe process must be saved somewhere else!!!
 */
 void softyield() {
-//	queue_enqueue(ready_queue, current_process);
 	soft_yielded = 1;
 	_yield();
 }
@@ -199,7 +258,7 @@ int sched_pdup2(int pid, int fd1, int fd2) {
 
 int sched_prun(int pid) {
 	Process * p = process_getbypid(pid);
-	queue_enqueue(ready_queue, p);
+	sched_enqueue( p);
 	return pid;
 }
 
@@ -242,11 +301,12 @@ int sched_pcreate(char * name, int argc, void * params) {
 
 // Function names
 char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", 
-	"kill", "getc", "putc", "top", "hang", NULL };
+	"kill", "getc", "putc", "top", "hang", "setp", "setsched", NULL };
 
 // Functions
 int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, 
-	reader_main, writer_main, _kill, getc_main, putc_main, top_main, _hang, NULL };
+	reader_main, writer_main, _kill, getc_main, putc_main, top_main, _hang, 
+	_setp, _setsched, NULL };
 
 main_pointer sched_ptr_from_string(char * string) {
 	int index;
@@ -314,7 +374,7 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 	if(strcmp(name, "idle") == 0) {
 		idle = p;
 	} else if(!queue_block)	{
-		queue_enqueue(ready_queue, p);
+		sched_enqueue( p);
 	}
 
 
@@ -368,24 +428,26 @@ void scheduler_think (void) {
 
 	if(yielded == 0) {
 		while(!queue_isempty(yield_queue)) {
-			queue_enqueue(ready_queue, queue_dequeue(yield_queue));
+			sched_enqueue(queue_dequeue(yield_queue));
 		}
 	} else { 
 		yielded--;
 	}
 
-	if (current_process != NULL 
-		&& current_process->state == PROCESS_RUNNING 
+	if (current_process != NULL                       // Kinda old condition, stays for good
+		&& current_process->state == PROCESS_RUNNING  // This way zombies 'pass out'
 		&& current_process != idle)
 	{
 		current_process->state = PROCESS_READY;
-		queue_enqueue(ready_queue, current_process);
+		sched_enqueue(current_process);
 		current_process = NULL;
 	}
 
 	
-	if (!queue_isempty(ready_queue)) {
-		current_process = queue_dequeue(ready_queue);
+	if (!sched_isempty()) {
+		current_process = sched_dequeue();
+		
+		// Process wakeup
 		if (current_process->state == PROCESS_BLOCKED) {
 			current_process->state = PROCESS_READY;
 			soft_yielded = 1;

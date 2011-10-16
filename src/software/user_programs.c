@@ -1,5 +1,6 @@
 #include "user_programs.h"
 #include "../monix/monix.h"
+#include "../libs/pqueue.h"
 
 // Helps teachers to understand a bit our mess, well, no
 int _printHelp(int size, char** args) {
@@ -261,9 +262,37 @@ int _kill (int argc, char ** argv)
 	printf("%c\n", c);
 	if (argc > 1) {
 		int pid = atoi(argv[1]);
-		printf("killing %d\n", pid);
 		if (pid >= 0) {
 			kill(2,pid);
+		}
+	}
+	return 0;
+}
+
+int _setp (int argc, char ** argv)
+{
+	if (argc > 2) {
+		int priority = atoi(argv[2]);
+		int pid = atoi(argv[1]);
+		if (priority >= 0 && pid >= 0) {
+			psetp(pid,priority);
+		}
+	}
+	return 0;
+}
+
+int _setsched (int argc, char ** argv)
+{
+	if (argc > 1) {
+		int priority = atoi(argv[1]);
+		if (priority >= 0) {
+			setsched(priority);
+			if(priority == 1) {
+				printf("Scheduler set to priority mode\n");
+			}
+			else if(priority == 0) {
+				printf("Scheduler set to round robin mode\n");
+			}
 		}
 	}
 	return 0;

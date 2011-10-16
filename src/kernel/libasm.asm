@@ -34,6 +34,8 @@ GLOBAL	pstatus
 GLOBAL	pgid
 GLOBAL	pgetpid_at
 GLOBAL	kill
+GLOBAL	psetp
+GLOBAL	setsched
 
 EXTERN	signal_on_demand
 EXTERN  int_08
@@ -454,6 +456,33 @@ kill:
 		mov		eax, 19				; eax en 18 para pgetpid_at
 		mov 	ebx, [ebp+8]		; signal
 		mov 	ecx, [ebp+12]		; pid
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+psetp:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 20				; eax en 20 para psetp
+		mov 	ebx, [ebp+8]		; pid
+		mov 	ecx, [ebp+12]		; priority
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+setsched:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 21				; eax en 21 para setsched
+		mov 	ebx, [ebp+8]		; schedmode
 		int		80h
 		popa
 		mov		esp, ebp

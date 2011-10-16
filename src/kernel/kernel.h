@@ -38,6 +38,8 @@
 #define PGID         17
 #define PGETPID_AT   18
 #define KILL         19
+#define PSETP        20
+#define SETSCHED     21
 
 
 #define SYSR_ERR     -1
