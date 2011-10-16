@@ -33,10 +33,7 @@ void _disk_read(int ata, char * ans, int count, unsigned short sector, int offse
 	// Just a sector...
 	if(count > 512 - offset)
 		return;
-		
-
-
-	printf("READING SECTOR %d\n", sector);
+	
 	char tmp[512];
 	int i = 0;
 	for(i = 0; i < 512; ++i)
@@ -46,7 +43,7 @@ void _disk_read(int ata, char * ans, int count, unsigned short sector, int offse
 	
 	sendComm(ata, LBA_READ, sector);
 
-	_Halt();
+	_Halt(); // TODO: Make the 500ns wait
 
 	int b;
 	unsigned short data;
@@ -86,7 +83,6 @@ void _disk_write(int ata, char * msg, int bytes, unsigned short sector, int offs
 	}
 	i = 0;
 
-	printf("WRITING SECTOR %d\n", sector);
 
 	// Prepare sectors with new data
 	for ( i = 0; i < bytes; i++ ) {
@@ -98,12 +94,11 @@ void _disk_write(int ata, char * msg, int bytes, unsigned short sector, int offs
 	// Send write command
 	sendComm(ata, LBA_WRITE, sector);
 
-	_Halt();
+	_Halt(); // TODO: Make the 500ns wait
 
 	// Now write all the sector
 	int b;
 	for (b=0; b<512; b+=2) {
-		printf("%c%c", write_tmp[b],write_tmp[b+1]);
 		writeDataToRegister(ata, write_tmp[b+1], write_tmp[b]);
 	}
 }
@@ -145,15 +140,13 @@ unsigned short getErrorRegister(int ata){
 void sendComm(int ata, int rdwr, unsigned short sector){
 	_Cli();
 	
-	printf("COMM: %d %d %d\n", ata, rdwr, sector);
-	
 	_out(ata + WIN_REG1, 0);
 	_out(ata + WIN_REG2, 1);	// Set count register sector in 1
 	
 	_out(ata + WIN_REG3, (unsigned char)sector);			// LBA low
-	_out(ata + WIN_REG4, (unsigned char)0);		// LBA mid
-	_out(ata + WIN_REG5, (unsigned char)0);	// LBA high
-	_out(ata + WIN_REG6, 0);	// Set LBA bit in 1 and the rest in 0
+	_out(ata + WIN_REG4, (unsigned char)(sector >> 8));		// LBA mid
+	_out(ata + WIN_REG5, (unsigned char)(sector >> 16));	// LBA high
+	_out(ata + WIN_REG6, 0);
 	
 	// Set command
 	_out(ata + WIN_REG7, rdwr);

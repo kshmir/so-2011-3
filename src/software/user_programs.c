@@ -315,30 +315,35 @@ int _dcheck(int size, char** args) {
 
 
 int _dread(int argc, char** argv) {
-	int i; 
-	char msg[2048];
-	for(i = 0; i < 2048; ++i)
-	{
-		msg[i] = 0;
-	}
-
-	unsigned short sector = 2;	
 	if(argc > 1)	{
+		int i; 
+		char msg[2048];
+		for(i = 0; i < 2048; ++i)
+		{
+			msg[i] = 0;
+		}
+
+		unsigned short sector = 0;	
+
 		sector = atoi(argv[1]);
-	}
+		if(!sector)
+		{
+			sector = 1;
+		}
 
+		int offset            = 0;
+		int count             = 512;
+		int ata               = ATA0;
 
-	int offset            = 0;
-	int count             = 512;
-	int ata               = ATA0;
+		_disk_read(ata, msg, count, sector, offset);
 
-	_disk_read(ata, msg, count, sector, offset);
-
-	i = 0;
-	for(; i < count; ++i) {
-		printf("%c", msg[i]);
-	}
+		printf("Lei esto del sector %d\n", sector);
+		i = 0;
+		for(; i < count; ++i) {
+			printf("%c", msg[i]);
+		}
 		printf("\n");
+	}
 }
 
 
@@ -362,16 +367,11 @@ int _dwrite (int argc, char ** argv)
 				ans[i] = 0;
 			}
 		}
+		int offset = 0;
+		int ata = ATA0;
+
+		_disk_write(ata, ans, bytes, sector, offset);
+		printf("Escrito en sector %d\n", sector);
 	}
-	
-
-
-	int offset = 0;
-	int ata = ATA0;
-		
-	_disk_write(ata, ans, bytes, sector, offset);
-	printf("escribo: %s.\n",ans);	
-	printf("\n");
-
 	return 0;
 }
