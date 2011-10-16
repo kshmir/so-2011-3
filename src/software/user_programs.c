@@ -349,7 +349,7 @@ int _dread(int argc, char** argv) {
 
 int _dwrite (int argc, char ** argv)
 {
-	char ans[2048] = "HARA BARA";
+	char ans[512] = "HARA BARA";
 	int bytes = 512;
 	int sector = 1;
 	if(argc > 2)
@@ -375,3 +375,28 @@ int _dwrite (int argc, char ** argv)
 	}
 	return 0;
 }
+
+int _dfill (int argc, char ** argv)
+{
+	printf("WRITECHECK\n");
+	char ans[512];
+	int bytes = 512;
+	int sector = 1;
+	if(argc > 1)
+	{
+		int i;
+		sector = atoi(argv[1]);
+		for(i = 0; i < 511; ++i)	{
+			ans[i] = '0' + sector % 10;
+		}
+		ans[i] = 0;
+		int offset = 0;
+		int ata = ATA0;
+
+		_disk_write(ata, ans, bytes, sector, offset);
+		printf("Escrito en sector %d\n", sector);
+	}
+	return 0;
+}
+
+
