@@ -37,7 +37,15 @@
 #define PPRIORITY    16
 #define PGID         17
 #define PGETPID_AT   18
+#define KILL         19
 
 
 #define SYSR_ERR     -1
 #define SYSR_BLOCK   -2
+
+#define KERNEL_BUFFER_SIZE 16
+#define	KERNEL_RETURN      (KERNEL_BUFFER_SIZE - 1)
+
+#ifndef kernel_buffer
+int kernel_buffer[KERNEL_BUFFER_SIZE];
+#endif

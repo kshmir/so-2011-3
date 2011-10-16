@@ -15,10 +15,7 @@ DESCR_INT idt[0x81];
 /* IDTR */
 IDTR idtr; 
 
-#define KERNEL_BUFFER_SIZE 16
-#define	KERNEL_RETURN      (KERNEL_BUFFER_SIZE - 1)
 
-int kernel_buffer[KERNEL_BUFFER_SIZE]; 
 
 void clear_kernel_buffer() {
 	int i = 0;
@@ -67,7 +64,7 @@ void int_09() {
 	flag = flag || (scancode >= 0x2b && scancode <= 0x35);
 	if (flag)	{
 		char sc = scanCodeToChar(scancode);
-		if(sc != 0)	{
+		if(sc != 0 && sc != EOF)	{
 			pushC(sc); //guarda un char en el stack
 		}
 	}
@@ -108,8 +105,6 @@ void int_80() {
 		else {
 			kernel_buffer[KERNEL_RETURN] = -1;
 		}
-		
-		
 	} else if (systemCall == CLOSE) {
 		kernel_buffer[KERNEL_RETURN] = fd_close(getp()->file_descriptors[fd]);
 	}
@@ -168,11 +163,29 @@ void int_80() {
 		} else {
 			kernel_buffer[KERNEL_RETURN] = -1;
 		}
-
+	}	else if (systemCall == KILL) {
+		kernel_buffer[KERNEL_RETURN - 1] = kernel_buffer[1];
+		kernel_buffer[KERNEL_RETURN - 2] = kernel_buffer[2];
 	}
-
 	
 	krn = 0;
+}
+
+
+// Fires a signal after a syscall, only if the kernel has been set to do so.
+void signal_on_demand() {
+	make_atomic();
+	if (kernel_buffer[KERNEL_RETURN - 1] != 0) {
+		
+		int sigcode = kernel_buffer[KERNEL_RETURN - 1];
+		int pid = kernel_buffer[KERNEL_RETURN - 2];
+
+		kernel_buffer[KERNEL_RETURN - 1] = 0; // SIGCODE
+		kernel_buffer[KERNEL_RETURN - 2] = 0; // PID
+		
+		sg_handle(sigcode, pid);
+	}
+	release_atomic();
 }
 
 ///////////// Fin Handlers de interrupciones.
@@ -206,6 +219,10 @@ kmain() {
 	/* CARGA DE IDT CON LA RUTINA DE ATENCION DE int80h    */
 
 	setup_IDT_entry(&idt[0x80], 0x08, (dword) & _int_80_hand, ACS_INT, 0);
+	
+	/* CARGA DE IDT CON LA RUTINA DE ATENCION DE int79h    */
+
+	setup_IDT_entry(&idt[0x79], 0x08, (dword) & _int_79_hand, ACS_INT, 0);
 
 	/* Carga de IDTR */
 

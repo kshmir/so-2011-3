@@ -20,6 +20,11 @@
 #define PROCESS_MAX				64
 #define PROCESS_WAIT_MAX		64
 #define PROCESS_HISTORY_SIZE	100
+#define PROCESS_SIGNALS			10
+
+// Signals
+#define SIGINT					2
+#define	SIGKILL					9
 
 /* write
  * Parameters:
@@ -146,4 +151,14 @@ int pgid(int pid);
  * - File Descriptor to the file, whichever type it has.
  **/
 int pgetpid_at(int index);
+
+/* pname
+ * Parameters:
+ * - Filename
+ * - Permissions
+ * Returns:
+ * - File Descriptor to the file, whichever type it has.
+ **/
+int kill(int signal, int pid);
+
 #endif

@@ -29,4 +29,6 @@ int putc_main (int argc, char ** argv);
 
 int getc_main (int argc, char ** argv);
 
+int _hang (int argc, char ** argv);
+
 #endif

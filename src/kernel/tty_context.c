@@ -128,6 +128,7 @@ typedef struct TTY_Context {
 	int		charBufferRIndex;
 	int		charBufferWIndex;
 	char	charBuffer[BUFFER_SIZE];
+	int		owner_pid;
 	Queue	* read_pblocks;
 	Queue	* write_pblocks;
 	// Video Context
@@ -137,6 +138,8 @@ typedef struct TTY_Context {
 static TTY_Context	tty_contexts[TTY_MAX_NUMBER];
 int					current_tty = 0;
 int					kb_tty      = 0;
+
+
 
 void switch_tty(int number) {
 	TTY_Context * cont = &tty_contexts[number]; 	
@@ -164,6 +167,9 @@ void init_context(int id) {
 
 static TTY_Context * cnt() { 
 	return &tty_contexts[current_tty];
+}
+void set_owner_pid(pid) {
+	cnt()->owner_pid = pid;
 }
 
 void unlock_all_contexts() {
@@ -245,6 +251,8 @@ void pushC(char c) {
 char scanCodeToChar(char scanCode) {
 	if ((cnt()->lCtrl || cnt()->rCtrl)) {
 		int in = FALSE;
+		int sig = FALSE;
+		
 		tty_contexts[current_tty].video_context->visible = 0;
 		switch(keyboard[scanCode][0]) {
 			case '1':
@@ -279,6 +287,10 @@ char scanCodeToChar(char scanCode) {
 				current_tty = 7;
 				in = TRUE;
 				break;
+			case 'c':
+			case 'C':
+				sig = TRUE;
+				break;
 		}
 		tty_contexts[current_tty].video_context->visible = 1;
 		if(in)	{
@@ -287,6 +299,15 @@ char scanCodeToChar(char scanCode) {
 			unlock_contexts();
 			kb_tty = current_tty;
 			return 0;
+		}
+		
+		if (sig) {
+			Process * p = process_getbypid(cnt()->owner_pid);
+			if (!p->is_tty) {
+				kernel_buffer[14] = 2;
+				kernel_buffer[13] = cnt()->owner_pid;
+			}
+			return EOF;
 		}
 
 	}
@@ -425,20 +446,11 @@ char getA() {
 	
 }
 
-// char getC() {	
-// 	while (cnt()->charBufferPointer < 0 
-// 		   || current_tty != current_p_tty()) {
-// 		yield();
-// 	}
-// 
-// 	char ret = cnt()->charBuffer[cnt()->charBufferPointer--];
-// 	return ret;
-// }
-
 int tty_read(char * buf, int len) {
 	if(cnt()->charBufferSize == 0 || current_tty != current_p_tty()) {
 		getp()->state = PROCESS_BLOCKED;
 		queue_enqueue(cnt()->read_pblocks, getp());
+		cnt()->owner_pid = getp()->pid;
 		return SYSR_BLOCK;
 	}
 	char ret = cnt()->charBuffer[cnt()->charBufferRIndex++];

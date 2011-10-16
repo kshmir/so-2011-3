@@ -26,6 +26,7 @@ typedef struct Process {
 	int					file_descriptors[PROCESS_FD_SIZE];
 	int					open_fds;
 	int					calls;
+	void *				signals[PROCESS_SIGNALS];
 	Queue				* wait_queue;
 } Process;
 
@@ -47,6 +48,8 @@ Process * getp();
 int current_p_tty();
 
 int process_getfreefd();
+
+void process_cleanpid(int pid);
 
 void process_setready(Process * p);
 

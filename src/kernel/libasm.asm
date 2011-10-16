@@ -2,6 +2,7 @@ GLOBAL  _read_msw,_lidt
 GLOBAL  _int_08_hand
 GLOBAL  _int_09_hand
 GLOBAL	_int_80_hand
+GLOBAL	_int_79_hand
 GLOBAL  _mascaraPIC1,_mascaraPIC2,_Cli,_Sti
 GLOBAL  _debug
 GLOBAL	_setCursor
@@ -32,8 +33,9 @@ GLOBAL	ppriority
 GLOBAL	pstatus
 GLOBAL	pgid
 GLOBAL	pgetpid_at
+GLOBAL	kill
 
-
+EXTERN	signal_on_demand
 EXTERN  int_08
 EXTERN  int_09
 EXTERN	int_80
@@ -107,20 +109,6 @@ _yield:
 
 ; Handler de INT 8 ( Timer tick)
 _int_08_hand:
-;		push	ds
-;		push	es					; Se salvan los registros
-;		pusha							; Carga de DS y ES con el valor del selector
-;		mov		ax, 10h			; a utilizar.
-;		mov		ds, ax
-;		mov		es, ax
-;		call	int_08
-;		mov		al,20h			; Envio de EOI generico al PIC
-;		out		20h,al
-;		popa
-;		pop		es
-;		pop		ds
-;		iret
-		
 		cli
 		pushad
 			mov eax, esp
@@ -163,9 +151,12 @@ _int_09_hand:
 			mov esp,eax
 			;call _debug;
 		popad
-		mov al,20h			; Envio de EOI generico al PIC
-		out 20h,al
-		sti
+		mov 	al,20h			; Envio de EOI generico al PIC
+		out 	20h,al
+		sti	
+		
+		int		079h
+		
 		iret
 
 ; recibe parametros a traves de los registros
@@ -175,25 +166,6 @@ _int_09_hand:
 ; edx -> cantidad de caracteres a escribir
 
 _int_80_hand:
-;   	cli
-;   	push	ds
-;   	push	es
-;   	pusha
-;   	push	edx             ; cantidad de caracteres a escribir
-;   	push	ecx             ; direccion de la cadena a escribir
-;   	push	ebx             ; file descriptor
-;   	push	eax             ; system call
-;   	call int_80
-;   	pop		eax             ; saco parametros
-;   	pop		eax
-;   	pop		eax
-;   	pop		eax
-;   	popa
-;   	pop		es
-;   	pop		ds
-;   	sti
-;   	iret
-		
 		cli
 		push	ds
 		push	es
@@ -217,11 +189,25 @@ _int_80_hand:
 		call scheduler_load_esp
 		mov esp,eax
 		
-		
 		popad
 		pop		es
 		pop		ds
 		sti
+		
+		int		079h ; Signals
+		
+		iret
+		
+_int_79_hand:
+		push	ds
+		push	es
+		pushad														; We push everything
+
+		call signal_on_demand									; Make the syscall
+
+		popad
+		pop		es
+		pop		ds
 		iret
 
 write:
@@ -454,6 +440,20 @@ pgetpid_at:
 		pusha
 		mov		eax, 18				; eax en 18 para pgetpid_at
 		mov 	ebx, [ebp+8]		; pid
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+kill:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 19				; eax en 18 para pgetpid_at
+		mov 	ebx, [ebp+8]		; signal
+		mov 	ecx, [ebp+12]		; pid
 		int		80h
 		popa
 		mov		esp, ebp

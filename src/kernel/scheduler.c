@@ -2,6 +2,7 @@
 #include "tty.h"
 #include "fd.h"
 #include "kernel.h"
+#include "signals.h"
 #include "../software/user_programs.c"
 #include "../libs/string.h"
 #include "../libs/queue.h"
@@ -126,6 +127,26 @@ Process * getp() {
 
 int ran = 0;
 
+void process_cleanpid(int pid) {
+
+	Process * _curr = process_getbypid(pid);
+
+	while(!queue_isempty(_curr->wait_queue)) {
+		Process * p = queue_dequeue(_curr->wait_queue);
+		p->state = PROCESS_READY;
+		queue_enqueue(ready_queue,p);
+	}
+
+	int i = 0;
+	for(; i < PROCESS_FD_SIZE; ++i)	{
+		fd_close(_curr->file_descriptors[i]);
+	}
+
+	_curr->state = PROCESS_ZOMBIE;
+	_processes_available++;
+	softyield();
+}
+
 void process_cleaner() {
 
 	while(!queue_isempty(current_process->wait_queue)) {
@@ -186,6 +207,9 @@ int sched_waitpid(int pid) {
 	Process * p = process_getbypid(pid);
 	if(p != NULL)
 	{
+		if (current_process->is_tty) {
+			set_owner_pid(p->pid);
+		}
 		queue_enqueue(p->wait_queue, current_process);
 		current_process->state = PROCESS_BLOCKED;
 		return pid;
@@ -218,11 +242,11 @@ int sched_pcreate(char * name, int argc, void * params) {
 
 // Function names
 char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", 
-	"fork", "getc", "putc", "top", NULL };
+	"kill", "getc", "putc", "top", "hang", NULL };
 
 // Functions
 int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, 
-	reader_main, writer_main, _fork, getc_main, putc_main, top_main, NULL };
+	reader_main, writer_main, _kill, getc_main, putc_main, top_main, _hang, NULL };
 
 main_pointer sched_ptr_from_string(char * string) {
 	int index;
@@ -275,6 +299,9 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 	p->file_descriptors[2] = fd_open_with_index(stderr,0,0,0);
 	p->is_tty              = is_tty;
 	p->wait_queue          = queue_init(PROCESS_WAIT_MAX);
+	
+	sg_set_defaults(p);
+	
 
 	int i;
 	for(i = 3; i < PROCESS_FD_SIZE; ++i) {
@@ -348,22 +375,28 @@ void scheduler_think (void) {
 	}
 
 	if (current_process != NULL 
-		&& current_process->state == PROCESS_RUNNING && current_process != idle)
+		&& current_process->state == PROCESS_RUNNING 
+		&& current_process != idle)
 	{
 		current_process->state = PROCESS_READY;
 		queue_enqueue(ready_queue, current_process);
+		current_process = NULL;
 	}
 
-	if(!queue_isempty(ready_queue)) {
+	
+	if (!queue_isempty(ready_queue)) {
 		current_process = queue_dequeue(ready_queue);
 		if (current_process->state == PROCESS_BLOCKED) {
 			current_process->state = PROCESS_READY;
 			soft_yielded = 1;
 		}
-	} 
+	
+		if (current_process->state == PROCESS_ZOMBIE) {
+			softyield();
+		}
+	}
 	else {
 		current_process = idle;
-		
 	}
 	
 	if (soft_yielded) {

@@ -34,6 +34,8 @@ void pushC(char c);
  */
 int controlKey(int scancode);
 
+void set_owner_pid(int pid);
+
 /** Gets whether caps is on or not */
 int capsOn();
 /** Tells wether a shift's on */
