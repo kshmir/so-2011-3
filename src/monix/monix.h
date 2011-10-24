@@ -16,11 +16,27 @@
 
 // Process' attributes
 #define	PROCESS_FD_SIZE			64
-#define PROCESS_STACK_SIZE		4096
+#define PROCESS_STACK_SIZE		16384
 #define PROCESS_MAX				64
 #define PROCESS_WAIT_MAX		64
 #define PROCESS_HISTORY_SIZE	100
 #define PROCESS_SIGNALS			10
+
+// File types
+#define MON_FT_UNKNOWN		0		// Unknown File Type
+#define MON_FT_REG_FILE		1		// Regular File
+#define MON_FT_DIR			2		// Directory File
+#define MON_FT_CHRDEV		3		// Character Device
+#define MON_FT_BLKDEV		4		// Block Device
+#define MON_FT_FIFO			5		// Buffer File
+#define MON_FT_SOCK			6		// Socket File
+#define MON_FT_SYMLINK		7		// Symbolic Link
+
+// Extra param for FS
+#define	O_CREAT					0x800		// Deletes the old file if exists.
+#define	O_RD					0x400		// Reads from frome
+#define	O_WR					0x200		// Writes to file.
+#define	O_NEW					0x100		// Creates a new only if exists
 
 // Signals
 #define SIGINT					2
@@ -178,5 +194,76 @@ int psetp(int pid, int priority);
  * - File Descriptor to the file, whichever type it has.
  **/
 int psetsched(int schedmode, int priority);
+
+/* pwd
+ * Returns:
+ * - String containing the current directory the tty is in.
+ **/
+char * pwd();
+
+/* cd
+ * Returns:
+ * 1 if moved, 0 if not.
+ **/
+int cd(char * to);
+
+/* cd
+ * Returns:
+ * List of EXT2 directory entries in the raw buffer.
+ **/
+int ls(char * data, int size, unsigned long * f_offset);
+
+/* mount
+ * Returns:
+ * List of EXT2 directory entries in the raw buffer.
+ **/
+int mount();
+
+
+/* cd
+ * Returns:
+ * List of EXT2 directory entries in the raw buffer.
+ **/
+int mkdir(char * name);
+
+int rm(char * name);
+
+
+
+int getuid(char * username); // if null... returns current UID
+
+int getgid(int uid);
+
+int makeuser(char * username, char * password);
+
+int setgid(char * username, int gid);
+
+int udelete(char * username);
+
+int uexists(char * username);
+
+int ulogin(char * username, char * password);
+
+int chown(char * filename, char * username);
+
+int chmod(char * filename, int perms);
+
+int fgetmod(char * filename);
+
+int fgetown(char * filename);
+
+// TODO
+int cp(char * from, char * to);
+
+// TODO
+int mv(char * from, char * to);
+
+// TODO
+void fsstat(int * data);
+
+// TODO? Really? O_RLY
+void fsformat(int * data);
+
+int logout();
 
 #endif

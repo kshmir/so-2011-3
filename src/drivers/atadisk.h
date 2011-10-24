@@ -4,28 +4,6 @@
 #define _AT_WINI_H_
 
 
-/*
-//extern struct system_t System;
-
-
-
-typedef struct disk_cmd{
-	int ata;
-	int sector;
-	int offset;
-	int count; // Bytes count
-	char * buffer;
-}disk_cmd;
-
-typedef struct disk_cmd * disk_cmd_t; 
-
-struct disk_t {
-	void (*read)(int, char *, unsigned short, int, int);
-	void (*write)(int, char *, int, unsigned short, int);
-};
-*/
-/* I/O Ports used by winchester disk controller. */
-
 #define ATA0 0x1f0
 #define ATA1 0x170
 
@@ -60,56 +38,6 @@ struct disk_t {
 /* Error codes */
 #define ERR		  -1	/* general error */
 
-/*
-read example
-		int i=0;
-	for (i=0;i<450000;i++);
-	i=25;
-		char msg[2048];
-	for(i=12;i<18;i+=4){
-	unsigned short sector=i;
-	int offset=0;
-	int count=2048;
-	int ata=ATA0;
-
-	disk_read(ata, msg, sector, offset, count);
-	//msg[0]='a';
-	msg[511]='O';
-	msg[1023]='O';
-	msg[1535]='O';
-	printf("res %d: %s.\n",i,msg);
-}
-}
-
-
-write example
-
-char ans[2048];
-int j;
-for(j=12;j<18;j+=4){
-unsigned short sector = j;
-int offset            = 0;
-// int count             = 512;
-int ata               = ATA0;
-int i;
-for (i = 0; i < 2047; i++) {
-	ans[i++] = 'A';
-	ans[i++] = 'X';
-	ans[i++] = 'A';
-	ans[i] = ' ';
-}
-
-ans[511]=0;
-ans[1023]=0;
-ans[1535]=0;
-ans[2047]=0;
-
-int bytes=2048;
-disk_write(ata, ans, bytes, sector, offset);
-printf("escribo: %s.\n",ans);	
-}
-
-*/
 
 #define MAX_ERRORS         4	/* how often to try rd/wt before quitting */
 #define NR_DEVICES        10	/* maximum number of drives */
@@ -127,14 +55,14 @@ enum{
 
 int driver(char * ata);
 
-void sendComm(int ata, int rdwr, unsigned short sector);
+void sendComm(int ata, int rdwr, unsigned int sector);
 
-void _disk_read(int ata, char * ans, int count, unsigned short sector, int offset);
+void _disk_read(int ata, char * ans, int count, unsigned int sector, int offset);
 unsigned short getDataRegister(int ata);
 
-void _disk_write(int ata, char * msg, int bytes, unsigned short sector, int offset);
+void _disk_write(int ata, char * msg, int bytes, unsigned int sector, int offset);
 void writeDataToRegister(int ata, char upper, char lower);
-void translateBytes(char ans[], unsigned short sector);
+void translateBytes(char ans[], unsigned short databyte, int sector);
 
 unsigned short getStatusRegister(int ata);
 void identifyDevice(int ata);

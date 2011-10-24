@@ -19,12 +19,12 @@
 
 /** ASM typedefs */
 
-typedef long					time_t;
-typedef unsigned char byte;
-typedef short int 		word;
-typedef int 					dword;
-typedef int 					size_t;
-typedef short int 				ssize_t;
+typedef long						time_t;
+typedef unsigned char				byte;
+typedef short int					word;
+typedef int							dword;
+typedef int							size_t;
+typedef short int					ssize_t;
 
 
 /* Flags para derechos de acceso de los segmentos */

@@ -2,6 +2,7 @@
 #include "../monix/monix.h"
 #include "../libs/pqueue.h"
 #include "../drivers/atadisk.h"
+#include "../kernel/fs/fs.h"
 
 // Helps teachers to understand a bit our mess, well, no
 int _printHelp(int size, char** args) {
@@ -308,8 +309,6 @@ int _hang (int argc, char ** argv)
 
 
 int _dcheck(int size, char** args) {
-	printf("MonkeyOS 1 - MurcielagOS kernel v0.1 (i686-pc-murcielago)\n");
-	printf("These shell commands are defined internally.  Type `help' to see this list.\n");
 	check_drive(ATA0);
 }
 
@@ -323,7 +322,7 @@ int _dread(int argc, char** argv) {
 			msg[i] = 0;
 		}
 
-		unsigned short sector = 0;	
+		unsigned int sector = 0;	
 
 		sector = atoi(argv[1]);
 		if(!sector)
@@ -351,7 +350,7 @@ int _dwrite (int argc, char ** argv)
 {
 	char ans[512] = "HARA BARA";
 	int bytes = 512;
-	int sector = 1;
+	unsigned int sector = 1;
 	if(argc > 2)
 	{
 		int i;
@@ -378,7 +377,6 @@ int _dwrite (int argc, char ** argv)
 
 int _dfill (int argc, char ** argv)
 {
-	printf("WRITECHECK\n");
 	char ans[512];
 	int bytes = 512;
 	int sector = 1;
@@ -399,4 +397,253 @@ int _dfill (int argc, char ** argv)
 	return 0;
 }
 
+int _cd(int argc, char ** argv) {
+	if(argc > 1)
+	{
+		cd(argv[1]);
+	}
+}
 
+int _pwd(int argc, char ** argv) {
+	printf("%s\n", pwd());
+}
+
+int _ls (int argc, char ** argv)
+{
+	char buffer[1024];
+	unsigned long f_offset = 0;
+	int off = 0;
+	ls(buffer, 1024, &f_offset);
+	dir_entry * d = (dir_entry *) &buffer;
+	while(d->inode) {
+		int len = d->name_len;
+		int i = 0;
+		if(*d->name != '.')
+		{
+			for(; i < len; ++i)	{
+				printf("%c", d->name[i]);
+			}
+			printf("\t ");
+		}
+
+		
+		if(!d->rec_len)	{
+			break;
+		}
+		off += d->rec_len;
+		
+		if(off >= 1024)	{
+			ls(buffer, 1024, &f_offset);
+		}
+		d = (dir_entry *) ((char*)&buffer + off);
+	}
+	if(off) {
+		printf("\n");
+	}
+
+	return 0;
+}
+
+int _mkdir (int argc, char ** argv)
+{
+	if(argc > 1)	{
+		if (mkdir(argv[1]) > 0) { 
+			printf("Directory %s created\n", argv[1]);
+		} else {
+			printf("Directory %s not created, invalid perms? Already exists? D:\n", argv[1]);
+		}
+	}
+	return 0;
+}
+
+int _rm (int argc, char ** argv)
+{
+	if(argc > 1)	{
+		rm(argv[1]);
+	}
+	return 0;
+}
+
+int _touch(int argc, char ** argv)
+{
+	if(argc > 1)	{
+		open(argv[1], 0666);
+	}
+	return 0;
+}
+
+int _cat(int argc, char ** argv)
+{
+	if(argc > 1)	{
+		int fd = open(argv[1], O_RD);
+		char buffer[512];
+		int i = 0;
+		int readsomething = 0;
+		int len = 0;
+		while((len = read(fd, buffer, 512)) > 0) {
+			readsomething = 1;
+			i = 0;
+			for(; i < 512 && buffer[i]; ++i) {
+				printf("%c", buffer[i]);
+			}
+			for(i = 0; i < 512; ++i) {
+				buffer[i] = 0;
+			}
+		}
+		if(readsomething)
+		{
+			printf("\n");
+		}
+
+	}
+
+	return 0;
+}
+
+int _fwrite(int argc, char ** argv)
+{
+	if(argc > 2)	{
+		int fd = open(argv[1], 0666);
+		write(fd, argv[2], strlen(argv[2]) - 1);
+	} else {
+		printf("Params required: fwrite filename data (-o)\n");
+		printf("Want to write more data? Try fbulk\n");
+	}
+	return 0;
+}
+
+int _logout(int argc, char ** argv) {
+	clear_screen();
+	printf("Bye bye!\n");
+	logout();
+	return 0;
+}
+
+int _makeuser(int argc, char ** argv) {
+	if(argc > 2)
+	{
+		if(uexists(argv[1]) != -1)
+		{
+			printf("User %s already exists!\n", argv[1]);
+		} else {
+			if (makeuser(argv[1], argv[2]) != -1) {
+				printf("User %s successfully created!!!\n", argv[1]);
+			} else {
+				printf("User %s already exists!!\n", argv[1]);
+			}
+		}
+	}
+	return 0;
+}
+
+int _setgid(int argc, char ** argv) {
+	if(argc > 2)
+	{
+		if(uexists(argv[1]) != -1)
+		{
+			int uid = getuid(argv[1]);
+			int oldgid = getgid(uid);
+			if(oldgid == atoi(argv[2]))
+			{
+				printf("User already has that gid!\n");
+				return 0;
+			}
+			
+			if(setgid(argv[1], atoi(argv[2])) == -1)
+			{
+				printf("User %s doesn't exist or invalid perms.\n", argv[1]);
+			} else {
+				printf("User %s's gid changed from %d to %d\n", argv[1], oldgid, atoi(argv[2]));
+			}
+		} else {
+			printf("User %s doesn't exist!\n", argv[1]);
+		}
+	}
+	return 0;
+}
+
+int _udelete(int argc, char ** argv) {
+	if(argc > 1)
+	{
+		if(uexists(argv[1]) != -1)
+		{
+			if(udelete(argv[1]) == -1)
+			{
+				printf("User %s doesn't exist or invalid perms.\n", argv[1]);
+			} else {
+				printf("User %s deleted, poor boy!\n", argv[1]);
+			}
+		} else {
+			printf("User %s doesn't exist!\n", argv[1]);
+		}
+	}
+	return 0;
+}
+
+int _chown(int argc, char ** argv) {
+	if(argc > 2)
+	{
+		if (chown(argv[1], argv[2]) >=0) {
+			printf("Owner changed\n");
+		} else {
+			printf("Something just went WRONG, did you send me the username?\n");
+		}
+	} else {
+		printf("Format: chown filename username\n");
+	}
+	return 0;
+}
+
+int _chmod(int argc, char ** argv) {
+	if(argc > 2 && *argv[1] >= '0' && *argv[1] <= '9')
+	{
+		int val = 0;
+		int j = 1;
+		int i = strlen(argv[1]); 
+		while(i >= 0) {
+			if((argv[1][i] - '0') <= 9 && (argv[1][i] - '0') >= 0)
+			{
+				printf("%c\n", argv[1][i]);
+				val += j * (argv[1][i] - '0');
+				j *= 8;
+			}
+			i--;
+		}
+		
+		if (chmod(argv[2], val) == 1) {
+			printf("Permissions changed to %d\n", val);
+		}else {
+			printf("Error, invalid perms?\n");
+		}
+	} else {
+		printf("Format: chmod perms file\n");
+		printf("Example: chmod 777 myfile\n");
+	}
+	return 0;
+}
+
+int _getown(int argc, char ** argv) {
+	if(argc > 1)
+	{
+		int res = fgetown(argv[1]);
+		if(res >= 0) {
+			printf("User #%d is %s's owner\n", res, argv[1]);
+		} else {
+			printf("Invalid file? Try that again man.\n");
+		}
+	}
+	return 0;
+}
+
+int _getmod(int argc, char ** argv) {
+	if(argc > 1)
+	{
+		int res = fgetmod(argv[1]);
+		if(res >= 0) {
+			printf("%s's permissions are %d\n", argv[1], res);
+		} else {
+			printf("Invalid file? Try that again man.\n");
+		}
+	}
+	return 0;
+}

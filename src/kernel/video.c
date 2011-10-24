@@ -150,9 +150,11 @@ void putC(char c) {
 	if(!in_kernel()) {
 		write(STDOUT,&c,1);
 	} else if(current_video_mode->visible)	{
-		char a[] = { c, defaultStyle };
-		video_write(a,2);
-		incrementCursor();
+		if(c != 1) {
+			char a[] = { c, defaultStyle };
+			video_write(a,2);
+			incrementCursor();
+		}
 	}
 }
 

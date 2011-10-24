@@ -12,8 +12,40 @@
 #define TTY_RIGHT 				1
 
 
+
+typedef struct TTY_Context { 
+	// Keyboard Context
+	char	direction;
+	char	numLock;
+	char	capsLock;
+	char	lShift;
+	char	rShift;
+	char	lCtrl;
+	char	rCtrl;
+	char	lAlt;
+	char	rAlt;
+	char	del;
+	char	_escPressed;
+	int		lastlastkey;
+	int		lastkey;
+	int		charBufferSize;
+	int		charBufferRIndex;
+	int		charBufferWIndex;
+	char	charBuffer[BUFFER_SIZE];
+	int		owner_pid;
+	Queue	* read_pblocks;
+	Queue	* write_pblocks;
+	// Video Context
+	VIDEO_MODE_INFO *	video_context;
+	
+	unsigned int	pwd;
+	int	uid;
+} TTY_Context;
+
 // Creates TTY process
 int tty_init(int tty_num);
+
+TTY_Context * current_ttyc();
 
 // Moves TTY to a direction.
 void switch_tty(int direction); 

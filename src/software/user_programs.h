@@ -31,4 +31,17 @@ int getc_main (int argc, char ** argv);
 
 int _hang (int argc, char ** argv);
 
+int _ls (int argc, char ** argv);
+
+int _mkdir (int argc, char ** argv);
+
+int _touch (int argc, char ** argv);
+
+int _cat(int argc, char ** argv);
+
+int _fwrite(int argc, char ** argv);
+
+int _logout(int argc, char ** argv);
+
+
 #endif

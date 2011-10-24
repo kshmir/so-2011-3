@@ -16,8 +16,7 @@ void * malloc(size_t size)
 }
 
 // Roughly callocs some memory
-void * calloc(size_t size, size_t cols)
-{
+void * calloc(size_t size, size_t cols)	{
      char* ret = (char*)malloc(size * cols);
      int i = 0;
      for(; i < size; i++)

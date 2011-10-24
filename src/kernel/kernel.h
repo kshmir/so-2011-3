@@ -20,12 +20,16 @@
 
 #define FD_FILE      1000
 
-// Syscalls based on http://docs.cs.up.ac.za/programming/asm/derick_tut/syscalls.html
+//// List of syscalls
+// Start of system
+#define READY        1
+// File Handling
 #define READ         3
 #define WRITE        4
 #define OPEN         5
 #define CLOSE        6
 #define MKFIFO       7
+// Process handling & Scheduling
 #define PCREATE      8
 #define PRUN         9
 #define PDUP2        10
@@ -40,7 +44,30 @@
 #define KILL         19
 #define PSETP        20
 #define SETSCHED     21
+// FS
+#define PWD          22
+#define CD           23
+#define LS           24
+#define MOUNT        25
+#define MKDIR        26
+#define RM           27
+// Users and sessions
+#define GETUID       28
+#define GETGID       29
+#define MAKEUSER     30
+#define SETGID       31
+#define UDELETE      32
+#define UEXISTS      33
+#define ULOGIN       34
+#define CHOWN        35
+#define CHMOD        36
+#define ULOGOUT      37
+#define GETOWN       38
+#define GETMOD       39
 
+
+
+void setready();
 
 #define SYSR_ERR     -1
 #define SYSR_BLOCK   -2

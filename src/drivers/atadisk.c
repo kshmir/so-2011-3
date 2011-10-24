@@ -28,117 +28,106 @@
 
 
 // To read N bytes from hard disk, must alloc N+1 bytes for ans, as N+1 byte is used to null-character
-void _disk_read(int ata, char * ans, int count, unsigned short sector, int offset){
+void _disk_read(int ata, char * ans, int count, unsigned int sector, int offset){
+	
+	// We need this to make it work, I just don't know why
+	Sti();
+	
+	
+	while ((_inw(0x3F6) & (BIT7)));
+
+
+	int i = 0;
+	for(i = 0; i < 512; ++i)
+	{
+		ans[i] = 0;
+	}
 
 	// Just a sector...
 	if(count > 512 - offset)
 		return;
-	
-	char tmp[512];
-	int i = 0;
-	for(i = 0; i < 512; ++i)
-	{
-		tmp[i] = 0;
-	}
+		
 	
 	sendComm(ata, LBA_READ, sector);
 
-	_Halt(); // TODO: Make the 500ns wait
-
+	
+	while ((_inw(0x3F6) & (BIT7)));
+		
 	int b;
 	unsigned short data;
 	int errors = 0;
-	for(b=0;b<512 && errors < 10;b+=2){
+	for(b=0;b<512;b+=2){
 		data = getDataRegister(ata);
-		if(data == 65535) {
-			errors++;
-			b-=2;
-		}
-		translateBytes(tmp+b, data);
+		translateBytes(ans+b, data, sector);
 	}
 
 
-	for(i=0;i<count;i++) {
-		ans[i] = tmp[offset+i];
-	}
 }
 
 // Translate one word into two char
-void translateBytes(char * ans, unsigned short databyte){	
+void translateBytes(char * ans, unsigned short databyte, int sector){	
 	ans[0] = databyte & 0xFF;
 	ans[1] = databyte >> 8;
 }
 
 // Writes to the ata chosen the msg received the ammount of bytes requested starting from the secto chose + the offset
-void _disk_write(int ata, char * msg, int bytes, unsigned short sector, int offset){
+void _disk_write(int ata, char * msg, int bytes, unsigned int sector, int offset){
+	
+	// We need this to make it work, I just don't know why
+	Sti();
+	while ((_inw(0x3F6) & (BIT7)));
+	
 
 	ata=ATA0;
 	int i = 0;
 
-	char write_tmp[512];
-
-	for(i = 0; i < 512; ++i)
-	{
-		write_tmp[i] = 0;
-	}
-	i = 0;
-
-
-	// Prepare sectors with new data
-	for ( i = 0; i < bytes; i++ ) {
-		write_tmp[ offset + i ] = msg[i];
-	}
-
-
-
-	// Send write command
 	sendComm(ata, LBA_WRITE, sector);
 
-	_Halt(); // TODO: Make the 500ns wait
+	
+	while ((_inw(0x3F6) & (BIT7)));
+
 
 	// Now write all the sector
 	int b;
 	for (b=0; b<512; b+=2) {
-		writeDataToRegister(ata, write_tmp[b+1], write_tmp[b]);
+		writeDataToRegister(ata, msg[b+1], msg[b]);
 	}
+
+
 }
 
 void writeDataToRegister(int ata, char upper, char lower){
-	_Cli();
+	
 	unsigned short out;
 	
 	// Wait for driver's ready signal.
-	while (!(_inw(ata + WIN_REG7) & BIT3));
+
 	
 	out = (upper << 8) | lower;
 	_outw(ata + WIN_REG0, out);
 	
-	_Sti();
 }
 
 unsigned short getDataRegister(int ata){
-	_Cli();
+
 	unsigned short ans;
-	
-	// Wait for driver's ready signal.
-	while (!(_inw(ata + WIN_REG7) & BIT3));
 
 	ans = _inw(ata + WIN_REG0);
-	
-	_Sti();
+
 	return ans;
 }
 
 unsigned short getErrorRegister(int ata){
-	_Cli();
+
 	unsigned short rta = _in(ata + WIN_REG1) & 0x00000FFFF;
-	_Sti();
+
 	return rta;
 }
 
 // Send a command to the disk in order to read or write
-void sendComm(int ata, int rdwr, unsigned short sector){
-	_Cli();
+void sendComm(int ata, int rdwr, unsigned int sector){
+
+	while (!(_inw(0x3F6) & (BIT6)));
 	
 	_out(ata + WIN_REG1, 0);
 	_out(ata + WIN_REG2, 1);	// Set count register sector in 1
@@ -152,7 +141,7 @@ void sendComm(int ata, int rdwr, unsigned short sector){
 	_out(ata + WIN_REG7, rdwr);
 
 
-	_Sti();
+
 }
 
 unsigned short getStatusRegister(int ata){
@@ -164,10 +153,10 @@ unsigned short getStatusRegister(int ata){
 }
 
 void identifyDevice(int ata){
-	_Cli();
+
 	_out(ata + WIN_REG6, 0);
 	_out(ata + WIN_REG7, WIN_IDENTIFY);
-	_Sti();
+
 }
 
 // Check disk features

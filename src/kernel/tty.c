@@ -16,11 +16,13 @@ extern int current_tty;
 
 int process_input(const char * input, int tty_number) { 
 
-	int piped = 0;
+	int  piped = 0;
 	char file_call_buffer[1024];
 	char stdout_call_buffer[128];
 	char stdin_call_buffer[128];
 	
+	int stdout_file = 0;
+	int stdin_file = 0;
 	int read_ptr = 0;
 	int stdin = 0;
 	int stdout = 0;
@@ -48,11 +50,14 @@ int process_input(const char * input, int tty_number) {
 					current_buffer = stdout_call_buffer;
 					valid_input = 0;
 					write_i = 0;
+					stdout_file = 1;
+
 					continue;
 				} else if (input[i] == '<') { 
 					current_buffer = stdin_call_buffer;
 					valid_input = 0;
 					write_i = 0;
+					stdin_file = 1;
 					continue;
 				}
 			} else {
@@ -68,7 +73,7 @@ int process_input(const char * input, int tty_number) {
 		if(i == 0 && input[i] == '|') {
 			return 0;
 		}
-		piped = (input[i] == '|'); 
+		piped = (input[i] == '|') && !stdin_file && !stdout_file; 
 		i++;
 		
 		if(piped)
@@ -84,7 +89,29 @@ int process_input(const char * input, int tty_number) {
 		
 		if(pid != -1)
 		{
-			if(stdin){
+			if(stdout_file) {
+				int _stdout = open(stdout_call_buffer, O_RD | O_WR);
+				if(_stdout != -1)
+				{
+					pdup2(pid, _stdout, STDOUT);
+ 				} else {
+					printf("TTY: file %s could not be opened for output\n", stdout_call_buffer);
+				}
+			}
+			
+			if(stdin_file) {
+				int _stdin = open(stdin_call_buffer, O_RD | O_WR);
+				if(_stdin != -1)
+				{
+					pdup2(pid, _stdin, STDIN);				
+				} else {
+					printf("TTY: file %s could not be opened for input\n", stdin_call_buffer);
+				}
+
+			}
+			
+			// For pipe
+			if(stdin)	{
 				pdup2(pid, stdin, STDIN);
 			}
 			
@@ -104,37 +131,63 @@ int process_input(const char * input, int tty_number) {
 				waitpid(pid);
 			}
 		}
-		
-		
-//		printf("file %s stdout %s stdin %s\n",file_call_buffer, stdout_call_buffer,stdin_call_buffer);
 	} while(piped);
 	return 1;
 }
 
 int tty_main (int argc, char ** argv)
-{
-	if(tty_index >= TTY_MAX_NUMBER) {
-		return 0;
-	}
-	init_context(tty_index);
-	tty_index++;
-	
+{	
+	clear_screen();
 	char cadena[50];
 	
+	int status     = 0; // 0: logged out; 1: logged in
+	int val        = 0;
+	int tty_number = 0;
+	val = 0;
+	tty_number = atoi(argv[1]) + 1;
+	char * input;
+	char * username;
+	char * password;
+	printf("Monix v1 - TTY %d\n", tty_number);
+	printf("Marseillan, Pereyra, Videla\n");
+	printf("Sistemas Operativos - 2011 - ITBA\n");
+	printf("Dennis Ritchie RIP\n");
 	while(1) {
-		int val = 0;
-		int tty_number = atoi(argv[1]);
-		printf("user@tty%s:", argv[1]);
+		switch (status){
+			case 1:
+				printf("user@tty%d:", tty_number);
 
-		char * input = (char *) getConsoleString(val);
-		process_input(input, tty_number);
+				input = (char *) getConsoleString(1);
+				process_input(input, tty_number);
+				if(getuid(NULL) == -1)
+				{
+					status = 0;
+				}
+				break;
+			case 0:
+				username = NULL; // HUGE LEAK, but..... we dont have free :P
+				password = NULL;
+				printf("Login: ");
+				username = (char *) getConsoleString(1);
+				if(strlen(username) > 0)
+				{
+					printf("Password: ");
+					password = (char *) getConsoleString(0);
+					if (ulogin(username,password) != -1) {
+						printf("Successfully logged in as %s\n", username);
+						status = 1;
+					} else {
+						printf("Bad credentials, try again...\n");
+					}
+				}
+				break;
+		}
 	}
 	return 0;
 }
 
-
-
 static char * process_name = "tty";
+
 // Creates TTY process
 int tty_init(int tty_num) { 
 	char ** _params = (char **)malloc(sizeof(char *) * 2);
@@ -144,4 +197,6 @@ int tty_init(int tty_num) {
 	itoa(tty_num, _num);
 	fd_open_with_index(FD_TTY0 + tty_num, _FD_TTY, NULL, 0666);
 	create_process("tty", tty_main, 0, tty_num, 1, FD_TTY0 + tty_num, FD_TTY0 + tty_num, FD_TTY0 + tty_num, 1, _params, 0);
+	init_context(tty_index);
+	tty_index++;
 }

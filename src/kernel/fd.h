@@ -9,7 +9,7 @@
 
 int fd_open_with_index (int fd, int type, void * data, int perms);
 
-int fd_open (int type, void * data, int perms);
+int fd_open (int type, void * data, int params);
 
 int fd_type (int fd);
 

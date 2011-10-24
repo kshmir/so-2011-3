@@ -109,37 +109,9 @@ unsigned char keyboard[][2] = { { NPRTBL, NPRTBL },//000
 
 #define		TTY_KEYBOARD_BUFFER	256
 
-typedef struct TTY_Context { 
-	// Keyboard Context
-	char	direction;
-	char	numLock;
-	char	capsLock;
-	char	lShift;
-	char	rShift;
-	char	lCtrl;
-	char	rCtrl;
-	char	lAlt;
-	char	rAlt;
-	char	del;
-	char	_escPressed;
-	int		lastlastkey;
-	int		lastkey;
-	int		charBufferSize;
-	int		charBufferRIndex;
-	int		charBufferWIndex;
-	char	charBuffer[BUFFER_SIZE];
-	int		owner_pid;
-	Queue	* read_pblocks;
-	Queue	* write_pblocks;
-	// Video Context
-	VIDEO_MODE_INFO *	video_context;
-} TTY_Context;
-
 static TTY_Context	tty_contexts[TTY_MAX_NUMBER];
 int					current_tty = 0;
 int					kb_tty      = 0;
-
-
 
 void switch_tty(int number) {
 	TTY_Context * cont = &tty_contexts[number]; 	
@@ -158,6 +130,8 @@ void init_context(int id) {
 	cont->read_pblocks           = queue_init(PROCESS_MAX);
 	cont->write_pblocks          = queue_init(PROCESS_MAX);
 	current_tty                  = id;
+	cont->pwd                    = 1;
+	cont->uid                    = -1;
 
 
 	setVideoMode(tty_contexts[current_tty].video_context);
@@ -168,6 +142,12 @@ void init_context(int id) {
 static TTY_Context * cnt() { 
 	return &tty_contexts[current_tty];
 }
+
+
+TTY_Context * current_ttyc() {	
+	return cnt();
+}
+
 void set_owner_pid(pid) {
 	cnt()->owner_pid = pid;
 }
@@ -465,8 +445,12 @@ int tty_read(char * buf, int len) {
 
 char getC() {	
 	char ret[1];
-	read(STDIN, ret, 1);
-	return *ret;
+	if (read(STDIN, ret, 1)) {
+		return *ret;
+	}
+	else {
+		return EOF;
+	}
 }
 
 int capsOn() {

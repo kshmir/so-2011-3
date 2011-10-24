@@ -24,6 +24,7 @@ GLOBAL _yield
 ; Syscalls
 GLOBAL	read
 GLOBAL	write
+GLOBAL	open
 GLOBAL	mkfifo
 GLOBAL	close
 GLOBAL	pcreate
@@ -40,7 +41,28 @@ GLOBAL	pgetpid_at
 GLOBAL	kill
 GLOBAL	psetp
 GLOBAL	setsched
+GLOBAL	pwd
+GLOBAL	cd
+GLOBAL	ls
+GLOBAL	mount
+GLOBAL	mkdir
+GLOBAL	rm
+GLOBAL	getuid
+GLOBAL	getgid
+GLOBAL	makeuser
+GLOBAL	setgid
+GLOBAL	udelete
+GLOBAL	uexists
+GLOBAL	ulogin
+GLOBAL	chown
+GLOBAL	chmod
+GLOBAL	logout
+GLOBAL	fgetown
+GLOBAL	fgetmod
 
+
+
+EXTERN	disk
 EXTERN	signal_on_demand
 EXTERN  int_08
 EXTERN  int_09
@@ -51,6 +73,9 @@ EXTERN	scheduler_get_temp_esp
 EXTERN	scheduler_think
 EXTERN	scheduler_load_esp
 EXTERN	softyield
+EXTERN	Cli
+EXTERN	kernel_ready
+EXTERN	Sti
 
 
 
@@ -64,7 +89,7 @@ _Sti:
 		sti			; habilita interrupciones por flag
 		ret
 		
-; TODO: Improve this
+
 _Halt:			; Should lock everything?
 		hlt			; wait for HPET/PIT
 		ret
@@ -113,9 +138,9 @@ _yield:
 		int 08h
 		ret
 
-; Handler de INT 8 ( Timer tick)
+; Handler de INT 8 (Timer tick)
 _int_08_hand:
-		cli
+		call Cli
 		pushad
 			mov eax, esp
 			push eax
@@ -133,15 +158,129 @@ _int_08_hand:
 		popad
 		mov al,20h			; Envio de EOI generico al PIC
 		out 20h,al
-		sti
+		call Sti
 		iret
 
 __stack_chk_fail:
 		ret
 
 
+_disk:
+		call Cli
+		call disk
+		mov 	al,20h			; Envio de EOI generico al PIC
+		out 	20h,al
+		mov 	al,0a0h			; Envio de EOI generico al PIC
+		out 	0a0h,al
+		call Sti
+		iret
+		
+		
+_setCursor:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		bx, [ebp+8]  	; lo que se envia
+		mov		al,0x0e
+		mov		dx,0x03d4
+		out		dx, al
+		mov		al,bh
+		mov		dx,0x03d5
+		out		dx, al
+		mov		al,0x0f
+		mov		dx,0x03d4
+		out		dx, al
+		mov		al,bl
+		mov		dx,0x03d5
+		out		dx, al
+		pop		ebp
+		ret
+
+_restart:
+		mov		al,0xfe
+		out		0x64,al
+		ret
+
+_in:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		edx, [ebp+8]    ; Puerto
+		mov		eax, 0          ; Limpio eax
+		in		al, dx
+		pop		ebp
+		ret
+
+_out:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		edx, [ebp+8]   	; Puerto
+		mov		eax, [ebp+12]  	; Lo que se va a mandar
+		out		dx, al
+		pop		ebp
+		ret
+
+_inw:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		edx, [ebp+8]    ; Puerto
+		mov		eax, 0          ; Limpio eax
+		in		ax, dx
+		pop		ebp
+		ret
+
+_outw:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		edx, [ebp+8]   	; Puerto
+		mov		eax, [ebp+12]  	; Lo que se va a mandar
+		out		dx, ax
+		pop		ebp
+		ret
+
+
+_rdtsc:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		rdtsc
+		mov		esp,ebp
+		pop		ebp
+		ret
+
+; Debug para el BOCHS, detiene la ejecución Para continuar colocar en el BOCHSDBG: set $eax=0
+
+
+
+_debug:
+		push	bp
+		mov		bp, sp
+		push	ax
+vuelve:	
+		mov		ax, 1
+		cmp		ax, 0
+		jne		vuelve
+		pop		ax
+		pop		bp
+		retn
+		
+		
+
+_fast_exit:
+		mov 	al,20h			; Envio de EOI generico al PIC
+		out 	20h,al
+		call Sti
+		
+		iret
+
 _int_09_hand:
-		cli
+		call kernel_ready
+		cmp eax, 0
+		jne _09hand
+		call Cli
+		mov al,20h			; Envio de EOI generico al PIC
+		out 20h,al
+		call Sti
+		iret
+	_09hand:
+		call Cli
 		pushad
 			mov eax, esp
 			push eax
@@ -159,7 +298,7 @@ _int_09_hand:
 		popad
 		mov 	al,20h			; Envio de EOI generico al PIC
 		out 	20h,al
-		sti	
+		call Sti
 		
 		int		079h
 		
@@ -172,7 +311,7 @@ _int_09_hand:
 ; edx -> cantidad de caracteres a escribir
 
 _int_80_hand:
-		cli
+		call Cli
 		push	ds
 		push	es
 		pushad										; We push everything
@@ -182,23 +321,16 @@ _int_80_hand:
 		mov 	[kernel_buffer + 4],  ebx
 		mov 	[kernel_buffer],      eax
 		
-		mov eax, esp								; Save ESP, get Kernel's one.
-		push eax
-			call scheduler_save_esp
-		pop eax
-		
-		call scheduler_get_temp_esp
-		mov esp, eax
+
 		
 		call int_80									; Make the syscall
 		
-		call scheduler_load_esp
-		mov esp,eax
+
 		
 		popad
 		pop		es
 		pop		ds
-		sti
+		call Sti
 		
 		int		079h ; Signals
 		
@@ -214,30 +346,8 @@ _int_79_hand:
 		popad
 		pop		es
 		pop		ds
+		
 		iret
-
-write:
-		push 	ebp
-		mov 	ebp, esp
-		pusha
-		mov		eax, 4				; eax en 4 para write
-		mov 	ebx, [ebp+8]		; file descriptor
-		mov 	ecx, [ebp+12]		; buffer a escribiar
-		mov 	edx, [ebp+16]		; cantidad
-		int 	80h
-		popa
-		mov 	esp,ebp
-		pop 	ebp
-		
-		mov		eax, [kernel_buffer + 60]
-
-		cmp		eax, -2
-		jne		_write_jmp_0
-		call	softyield
-		jmp		write
-	_write_jmp_0:
-		
-		ret
 
 read:
 		push 	ebp
@@ -259,6 +369,43 @@ read:
 		jmp		read
 	_read_jmp_0:
 	
+		ret
+		
+write:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov		eax, 4				; eax en 4 para write
+		mov 	ebx, [ebp+8]		; file descriptor
+		mov 	ecx, [ebp+12]		; buffer a escribiar
+		mov 	edx, [ebp+16]		; cantidad
+		int 	80h
+		popa
+		mov 	esp,ebp
+		pop 	ebp
+
+		mov		eax, [kernel_buffer + 60]
+
+		cmp		eax, -2
+		jne		_write_jmp_0
+		call	softyield
+		jmp		write
+	_write_jmp_0:
+
+		ret
+
+open:
+		push 	ebp
+		mov 	ebp, esp
+		pusha
+		mov 	eax, 5				; eax en 5 para open
+		mov 	ebx, [ebp+8]		; file names
+		mov 	ecx, [ebp+12]		; permissions
+		int 	80h
+		popa
+		mov 	esp, ebp
+		pop 	ebp
+		mov		eax, [kernel_buffer + 60]
 		ret
 		
 close:
@@ -493,91 +640,253 @@ setsched:
 		pop		ebp
 		mov		eax, [kernel_buffer + 60]
 		ret
-
-_setCursor:
+		
+pwd:
 		push	ebp
-		mov		ebp, esp		; Stack frame
-		mov		bx, [ebp+8]  	; lo que se envia
-		mov		al,0x0e
-		mov		dx,0x03d4
-		out		dx, al
-		mov		al,bh
-		mov		dx,0x03d5
-		out		dx, al
-		mov		al,0x0f
-		mov		dx,0x03d4
-		out		dx, al
-		mov		al,bl
-		mov		dx,0x03d5
-		out		dx, al
+		mov		ebp, esp
+		pusha
+		mov		eax, 22				; eax en 22 para pwd
+		int		80h
+		popa
+		mov		esp, ebp
 		pop		ebp
+		mov		eax, [kernel_buffer + 60]
 		ret
-
-_restart:
-		mov		al,0xfe
-		out		0x64,al
-		ret
-
-_in:
+		
+cd:
 		push	ebp
-		mov		ebp, esp		; Stack frame
-		mov		edx, [ebp+8]    ; Puerto
-		mov		eax, 0          ; Limpio eax
-		in		al, dx
+		mov		ebp, esp
+		pusha
+		mov		eax, 23				; eax en 23 para cd
+		mov 	ebx, [ebp+8]		; name of file to move
+		int		80h
+		popa
+		mov		esp, ebp
 		pop		ebp
+		mov		eax, [kernel_buffer + 60]
 		ret
 
-_out:
+ls:
 		push	ebp
-		mov		ebp, esp		; Stack frame
-		mov		edx, [ebp+8]   	; Puerto
-		mov		eax, [ebp+12]  	; Lo que se va a mandar
-		out		dx, al
+		mov		ebp, esp
+		pusha
+		mov		eax, 24				; eax en 24 para ls
+		mov 	ebx, [ebp+8]		; file descriptor
+		mov 	ecx, [ebp+12]		; file descriptor
+		mov 	edx, [ebp+16]		; file descriptor
+		int		80h
+		popa
+		mov		esp, ebp
 		pop		ebp
+		mov		eax, [kernel_buffer + 60]
 		ret
 
-_inw:
+mount:
 		push	ebp
-		mov		ebp, esp		; Stack frame
-		mov		edx, [ebp+8]    ; Puerto
-		mov		eax, 0          ; Limpio eax
-		in		ax, dx
+		mov		ebp, esp
+		pusha
+		mov		eax, 25				; eax en 25 para mount
+		int		80h
+		popa
+		mov		esp, ebp
 		pop		ebp
+		mov		eax, [kernel_buffer + 60]
 		ret
-
-_outw:
+		
+mkdir:
 		push	ebp
-		mov		ebp, esp		; Stack frame
-		mov		edx, [ebp+8]   	; Puerto
-		mov		eax, [ebp+12]  	; Lo que se va a mandar
-		out		dx, ax
+		mov		ebp, esp
+		pusha
+		mov		eax, 26				; eax en 25 para pwd
+		mov 	ebx, [ebp+8]		; file file name
+		int		80h
+		popa
+		mov		esp, ebp
 		pop		ebp
+		mov		eax, [kernel_buffer + 60]
 		ret
-
-
-_rdtsc:
+		
+rm:
 		push	ebp
-		mov		ebp, esp		; Stack frame
-		rdtsc
-		mov		esp,ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 27				; eax en 27 para rm
+		mov 	ebx, [ebp+8]		; file name
+		int		80h
+		popa
+		mov		esp, ebp
 		pop		ebp
+		mov		eax, [kernel_buffer + 60]
 		ret
-
-; Debug para el BOCHS, detiene la ejecución Para continuar colocar en el BOCHSDBG: set $eax=0
-
-
-
-_debug:
-		push	bp
-		mov		bp, sp
-		push	ax
-vuelve:	
-		mov		ax, 1
-		cmp		ax, 0
-		jne		vuelve
-		pop		ax
-		pop		bp
-		retn
-
-
-
+		
+getuid:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 28				; eax en 28 para ls
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+getgid:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 29				; eax en 29 para getgid
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+makeuser:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 30				; eax en 30 para makeuser
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+setgid:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 31				; eax en 31 para setgid
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+udelete:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 32				; eax en 32 para udelete
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+uexists:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 33				; eax en 33 para uexists
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+ulogin:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 34				; eax en 34 para ulogin
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+chown:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 35				; eax en 35 para chown
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+chmod:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 36				; eax en 36 para chmod
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+logout:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 37				; eax en 37 para logout
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+fgetown:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 38				; eax en 38 para chmod
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+fgetmod:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 39				; eax en 39 para chmod
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret

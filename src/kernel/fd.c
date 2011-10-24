@@ -1,17 +1,19 @@
 #include "fd.h"
 #include "video.h"
 #include "kernel.h"
+#include "tty.h"
 
 #define FILE_MAX 4096
 
 typedef struct file {
 	int	   type;
 	void * data;
+	unsigned long    offset;
+	int    gid;
 	int	   uid;
-	int	   perms;
+	int	   params;
 	int	   used;	
 } file;
-
 
 static unsigned int FIFO_allocator		 = 100;
 static unsigned int FIFO_allocator_index = 100;
@@ -32,7 +34,7 @@ static void files_alloc() {
 		files[i].type  = 0;
 		files[i].data  = (void *)0;
 		files[i].uid   = 0;
-		files[i].perms = 0600;
+		files[i].params = 0600;
 		files[i].used  = 0;
 	}
 	files_allocd = 1;
@@ -49,7 +51,7 @@ int fd_find(int type, int key) {
 	return -1;
 }
 
-int fd_open (int type, void * data, int perms) {
+int fd_open (int type, void * data, int params) {
 	int fd = 0;
 
 	if(type == _FD_FIFO) {
@@ -79,33 +81,37 @@ int fd_open (int type, void * data, int perms) {
 		return -1;
 	}
 
-	return fd_open_with_index(fd, type, data, perms);
+	return fd_open_with_index(fd, type, data, params);
 }
 
-int fd_open_with_index (int fd, int type, void * data, int perms) {
+int fd_open_with_index (int fd, int type, void * data, int params) {
 	if(files_allocd == 0) {
 		files_alloc();
 	}
 	if(!files[fd].used)		{
 		files[fd].type = type;
 		files[fd].data = data;
-		files[fd].perms = perms;
+		files[fd].params = params;
 		switch(files[fd].type) {
 			case _FD_TTY:
-//				init_context(fd - FD_TTY0);
+			//
 			break;
 			case _FD_FIFO:
-			files[fd].data = (void *)fifo_make(data, perms); // Fifos are stored with their own id...
+				files[fd].data = (void *)fifo_make(data, params);                    // Fifos are stored with their own id...
 			break;
 			case _FD_FILE:
-				// hdd_read
+				files[fd].data = (void *)fs_open_reg_file(data, current_ttyc()->pwd, params);             // Inodes are stoded with their inode number.
 			break;
 			default:
 			return -1;
 		}
 	}
-	files[fd].used++;
 
+
+	if(!files[fd].data && type == _FD_FILE)	{
+		return -1;
+	}
+	files[fd].used++;
 	return fd;
 }
 
@@ -122,7 +128,7 @@ int fd_read (int fd, char * buffer, int block_size) {
 			return fifo_read((int)files[fd].data, buffer, block_size);
 		break;
 		case _FD_FILE:
-			// hdd_read
+			return fs_read_file((int)files[fd].data, buffer, block_size, &files[fd].offset);
 		break;
 		default:
 		return -1;
@@ -142,7 +148,7 @@ int fd_write(int fd, char * buffer, int block_size) {
 			return fifo_write((int)files[fd].data, buffer, block_size);
 		break;
 		case _FD_FILE:
-			// hdd_write
+			return fs_write_file((int)files[fd].data, buffer, block_size);
 		break;
 		default:
 		return -1;

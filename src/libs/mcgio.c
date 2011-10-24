@@ -39,7 +39,7 @@ void mcg_putchar(char c) {
 }
 
 // Console scanf
-char* getConsoleString(int sendAutocomplete) {
+char* getConsoleString(int showdata) {
 	char c;
 	char* str = NULL;
 	str = (char*) malloc(sizeof(char) * 255 + 1); // TODO: This should increment on hit
@@ -47,7 +47,7 @@ char* getConsoleString(int sendAutocomplete) {
 	int i      = 0;
 	int sx     = getCursorX();
 	int sy     = getCursorY();
-//	printf("asking it...\n");
+
 	while ((c = getC()) != '\n') {
 		int dirKey = 0;//getA();
 
@@ -59,8 +59,7 @@ char* getConsoleString(int sendAutocomplete) {
 
 		if (dirKey == 0) {
 			if (c != 0x0f && c != 0) {
-//				printf("got it...\n");
-				if (c != '\r' || getCursorY() > sy || getCursorX() > sx)
+				if ((c != '\r' || getCursorY() > sy || getCursorX() > sx) && showdata)
 					mcg_putchar(c);
 				if (c != '\r') {
 					str[i] = c;
@@ -69,19 +68,6 @@ char* getConsoleString(int sendAutocomplete) {
 					if (i > 0) {
 						str[i] = 0;
 						i--;
-					}
-				}
-			} else if (c != 0) {
-				if (onTabCall != NULL && sendAutocomplete) {
-					str[i] = 0;
-					char* moves = onTabCall(str);
-					if (moves != NULL) {
-						while (*moves != 0) {
-							str[i] = *moves;
-							mcg_putchar(*moves);
-							i++;
-							*moves++;
-						}
 					}
 				}
 			}

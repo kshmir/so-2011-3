@@ -29,6 +29,17 @@ static PQueue 				* priority_queue;
 #define	MODE_ROUNDR		0
 #define	MODE_PRIORITY	1
 
+static int interrupts = 0;
+
+int Sti() {
+		_Sti();
+}
+
+int Cli() {
+		_Cli();
+}
+
+
 int sched_mode = MODE_ROUNDR;
 
 void sched_set_mode(int m) {
@@ -301,12 +312,15 @@ int sched_pcreate(char * name, int argc, void * params) {
 
 // Function names
 char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", 
-	"kill", "getc", "putc", "top", "hang", "setp", "setsched", "dcheck", "dread", "dwrite", "dfill", NULL };
+	"kill", "getc", "putc", "top", "hang", "setp", "setsched", "dcheck", 
+	"dread", "dwrite", "dfill", "ls", "cd", "pwd", "mkdir", "rm", "touch", "cat", "fwrite",
+	"logout", "makeuser", "setgid", "udelete", "chown", "chmod", "getown", "getmod", NULL };
 
 // Functions
 int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, 
 	reader_main, writer_main, _kill, getc_main, putc_main, top_main, _hang, 
-	_setp, _setsched, _dcheck, _dread, _dwrite, _dfill, NULL };
+	_setp, _setsched, _dcheck, _dread, _dwrite, _dfill, _ls, _cd, _pwd, _mkdir, _rm, _touch,
+	_cat, _fwrite, _logout, _makeuser, _setgid, _udelete, _chown, _chmod, _getown, _getmod, NULL };
 
 main_pointer sched_ptr_from_string(char * string) {
 	int index;
@@ -422,9 +436,10 @@ void release_atomic() {
 
 void scheduler_think (void) {
 
-	if(atomic) {
+	if(atomic || in_kernel()) {
 		return;
 	}
+
 
 	if(yielded == 0) {
 		while(!queue_isempty(yield_queue)) {
@@ -464,15 +479,19 @@ void scheduler_think (void) {
 	if (soft_yielded) {
 		soft_yielded = 0;
 	} else {
-		think_storage[think_storage_index++] = current_process->pid;
-		if (think_storage_index == PROCESS_HISTORY_SIZE) {
-			think_storage_index = 0;
+		if(current_process != idle)
+		{
+			think_storage[think_storage_index++] = current_process->pid;
+			if (think_storage_index == PROCESS_HISTORY_SIZE) {
+				think_storage_index = 0;
+			}
 		}
 	}
 
 	switch_tty(current_process->tty);
 	if (current_process != idle) {
 		current_process->state = PROCESS_RUNNING;
+
 	}
 }
 
