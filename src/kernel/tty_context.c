@@ -140,7 +140,7 @@ int					current_tty = 0;
 int					kb_tty      = 0;
 
 
-
+/** Changes from one tty to an other*/
 void switch_tty(int number) {
 	TTY_Context * cont = &tty_contexts[number]; 	
 	setVideoMode(tty_contexts[number].video_context);
@@ -148,6 +148,7 @@ void switch_tty(int number) {
 }
 
 int aux = 0;
+/** Initializes a tty context*/
 void init_context(int id) {
 	aux = current_tty;
 	TTY_Context * cont = &tty_contexts[id]; 
@@ -228,7 +229,7 @@ void startKeyboard(int id)
 // Buffer for arrows
 void pushArr(char c) {
 }
-
+/** Pushes a character to the current tty conext*/
 void pushC(char c) {
 
 	int aux = current_tty;

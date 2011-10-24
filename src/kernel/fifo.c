@@ -25,6 +25,7 @@ typedef struct fifo {
 
 static list fifos = NULL;
 
+/* Searchs for the fifo containing the inode.*/
 static fifo * fifo_find(int inode) {
 	foreach(fifo *, f, fifos) { 
 		if(inode == f->inode)	{
@@ -34,7 +35,7 @@ static fifo * fifo_find(int inode) {
 	return NULL;
 }
 
-
+/* #TODO*/
 int fifo_exists(char * file_name) {
 	int n = 31; 
 	
@@ -103,7 +104,7 @@ int	fifo_open(char * file_name) {
 	}
 	
 }
-
+/* Writes a message to the fifo's file descriptor. #TODO: complete*/
 int fifo_write(int fd, char * msg, int len){ 
 	fifo * f = (fifo *) fd;
 

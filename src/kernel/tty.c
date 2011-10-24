@@ -13,7 +13,8 @@
 static int tty_index = 0;
 
 extern int current_tty;
-
+/** Reads the command received and excecutes the corrisponding process sending  it it's arguments and 
+also responds to special characters.*/
 int process_input(const char * input, int tty_number) { 
 
 	int piped = 0;
@@ -110,7 +111,7 @@ int process_input(const char * input, int tty_number) {
 	} while(piped);
 	return 1;
 }
-
+/** Starts a tty*/
 int tty_main (int argc, char ** argv)
 {
 	if(tty_index >= TTY_MAX_NUMBER) {

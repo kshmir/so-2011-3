@@ -91,13 +91,13 @@ void int_80() {
 	
 	int i, j;
 
-	if (systemCall == WRITE) {
+	if (systemCall == WRITE) { 
 		Process * current = getp();
 		kernel_buffer[KERNEL_RETURN] = fd_write(current->file_descriptors[fd],(char *)buffer,count);
 	} else if (systemCall == READ) {
 		Process * current = getp();
 		kernel_buffer[KERNEL_RETURN] = fd_read(current->file_descriptors[fd],(char *)buffer,count);
-	} else if (systemCall == MKFIFO) {		
+	} else if (systemCall == MKFIFO) { // Returns a new FIFO if there is a file descriptor available		
 		int _fd = process_getfreefd();
 		if(_fd != -1)	{
 			int fd = fd_open(_FD_FIFO, (void *)kernel_buffer[1],kernel_buffer[2]);
@@ -107,26 +107,26 @@ void int_80() {
 		else {
 			kernel_buffer[KERNEL_RETURN] = -1;
 		}
-	} else if (systemCall == CLOSE) {
+	} else if (systemCall == CLOSE) { // Closes file descriptor received.
 		kernel_buffer[KERNEL_RETURN] = fd_close(getp()->file_descriptors[fd]);
 	}
-	else if (systemCall == PCREATE) {
+	else if (systemCall == PCREATE) { // Creates a process and inserts it into the schedduler.
 		kernel_buffer[KERNEL_RETURN] = sched_pcreate(kernel_buffer[1],kernel_buffer[2],kernel_buffer[3]);
 	}
-	else if (systemCall == PRUN) {
+	else if (systemCall == PRUN) { // Takes the process pid from the pool and inserts it into the queue.
 		kernel_buffer[KERNEL_RETURN] = sched_prun(kernel_buffer[1]);
 	}
-	else if (systemCall == PDUP2) {
+	else if (systemCall == PDUP2) { // Makes the second file descriptor received point the first one.
 		kernel_buffer[KERNEL_RETURN] = sched_pdup2(kernel_buffer[1],kernel_buffer[2],kernel_buffer[3]);
 	}
-	else if (systemCall == GETPID) {
+	else if (systemCall == GETPID) { // Return the current process id
 		kernel_buffer[KERNEL_RETURN] = sched_getpid();
 	}
-	else if (systemCall == WAITPID) {
+	else if (systemCall == WAITPID) { /** Inserts the process in the waitting queue of the current process (or himself if it's the tty the current process)*/
 		kernel_buffer[KERNEL_RETURN] = sched_waitpid(kernel_buffer[1]);
 	} else if (systemCall == PTICKS) {
 		kernel_buffer[KERNEL_RETURN] = (int) storage_index();
-	} else if (systemCall == PNAME) {
+	} else if (systemCall == PNAME) { // Returns the name of process pid
 		Process * p = process_getbypid(kernel_buffer[1]);
 		if(p == NULL)
 		{
@@ -134,7 +134,7 @@ void int_80() {
 		} else {
 			kernel_buffer[KERNEL_RETURN] = (int) p->name;
 		}
-	} else if (systemCall == PSTATUS) {
+	} else if (systemCall == PSTATUS) { // Returns the status of process pid
 		Process * p = process_getbypid(kernel_buffer[1]);
 		if(p == NULL)
 		{
@@ -142,7 +142,7 @@ void int_80() {
 		} else {
 			kernel_buffer[KERNEL_RETURN] = (int) p->state;
 		}
-	}	else if (systemCall == PPRIORITY) {
+	}	else if (systemCall == PPRIORITY) { // Returns the priority of proces pid.
 		Process * p = process_getbypid(kernel_buffer[1]);
 		if(p == NULL)
 		{
@@ -150,7 +150,7 @@ void int_80() {
 		} else {
 			kernel_buffer[KERNEL_RETURN] = (int) p->priority;
 		}
-	}	else if (systemCall == PGID) {
+	}	else if (systemCall == PGID) { // Returns the group of proces pid.
 		Process * p = process_getbypid(kernel_buffer[1]);
 		if(p == NULL)
 		{
@@ -158,7 +158,7 @@ void int_80() {
 		} else {
 			kernel_buffer[KERNEL_RETURN] = (int) p->gid;
 		}
-	}	else if (systemCall == PGETPID_AT) {
+	}	else if (systemCall == PGETPID_AT) { // Returns the pid of the process at certain index.
 		Process * p = process_getbypindex(kernel_buffer[1]);
 		if (p->state != -1) {
 			kernel_buffer[KERNEL_RETURN] = (int) p->pid;
@@ -178,7 +178,7 @@ void int_80() {
 			}
 			kernel_buffer[KERNEL_RETURN] = (int) p->gid;
 		}
-	}	else if (systemCall == SETSCHED) {
+	}	else if (systemCall == SETSCHED) { // Changes the scheduler mode (priority or round robin)
 		sched_set_mode(kernel_buffer[1]);
 	}
 	

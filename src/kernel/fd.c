@@ -24,7 +24,7 @@ static unsigned int fd_allocator_end	 = FILE_MAX;
 
 static int files_allocd = 0;
 static file files[FILE_MAX];
-
+/* Initializes all file descriptors*/
 static void files_alloc() {
 	int i = 0;
 	for(; i < FILE_MAX; ++i)
@@ -37,7 +37,7 @@ static void files_alloc() {
 	}
 	files_allocd = 1;
 }
-
+/* Used to find a FIFO fd having a key.*/
 int fd_find(int type, int key) { 
 	int i = 0;
 	for(; i < FILE_MAX; ++i)
@@ -48,7 +48,7 @@ int fd_find(int type, int key) {
 	}
 	return -1;
 }
-
+/* Opens a file descriptor whcich could be a FIFO or just a file. On error returns -1*/
 int fd_open (int type, void * data, int perms) {
 	int fd = 0;
 
@@ -81,7 +81,7 @@ int fd_open (int type, void * data, int perms) {
 
 	return fd_open_with_index(fd, type, data, perms);
 }
-
+/* Opens a file descriptor and sets it's type, data and permissions*/
 int fd_open_with_index (int fd, int type, void * data, int perms) {
 	if(files_allocd == 0) {
 		files_alloc();
@@ -108,11 +108,11 @@ int fd_open_with_index (int fd, int type, void * data, int perms) {
 
 	return fd;
 }
-
+/* Return the type of a fd (FILE, FIFO or TTY)*/
 int fd_type (int fd) {
 	return files[fd].type;
 }
-
+/* Reads the content of the file descriptor and stores it in the buffer.*/
 int fd_read (int fd, char * buffer, int block_size) {
 	switch(files[fd].type) {
 		case _FD_TTY:
@@ -128,7 +128,7 @@ int fd_read (int fd, char * buffer, int block_size) {
 		return -1;
 	}
 }
-
+/* Writes the content of the buffer in the file descriptor.*/
 int fd_write(int fd, char * buffer, int block_size) {
 	switch(files[fd].type) {
 		case _FD_TTY:
@@ -149,7 +149,7 @@ int fd_write(int fd, char * buffer, int block_size) {
 	}
 	return 1;
 }
-
+/* Closes the file descriptor and writes EOF to it.*/
 int fd_close(int fd) {
 	
 	if (fd != -1 && files[fd].used) {

@@ -31,6 +31,7 @@ static PQueue 				* priority_queue;
 
 int sched_mode = MODE_ROUNDR;
 
+/** Swithches the scheduler mode to round robin or priority*/
 void sched_set_mode(int m) {
 	if (m == 0 || m == 1) {
 		sched_mode = m;
@@ -50,7 +51,7 @@ void sched_set_mode(int m) {
 		
 	}
 }
-
+/** Returns true if there are not processes in the queue*/
 int sched_isempty() {
 	switch(sched_mode) {
 		case MODE_PRIORITY:
@@ -62,7 +63,7 @@ int sched_isempty() {
 			break;
 	}
 }
-
+/** Adds a process to the ready queue*/
 void sched_enqueue(Process * p) {
 	switch(sched_mode) {
 		case MODE_PRIORITY:
@@ -75,7 +76,7 @@ void sched_enqueue(Process * p) {
 			break;
 	}
 }
-
+/** Removes a process from the reasy queue*/
 void * sched_dequeue() {
 	switch(sched_mode) {
 		case MODE_PRIORITY:
@@ -88,14 +89,14 @@ void * sched_dequeue() {
 			break;
 	}
 }
-
+/** Tells the scheduler to add the process to the ready queue*/
 void process_setready(Process * p) { 
 	
 	sched_enqueue(p);
 }
 
 int out = 0;
-
+/** Initializes the process pool, ready queue, yield queue and priority queue*/
 void scheduler_init() {
 	int i = 0;
 	char *pool = (char*)	process_pool;
@@ -123,11 +124,11 @@ unsigned int process_getnextpid() {
 	return _pid_seed++;
 }
 
-
+/** Returns the process at the position index of the process pool*/
 Process * process_getbypindex(int index) {
 	return &process_pool[index];
 }
-
+/** Returns a process by knowing it's process id*/
 Process * process_getbypid(int pid) {
 	int i = 0;
 	for(; i < PROCESS_MAX; ++i)	{
@@ -138,7 +139,7 @@ Process * process_getbypid(int pid) {
 	return NULL;
 }
 
-
+/** Returns a zombie process or a wrong process from the process pool.*/
 Process * process_getfree() {
 	if(_processes_available == 0) {
 		return NULL; // Big problem.
@@ -159,7 +160,7 @@ Process * process_getfree() {
 
 	return NULL;
 }
-
+/** Returns a file descriptor which is not used by the current process*/
 int process_getfreefd() {
 	if(current_process->open_fds == PROCESS_FD_SIZE) {
 		return -1; // Big problem.
@@ -176,17 +177,18 @@ int process_getfreefd() {
 
 	return -1;
 }
-
+/** Returns the terminal of the current process*/
 int current_p_tty() {
 	return current_process->tty;
 }
-
+/** Returns current process.*/
 Process * getp() {
 	return current_process;
 }
 
 int ran = 0;
-
+/** Removes all the process in the wait queue of pid, closes the file descriptors 
+of the pid and turns it to zombie*/
 void process_cleanpid(int pid) {
 
 	Process * _curr = process_getbypid(pid);
@@ -206,7 +208,7 @@ void process_cleanpid(int pid) {
 	_processes_available++;
 	softyield();
 }
-
+/** Cleans current process (same as above)*/
 void process_cleaner() {
 
 	while(!queue_isempty(current_process->wait_queue)) {
@@ -232,7 +234,7 @@ int soft_yielded = 0;
 
 /*
 	Switches cards, allows the process to wait for something to come soon. It does NOT save CPU.
-	THe process must be saved somewhere else!!!
+	The process must be saved somewhere else!!!
 */
 void softyield() {
 	soft_yielded = 1;
@@ -248,20 +250,21 @@ void yield() {
 	yielded++;
 	_yield();
 }
-
+/** Copies the fd1 to the f2*/
 int sched_pdup2(int pid, int fd1, int fd2) {
 	Process * p = process_getbypid(pid);
 	fd_close(p->file_descriptors[fd2]);
 	p->file_descriptors[fd2] = current_process->file_descriptors[fd1];
 	return 0;
 }
-
+/** Takes the process pid from the pool and inserts it into the queue*/
 int sched_prun(int pid) {
 	Process * p = process_getbypid(pid);
 	sched_enqueue( p);
 	return pid;
 }
-
+/** Inserts the process in the waitting queue of the current 
+process (or himself if it's the tty the current process)*/
 int sched_waitpid(int pid) {
 	Process * p = process_getbypid(pid);
 	if(p != NULL)
@@ -276,7 +279,7 @@ int sched_waitpid(int pid) {
 		return -1;
 	}
 }
-
+/** Initializes a process*/
 int sched_pcreate(char * name, int argc, void * params) {
 
 	void * ptr = sched_ptr_from_string(name);
@@ -324,7 +327,7 @@ main_pointer sched_ptr_from_string(char * string) {
 int sched_getpid() {
 	return current_process->pid;
 }
-
+/** Builds the stack frame of a process*/
 int	stackf_build(void * stack, main_pointer _main, int argc, void * argv) {
 
 	void * bottom 	= (void *)((int)stack + PROCESS_STACK_SIZE -1);
@@ -343,7 +346,7 @@ int	stackf_build(void * stack, main_pointer _main, int argc, void * argv) {
 
 	return	(int)f;
 }
-
+/** Creates a process setting it's attributes and enqueues it in the ready list*/
 Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
 int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queue_block) {
 	Process * p            = process_getfree();
@@ -381,7 +384,7 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 	return p;
 }
 
-
+/** Saves process stack pointes*/
 void scheduler_save_esp (int esp)
 {
 
@@ -419,7 +422,7 @@ void release_atomic() {
 	atomic--;
 }
 
-
+/** Here the scheduler decides which will be the next process to excecute*/
 void scheduler_think (void) {
 
 	if(atomic) {
