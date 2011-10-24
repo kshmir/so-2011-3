@@ -28,8 +28,7 @@ void newLine() {
 	release_atomic();
 }
 
-/**	Copia todo lo que hay en el BUFFER DE PANTALLA (no en la placa de
- * video) y lo vuelve a imprimir*/
+/**	Copies everything from the screen buffer (Not the Video buffer) and re draw it*/
 void reDrawLines() {
 	int i, j;
 	setCursor(FALSE);

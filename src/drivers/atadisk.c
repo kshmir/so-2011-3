@@ -159,7 +159,7 @@ void identifyDevice(int ata){
 
 }
 
-// Check disk features
+// Check disk features 
 void check_drive(int ata){
 	printf("-----------------------\n");
 	printf("Identifying device ");

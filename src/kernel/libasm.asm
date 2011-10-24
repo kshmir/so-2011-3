@@ -425,7 +425,7 @@ mkfifo:
 		push 	ebp
 		mov 	ebp, esp
 		pusha
-		mov 	eax, 7				; eax en 8 para pcreate
+		mov 	eax, 7				; eax en 7 para mkfifo
 		mov 	ebx, [ebp+8]		; fifo name
 		mov 	ecx, [ebp+12]		; perms
 		int 	80h
@@ -477,7 +477,7 @@ pdup2:
 		pop 	ebp
 		mov		eax, [kernel_buffer + 60]
 		ret
-		
+; ESTO ESTA MAL!!! :TODO: CORREGIR!!		
 openfifo:
 		push 	ebp
 		mov 	ebp, esp
@@ -504,7 +504,7 @@ getpid:
 		pop 	ebp
 		mov		eax, [kernel_buffer + 60]
 		ret
-		
+;WTF???		
 waitpid:
 		push 	ebp
 		mov 	ebp, esp
@@ -604,7 +604,7 @@ kill:
 		push	ebp
 		mov		ebp, esp
 		pusha
-		mov		eax, 19				; eax en 18 para pgetpid_at
+		mov		eax, 19				; eax en 19 para kill
 		mov 	ebx, [ebp+8]		; signal
 		mov 	ecx, [ebp+12]		; pid
 		int		80h
@@ -890,3 +890,4 @@ fgetmod:
 		pop		ebp
 		mov		eax, [kernel_buffer + 60]
 		ret
+
