@@ -38,13 +38,13 @@ void _disk_read(int ata, char * ans, int count, unsigned int sector, int offset)
 
 
 	int i = 0;
-	for(i = 0; i < 512; ++i)
+	for(i = 0; i < 1024; ++i)
 	{
 		ans[i] = 0;
 	}
 
 	// Just a sector...
-	if(count > 512 - offset)
+	if(count > 1024 - offset)
 		return;
 		
 	
@@ -56,7 +56,7 @@ void _disk_read(int ata, char * ans, int count, unsigned int sector, int offset)
 	int b;
 	unsigned short data;
 	int errors = 0;
-	for(b=0;b<512;b+=2){
+	for(b=0;b<1024;b+=2){
 		data = getDataRegister(ata);
 		translateBytes(ans+b, data, sector);
 	}
@@ -89,7 +89,7 @@ void _disk_write(int ata, char * msg, int bytes, unsigned int sector, int offset
 
 	// Now write all the sector
 	int b;
-	for (b=0; b<512; b+=2) {
+	for (b=0; b<1024; b+=2) {
 		writeDataToRegister(ata, msg[b+1], msg[b]);
 	}
 
@@ -130,7 +130,7 @@ void sendComm(int ata, int rdwr, unsigned int sector){
 	while (!(_inw(0x3F6) & (BIT6)));
 	
 	_out(ata + WIN_REG1, 0);
-	_out(ata + WIN_REG2, 1);	// Set count register sector in 1
+	_out(ata + WIN_REG2, 2);	// Set count register sector in 1
 	
 	_out(ata + WIN_REG3, (unsigned char)sector);			// LBA low
 	_out(ata + WIN_REG4, (unsigned char)(sector >> 8));		// LBA mid

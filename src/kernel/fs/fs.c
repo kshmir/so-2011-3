@@ -51,17 +51,11 @@ static int fs_done;
 ///////////// Block Handling
 
 static void block_write(void * data, unsigned int block_n) {
-	
-
 	hdd_write( data, block_n * 2 + 1);	
-	hdd_write( data + SECTOR_SIZE, block_n * 2 + 2);	
-
 }
 
 static void block_read(void * data, unsigned int block_n) {
 	hdd_read( data, block_n * 2 + 1);	
-	hdd_read( data + SECTOR_SIZE, block_n * 2 + 2);		
-
 }
 
 static void block_clear(block * b){
