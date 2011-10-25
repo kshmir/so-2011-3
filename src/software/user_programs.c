@@ -331,10 +331,10 @@ int _dread(int argc, char** argv) {
 		}
 
 		int offset            = 0;
-		int count             = 512;
+		int count             = 1024;
 		int ata               = ATA0;
 
-		_disk_read(ata, msg, count, sector, offset);
+		_disk_read(ata, msg, 1, sector);
 
 		printf("Lei esto del sector %d\n", sector);
 		i = 0;
@@ -348,20 +348,20 @@ int _dread(int argc, char** argv) {
 
 int _dwrite (int argc, char ** argv)
 {
-	char ans[512] = "HARA BARA";
-	int bytes = 512;
+	char ans[1024] = "HARA BARA";
+	int bytes = 1024;
 	unsigned int sector = 1;
 	if(argc > 2)
 	{
 		int i;
 		int len = strlen(argv[1]);
 		sector = atoi(argv[2]);
-		if(len < 512)
+		if(len < 1024)
 		{
 			for(i = 0; i < len; ++i)	{
 				ans[i] = argv[1][i];
 			}
-			for(; i < 512; ++i)
+			for(; i < 1024; ++i)
 			{
 				ans[i] = 0;
 			}
@@ -369,30 +369,44 @@ int _dwrite (int argc, char ** argv)
 		int offset = 0;
 		int ata = ATA0;
 
-		_disk_write(ata, ans, bytes, sector, offset);
+		_disk_write(ata, ans, 1, sector);
 		printf("Escrito en sector %d\n", sector);
 	}
 	return 0;
 }
 
+
+char ans[65536];
 int _dfill (int argc, char ** argv)
 {
-	char ans[512];
-	int bytes = 512;
+
+	int bytes = 65536;
 	int sector = 1;
 	if(argc > 1)
 	{
 		int i;
 		sector = atoi(argv[1]);
-		for(i = 0; i < 511; ++i)	{
-			ans[i] = '0' + sector % 10;
+		for(i = 0; i < 65536; ++i)	{
+			ans[i] = '0' + (i / 512) % 10;
 		}
-		ans[i] = 0;
 		int offset = 0;
 		int ata = ATA0;
 
-		_disk_write(ata, ans, bytes, sector, offset);
-		printf("Escrito en sector %d\n", sector);
+		_disk_write(ata, ans, 128, sector);
+		
+		for(i = 0; i < 65536; ++i)	{
+			ans[i] = 0;
+		}
+
+		_disk_read(ata, ans, 128, sector);
+		
+		for(i = 0; i < 128; ++i)	{
+			if(ans[i * 512] != i % 10 + '0')	{
+				printf("Err %d %d\n", i % 10 + '0', ans[i * 512]);
+				getC();
+			}
+		}
+		
 	}
 	return 0;
 }

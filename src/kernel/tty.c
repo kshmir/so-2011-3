@@ -11,7 +11,7 @@
 
 
 static int tty_index = 0;
-
+extern int max_uid;
 extern int current_tty;
 /** Reads the command received and excecutes the corrisponding process sending  it it's arguments and 
 also responds to special characters.*/
@@ -138,7 +138,7 @@ int process_input(const char * input, int tty_number) {
 /** Starts a tty*/
 int tty_main (int argc, char ** argv)
 {	
-	clear_screen();
+//	clear_screen();
 	char cadena[50];
 	
 	int status     = 0; // 0: logged out; 1: logged in
@@ -149,10 +149,14 @@ int tty_main (int argc, char ** argv)
 	char * input;
 	char * username;
 	char * password;
-	printf("Monix v1 - TTY %d\n", tty_number);
+	printf("Monix v1 - TTY %d %d\n", tty_number, max_uid);
 	printf("Marseillan, Pereyra, Videla\n");
 	printf("Sistemas Operativos - 2011 - ITBA\n");
 	printf("Dennis Ritchie RIP\n");
+ 	if(tty_number == 1)	{
+		users_init();
+	}
+
 	while(1) {
 		switch (status){
 			case 1:

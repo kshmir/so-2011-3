@@ -14,7 +14,7 @@ typedef struct user {
 } user;
 
 
-void	users_init();
+int	users_init();
 
 int		user_create(char * username, char * password, int gid);
 

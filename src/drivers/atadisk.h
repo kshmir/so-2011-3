@@ -57,10 +57,10 @@ int driver(char * ata);
 
 void sendComm(int ata, int rdwr, unsigned int sector);
 
-void _disk_read(int ata, char * ans, int count, unsigned int sector, int offset);
+void _disk_read(int ata, char * ans, int numreads, unsigned int sector);
 unsigned short getDataRegister(int ata);
 
-void _disk_write(int ata, char * msg, int bytes, unsigned int sector, int offset);
+void _disk_write(int ata, char * msg, int numreads, unsigned int sector);
 void writeDataToRegister(int ata, char upper, char lower);
 void translateBytes(char ans[], unsigned short databyte, int sector);
 

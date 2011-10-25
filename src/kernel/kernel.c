@@ -385,21 +385,26 @@ int idle_main(int argc, char ** params) {
 		memcpy((char*)0xb8000 + i * 2, start_msg[i], 2);
 		_setCursor(i);
 	}
+
 	make_atomic();
 	mount();
-	users_init();
+
+
+	release_atomic();
+	
+	setready(); // Now we can read the keyboard
+	
+
 	tty_init(0);
 	tty_init(1);
 	tty_init(2);
 	tty_init(3);
 	tty_init(4);
 	tty_init(5);
+	
 
-	release_atomic();
-	
-	setready(); // Now we can read the keyboard
-	
 	while(1) {
+
 		fs_finish();		
 		_Halt(); // Now set to idle.
 	}
@@ -418,6 +423,12 @@ void disk()	{
 kmain() {
 	int i, num;
 
+	// setup_IDT_entry(&idt[0x0E], 0x08, (dword) & _disk, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x76], 0x08, (dword) & _disk, ACS_INT, 0);
+	// setup_IDT_entry(&idt[0x0D], 0x08, (dword) & _disk, ACS_INT, 0);
+	// setup_IDT_entry(&idt[0x78], 0x08, (dword) & _disk, ACS_INT, 0);
+	// setup_IDT_entry(&idt[0x79], 0x08, (dword) & _disk, ACS_INT, 0);
+	// setup_IDT_entry(&idt[0x74], 0x08, (dword) & _disk, ACS_INT, 0);
 
 	/* CARGA DE IDT CON LA RUTINA DE ATENCION DE IRQ0    */
 
@@ -450,8 +461,8 @@ kmain() {
 	Cli();
 
 	/* Habilito interrupcion de timer tick*/
-	_mascaraPIC1(0xFC);
-	_mascaraPIC2(0xFF);
+	_mascaraPIC1(0x00);
+	_mascaraPIC2(0x00);
 
 	Sti();
 

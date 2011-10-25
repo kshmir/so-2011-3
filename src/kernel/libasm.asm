@@ -60,7 +60,9 @@ GLOBAL	logout
 GLOBAL	fgetown
 GLOBAL	fgetmod
 
-
+GLOBAL	_disk
+GLOBAL	_inb
+GLOBAL	_outb
 
 EXTERN	disk
 EXTERN	signal_on_demand
@@ -76,6 +78,7 @@ EXTERN	softyield
 EXTERN	Cli
 EXTERN	kernel_ready
 EXTERN	Sti
+
 
 
 
@@ -198,6 +201,24 @@ _setCursor:
 _restart:
 		mov		al,0xfe
 		out		0x64,al
+		ret
+
+_inb:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		edx, [ebp+8]    ; Puerto
+		mov		eax, 0          ; Limpio eax
+		in byte		al, dx
+		pop		ebp
+		ret
+
+_outb:
+		push	ebp
+		mov		ebp, esp		; Stack frame
+		mov		edx, [ebp+8]   	; Puerto
+		mov		eax, [ebp+12]  	; Lo que se va a mandar
+		out byte	dx, al
+		pop		ebp
 		ret
 
 _in:

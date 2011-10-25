@@ -22,52 +22,72 @@ int user_comparer(user * u1, char * name) {
 	}
 }
 
-void	users_init() {
+int	users_init() {
+	
 	users = list_init();
 	
 	int existed = 1;
+
 	if (!(users_inode = fs_indir(".users", 1))) {
-		users_inode = fs_open_reg_file(".users", 1, 0700);
+		printf("Not in dir...\n");
 		existed = 0;
 	}
-	
-	
-	if(!existed) // Create root and save it
-	{
-		user root;
-		strcpy(root.username, "root");
-		strcpy(root.password, "root");
-		root.uid = 0;
-		root.gid = 0;
-		
-		fs_write_file(users_inode, &root, sizeof(root));
-		
-		user guest;
-		strcpy(guest.username, "guest");
-		strcpy(guest.password, "");
-		guest.uid = 1;
-		guest.gid = 0;
-		
-		fs_write_file(users_inode, &guest, sizeof(guest));
-	}
+	users_inode = fs_open_reg_file(".users", 1, O_RD | O_WR);
 
+	
+	
+
+	
 	user buffer;
-	
-
-	while (fs_read_file(users_inode, &buffer, sizeof(buffer),&file_r_offset)) {		
+	max_uid = users_inode;
+	int i = 0;
+	while (fs_read_file(users_inode, &buffer, sizeof(buffer),&file_r_offset) > 0) {		
 		user * u = (user *) malloc(sizeof(user));
+		existed = 1;
 		strcpy(u->username, buffer.username);
 		strcpy(u->password, buffer.password);
 		u->gid = buffer.gid;
 		u->uid = buffer.uid;
 		
+	
 		list_add(users, u);
-		
+
 		if(u->uid > max_uid)
 		{
 			max_uid = u->uid + 1;
 		}
 	}
+
+
+	if(!existed) // Create root and save it
+	{
+		user * root = malloc(sizeof(user));
+		strcpy(root->username, "root");
+		strcpy(root->password, "root");
+		root->uid = 0;
+		root->gid = 0;
+
+		fs_write_file(users_inode, root, sizeof(user));		
+		
+		user * guest = malloc(sizeof(user));
+		strcpy(guest->username, "guest");
+		strcpy(guest->password, "");
+		guest->uid = 1;
+		guest->gid = 0;
+		
+		fs_write_file(users_inode, guest, sizeof(user));
+		
+		list_add(users, root);
+		list_add(users, guest);
+	}
+
+	for(; i < list_size(users); i++)
+	{
+		user * _u = list_get(users, i);
+		printf("Username: %s %d\n", _u->username, strlen(_u->username));
+	}			
+
+	
 }
 
 int	user_create(char * username, char * password, int gid) {
@@ -86,6 +106,7 @@ int	user_create(char * username, char * password, int gid) {
 }
 
 int user_table_reload() {
+	fs_rm(".users", 1);
 	users_inode = fs_open_reg_file(".users", 1, O_CREAT); // Editing such file would be a pain, wouldn't it? D:
 	
 	int i = 0;
@@ -154,6 +175,8 @@ int		user_login(char * username, char * password) {
 		}
 	}
 }
+
+
 
 int		user_gid(int uid) {
 	int i = 0;

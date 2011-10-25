@@ -51,11 +51,16 @@ static int fs_done;
 ///////////// Block Handling
 
 static void block_write(void * data, unsigned int block_n) {
+	// printf("Start write\n");
 	hdd_write( data, block_n * 2 + 1);	
+//	hdd_write( data + SECTOR_SIZE, block_n * 2 + 2);	
+
 }
 
 static void block_read(void * data, unsigned int block_n) {
 	hdd_read( data, block_n * 2 + 1);	
+//	hdd_read( data + SECTOR_SIZE, block_n * 2 + 2);		
+
 }
 
 static void block_clear(block * b){
@@ -634,8 +639,7 @@ unsigned int fs_read_file(int inode, char * data, int size, unsigned long * f_of
 		}
 		* f_offset += i;
 	} else {
-
-		return -1; // Bad Offsetttttt!!!!
+		return 0; // Bad Offsetttttt!!!!
 	}
 
 	

@@ -66,7 +66,7 @@
 #define GETMOD       39
 
 
-
+void _disk();
 void setready();
 
 #define SYSR_ERR     -1
