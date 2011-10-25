@@ -329,7 +329,7 @@ main_pointer sched_ptr_from_string(char * string) {
 	int index;
 	for (index = 0; _function_names[index] != NULL; ++index) {
 		int n = 0;
-		if (!strcmp(string, _function_names[index]) && strlen(string) >= strlen(_functionro_names[index])) {
+		if (!strcmp(string, _function_names[index]) && strlen(string) >= strlen(_function_names[index])) {
 			return _functions[index];
 		}
 	}

@@ -456,10 +456,11 @@ kmain() {
 
 
 
-	scheduler_init();
+	
 	
 	Cli();
 
+	scheduler_init();
 	/* Habilito interrupcion de timer tick*/
 	_mascaraPIC1(0x00);
 	_mascaraPIC2(0x00);

@@ -35,8 +35,10 @@ void _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	// We need this to make it work, I just don't know why
 
 	Sti();
-	_Halt();
+//	_Halt();
 	_outw(0x3F6, 0);
+
+	
 
 	int i = 0;
 	for(i = 0; i < SECTOR_SIZE; ++i)
@@ -61,10 +63,16 @@ void _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	_outb(0x1F6, 0);
 	_outb(0x1F7, 0x24);
 	
-	
+
 
 	
-	// while ((_inw(0x3F6) & (BIT7)));
+	_inb(0x3F6, 0);
+	_inb(0x3F6, 0);
+	_inb(0x3F6, 0);
+	_inb(0x3F6, 0);
+	_inb(0x3F6, 0);
+	
+	while ((_inw(0x3F6) & (BIT7)));
 	// printf("error: %d\n", getErrorRegister(ATA0));		
 	int b;
 	unsigned short data;
@@ -78,6 +86,8 @@ void _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 			translateBytes(ans+c, data, sector);
 		}
 	}
+	
+
 	// printf("error: %d\n", getErrorRegister(ATA0));
 	_outw(0x3F6, 0);
 	Cli();
@@ -95,8 +105,10 @@ void _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 	
 
 	Sti();
-	_Halt();
+	//_Halt();
 	_outw(0x3F6, 0);
+	
+	while ((_inw(0x3F6) & (BIT7)));
 
 
 	ata=ATA0;
@@ -117,7 +129,14 @@ void _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 	_outb(0x1F6, 0);
 	_outb(0x1F7, 0x34);
 
+	_inb(0x3F6, 0);
+	_inb(0x3F6, 0);
+	_inb(0x3F6, 0);
+	_inb(0x3F6, 0);
+	_inb(0x3F6, 0);
+
 	while ((_inw(0x1F7) & (BIT7)));
+	
 
 
 	// Now write all the sector
@@ -132,6 +151,8 @@ void _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 	}
 
 	_outw(0x3F6, 0);
+	
+	while ((_inw(0x3F6) & (BIT7)));
 	Cli();
 
 }
