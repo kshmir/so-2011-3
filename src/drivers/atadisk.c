@@ -36,9 +36,9 @@ void _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 
 	Sti();
 //	_Halt();
-	_outw(0x3F6, 0);
+	_outw(0x3F6, BIT2);
 
-	
+	while ((_inw(0x3F6) & (BIT7)));
 
 	int i = 0;
 	for(i = 0; i < SECTOR_SIZE; ++i)
@@ -63,9 +63,6 @@ void _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	_outb(0x1F6, 0);
 	_outb(0x1F7, 0x24);
 	
-
-
-	
 	_inb(0x3F6, 0);
 	_inb(0x3F6, 0);
 	_inb(0x3F6, 0);
@@ -89,7 +86,7 @@ void _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	
 
 	// printf("error: %d\n", getErrorRegister(ATA0));
-	_outw(0x3F6, 0);
+	_outw(0x3F6, BIT2);
 	Cli();
 }
 
@@ -106,7 +103,7 @@ void _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 
 	Sti();
 	//_Halt();
-	_outw(0x3F6, 0);
+	_outw(0x3F6, BIT2);
 	
 	while ((_inw(0x3F6) & (BIT7)));
 
@@ -150,9 +147,8 @@ void _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 		}
 	}
 
-	_outw(0x3F6, 0);
+	_outw(0x3F6, BIT2);
 	
-	while ((_inw(0x3F6) & (BIT7)));
 	Cli();
 
 }

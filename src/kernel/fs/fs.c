@@ -954,7 +954,6 @@ unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int 
 			if(!_rm_res) {
 				return 0;
 			}
-			printf("O_CREAT delete\n");
 		} else if(mode & O_NEW) {
 			return 0;
 		} else {
@@ -981,7 +980,6 @@ unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int 
 	
 	inode_id = bitmap_first_valued(bm_inodes, FS_INODE_BITMAP_SIZE, 0) + 1;
 	
-	printf("Got inode %d\n", inode_id);
 	if (!folder_inode) {
 		folder_inode = inode_id;
 	}
