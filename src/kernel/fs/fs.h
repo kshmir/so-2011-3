@@ -29,7 +29,7 @@ typedef struct inode inode;
 
 #define	FS_INODE_TABLE_SIZE		910
 #define FS_INODE_SIZE			sizeof(inode)
-#define FS_INODES_PER_BLOCK		(FS_BLOCK_SIZE / FS_INODE_SIZE)
+#define FS_INODES_PER_BLOCK		8
 
 #define FS_INODE_BITMAP_SIZE	(FS_DATA_TABLE_SIZE * FS_BLOCK_GROUP_COUNT)
 #define FS_DATA_BITMAP_SIZE		(FS_INODE_TABLE_SIZE * FS_BLOCK_GROUP_COUNT * FS_INODES_PER_BLOCK)
@@ -143,8 +143,6 @@ struct inode {
 	short 	links;
 	
 	int		blocks;
-	int		flags;
-	int		osd1;
 	
 	int		data_blocks[15];
 	

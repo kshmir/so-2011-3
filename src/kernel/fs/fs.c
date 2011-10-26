@@ -358,7 +358,7 @@ void make_ph_block(inode * n, int * ph_block, int * log_block) {
 		n->data_blocks[inode_get_dir_block(*log_block)] = * ph_block;
 		dirty = 1;
 	} 
-		printf("Indir0 %d %d %d\n", * ph_block, * log_block, indirects);	
+	
 	if (indirects > 0) {
 		block_clear(&bi);
 		if (!dirty) {
@@ -519,13 +519,7 @@ void fs_init() {
 		fs_gbdt_read();
 		fs_bitmaps_init();
 		if (_FS_DEBUG) {
-			printf("SUPERBLOCK DEBUGGING\n");
-			printf("\tFree Blocks: %d\t Total Blocks: %d\n", 
-				   bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0),
-				   FS_DATA_BITMAP_SIZE);
-			printf("\tFree Inodes: %d\t Total Inodes: %d\n",
-				   bitmap_block_count(bm_inodes, FS_INODE_BITMAP_SIZE, 0),
-				   FS_INODE_BITMAP_SIZE);
+
 
 			
 			
@@ -702,12 +696,14 @@ void delete_internal_inodes(int log_block) {
 		i1_delete = inode_get_1indir_block(log_block) == 0;
 		if (indirects >= 2) {
 			printf("Indirect 2\n");
+			getC();
 			data_read_block(&bi, (i2_ptr = data[inode_get_1indir_block(log_block)]) );
 			i2_delete = inode_get_2indir_block(log_block) == 0;
 
 			if (indirects >= 3) {
 				i3_ptr = data[inode_get_1indir_block(log_block)];
 				printf("Indirect 3\n");
+				getC();
 				i3_delete = inode_get_3indir_block(log_block) == 0;
 				
 				if (i3_delete) {
@@ -795,7 +791,7 @@ unsigned int fs_rm(unsigned int inode, int recursive) {
 		folder_rem_direntry(inode, folder_inode);
 	}
 
-	bitmap_write(bm_inodes, inode, 0);
+	bitmap_write(bm_inodes, inode - 1, 0);
 
 	fs_bitmaps_write_all();  
 
@@ -1257,6 +1253,31 @@ unsigned int fs_chown(char * filename, char * username) {
 	} else {
 		return -2;
 	}
+}
+
+void fs_finfo(char * filename) {
+	int start_inode = current_ttyc()->pwd;
+	int namenode = fs_indir(filename, start_inode);
+	if(namenode)
+	{
+		inode_read(namenode, &n);	
+		
+
+		printf("Filename: %s\n", filename);
+		printf("File inode: %d\n", namenode);
+		printf("File blocks: %d\n", n.blocks);
+		printf("File perms: %d\n", n.i_file_acl);
+		printf("File uid: %d\n", n.uid);
+
+	}
+	
+	printf("SUPERBLOCK DEBUGGING\n");
+	printf("\tFree Blocks: %d\t Total Blocks: %d\n", 
+		   bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0),
+		   FS_DATA_BITMAP_SIZE);
+	printf("\tFree Inodes: %d\t Total Inodes: %d\n",
+		   bitmap_block_count(bm_inodes, FS_INODE_BITMAP_SIZE, 0),
+		   FS_INODE_BITMAP_SIZE);
 }
 
 unsigned int fs_chmod(char * filename, int perms) {

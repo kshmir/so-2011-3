@@ -375,15 +375,14 @@ int _dwrite (int argc, char ** argv)
 	return 0;
 }
 
-
 char ans[65536];
 int _dfill (int argc, char ** argv)
 {
 	int j = 0;
-
+	
 	for(j = 0; j < 1000; ++j)
 	{
-		int count = 128;
+		int count = 2;
 		int bytes = 65536;
 		int sector = 1;
 		if(argc > 1)
@@ -395,22 +394,16 @@ int _dfill (int argc, char ** argv)
 			}
 			int offset = 0;
 			int ata = ATA0;
-
-			// if(j + 1 % 100 == 0)
-			// {
-			// 	printf("Next is %d\n", j);
-			// }
-
-
-
+	
+	
 			_disk_write(ata, ans, count, sector);
-
+	
 			for(i = 0; i < 65536; ++i)	{
 				ans[i] = 0;
 			}
-
+	
 			_disk_read(ata, ans, count, sector);
-
+	
 			for(i = 0; i < count; ++i)	{
 				if(ans[i * 512] != i % 10 + '0')	{
 					printf("Err %d %d %d %d\n", i % 10 + '0', ans[i * 512], i, j);
@@ -418,7 +411,7 @@ int _dfill (int argc, char ** argv)
 					break;
 				}
 			}
-
+	
 		}
 	}
 	return 0;
@@ -700,6 +693,14 @@ int _getmod(int argc, char ** argv) {
 		} else {
 			printf("Invalid file? Try that again man.\n");
 		}
+	}
+	return 0;
+}
+
+int _finfo(int argc, char ** argv) {
+	if(argc > 1)
+	{
+		fs_finfo(argv[1]);
 	}
 	return 0;
 }

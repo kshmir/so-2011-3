@@ -44,6 +44,7 @@
 
 #define SECTOR_SIZE 512
 
+int  hdddebug = 0;
 
 void _400ns() {
 	_inb(0x3F6);
@@ -109,11 +110,12 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	
 	// We need this to make it work, I just don't know why
 
+	ata= ATA0;
 	Sti();
 	_outw(0x3F6, BIT2);
 
 	int i = 0;
-	for(i = 0; i < SECTOR_SIZE; ++i)
+	for(i = 0; i < SECTOR_SIZE * numreads; ++i)
 	{
 		ans[i] = 0;
 	}
@@ -172,8 +174,8 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 
 // Translate one word into two char
 void translateBytes(char * ans, unsigned short databyte, int sector){	
-	ans[0] = databyte & 0xFF;
-	ans[1] = databyte >> 8;
+	ans[0] = databyte & 0x000000FF;
+	ans[1] = (databyte >> 8) & 0x000000FF;
 }
 
 
@@ -248,8 +250,9 @@ int _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 
 
 void writeDataToRegister (int ata, char upper, char lower) {
-	unsigned short out;
-	out = (upper << 8) | lower;
+	unsigned short out = 0;
+	out = ((upper << 8) & 0xFF00) | (lower & 0xFF);
+	
 	_outw(ata + WIN_REG0, out);	
 }
 
