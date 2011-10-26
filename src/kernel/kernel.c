@@ -146,7 +146,6 @@ void int_80() {
 			fd = fd_open(_FD_FILE, (void *) kernel_buffer[1], kernel_buffer[2]);
 			if(_fd != -1)
 			{
-
 				getp()->file_descriptors[_fd] = fd;
 				kernel_buffer[KERNEL_RETURN] = _fd;
 			}
@@ -387,7 +386,8 @@ int idle_main(int argc, char ** params) {
 	}
 
 	make_atomic();
-	mount();
+
+
 
 
 	release_atomic();

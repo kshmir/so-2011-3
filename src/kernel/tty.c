@@ -138,7 +138,7 @@ int process_input(const char * input, int tty_number) {
 /** Starts a tty*/
 int tty_main (int argc, char ** argv)
 {	
-//	clear_screen();
+	clear_screen();
 	char cadena[50];
 	
 	int status     = 0; // 0: logged out; 1: logged in
@@ -154,6 +154,7 @@ int tty_main (int argc, char ** argv)
 	printf("Sistemas Operativos - 2011 - ITBA\n");
 	printf("Dennis Ritchie RIP\n");
  	if(tty_number == 1)	{
+		fs_init();
 		users_init();
 	}
 

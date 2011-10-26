@@ -18,8 +18,6 @@
 #define WIN_REG8       0x3f6
 
 
-
-
 /* Winchester disk controller command bytes. */
 #define WIN_IDENTIFY	0xEC
 #define MEDIA_STATUS	0xDA
@@ -34,9 +32,6 @@
 
 /* Parameters for the disk drive. */
 #define SECTOR_SIZE      512	/* physical sector size in bytes */
-
-/* Error codes */
-#define ERR		  -1	/* general error */
 
 
 #define MAX_ERRORS         4	/* how often to try rd/wt before quitting */
@@ -57,18 +52,11 @@ int driver(char * ata);
 
 void sendComm(int ata, int rdwr, unsigned int sector);
 
-void _disk_read(int ata, char * ans, int numreads, unsigned int sector);
+int _disk_read(int ata, char * ans, int numreads, unsigned int sector);
 unsigned short getDataRegister(int ata);
 
-void _disk_write(int ata, char * msg, int numreads, unsigned int sector);
-void writeDataToRegister(int ata, char upper, char lower);
-void translateBytes(char ans[], unsigned short databyte, int sector);
+int _disk_write(int ata, char * msg, int numreads, unsigned int sector);
 
-unsigned short getStatusRegister(int ata);
-void identifyDevice(int ata);
-void check_drive(int ata);
-unsigned short getErrorRegister(int ata);
-
-
+void _400ns();
 
 #endif

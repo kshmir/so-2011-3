@@ -317,13 +317,13 @@ int sched_pcreate(char * name, int argc, void * params) {
 char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", 
 	"kill", "getc", "putc", "top", "hang", "setp", "setsched", "dcheck", 
 	"dread", "dwrite", "dfill", "ls", "cd", "pwd", "mkdir", "rm", "touch", "cat", "fwrite",
-	"logout", "makeuser", "setgid", "udelete", "chown", "chmod", "getown", "getmod", NULL };
+	"logout", "makeuser", "setgid", "udelete", "chown", "chmod", "getown", "getmod", "fbulk", NULL };
 
 // Functions
 int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, 
 	reader_main, writer_main, _kill, getc_main, putc_main, top_main, _hang, 
 	_setp, _setsched, _dcheck, _dread, _dwrite, _dfill, _ls, _cd, _pwd, _mkdir, _rm, _touch,
-	_cat, _fwrite, _logout, _makeuser, _setgid, _udelete, _chown, _chmod, _getown, _getmod, NULL };
+	_cat, _fwrite, _logout, _makeuser, _setgid, _udelete, _chown, _chmod, _getown, _getmod, _fbulk, NULL };
 
 main_pointer sched_ptr_from_string(char * string) {
 	int index;

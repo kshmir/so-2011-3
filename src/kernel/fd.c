@@ -103,6 +103,7 @@ int fd_open_with_index (int fd, int type, void * data, int params) {
 			break;
 			case _FD_FILE:
 				files[fd].data = (void *)fs_open_reg_file(data, current_ttyc()->pwd, params);             // Inodes are stoded with their inode number.
+				printf("INODE: %d\n", files[fd].data);
 			break;
 			default:
 			return -1;

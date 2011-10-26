@@ -1,21 +1,37 @@
 #include "atadisk.h"
 
-#define BIT0 1
-#define BIT1 1<<1
-#define BIT2 1<<2
-#define BIT3 1<<3
-#define BIT4 1<<4
-#define BIT5 1<<5
-#define BIT6 1<<6
-#define BIT7 1<<7
-#define BIT8 1<<8
-#define BIT9 1<<9
-#define BIT10 1<<10
-#define BIT11 1<<11
-#define BIT12 1<<12
-#define BIT13 1<<13
-#define BIT14 1<<14
-#define BIT15 1<<15
+#define BIT0 (1)
+#define BIT1 (1<<1)
+#define BIT2 (1<<2)
+#define BIT3 (1<<3)
+#define BIT4 (1<<4)
+#define BIT5 (1<<5)
+#define BIT6 (1<<6)
+#define BIT7 (1<<7)
+#define BIT8 (1<<8)
+#define BIT9 (1<<9)
+#define BIT10 (1<<10)
+#define BIT11 (1<<11)
+#define BIT12 (1<<12)
+#define BIT13 (1<<13)
+#define BIT14 (1<<14)
+#define BIT15 (1<<15)
+
+#define DATA_PORT		BIT0
+#define ATAPI_PORT		BIT1
+#define SECTOR_COUNT	BIT2
+#define LBA_LO			BIT3
+#define LBA_MID			BIT4
+#define LBA_HI			BIT5
+#define DRIVE_PORT		BIT6
+#define STATUS_PORT		BIT7
+
+#define ERR				BIT0
+#define	DRQ				BIT3
+#define	SRV				BIT4
+#define	DF				BIT5
+#define	RDY				BIT6
+#define	BSY				BIT7
 
 /* This defines are to check the sepecifications of the disk.
 	#TODO: check size!*/
@@ -29,65 +45,129 @@
 #define SECTOR_SIZE 512
 
 
+void _400ns() {
+	_inb(0x3F6);
+	_inb(0x3F6);
+	_inb(0x3F6);
+	_inb(0x3F6);
+	_inb(0x3F6);
+	_inb(0x3F6);
+	_inb(0x3F6);
+	_inb(0x3F6);
+	_inb(0x3F6);
+	_inb(0x3F6);
+}
+
+int _drq_wait() {
+	
+	_400ns();
+	_400ns();
+	int test;
+	while ((test = _inb(0x1F7)) && 1) {
+		if(!(test & BSY))
+		{
+			if(test & DRQ)	{
+				break;
+			} else if(test & (ERR | DF))
+			{
+				if(test & ERR)	{
+					printf("OUCH ERROR! %d %d\n", !!(test & DF), !!(test & ERR));	
+				}
+
+				return 1;
+				break;
+			}
+		}
+	}
+	return 0;
+}
+
+int _next_io() {
+	int test;
+	_400ns();
+	_400ns();
+	
+	while ((test = _inb(0x1F7)) && 1) {
+		if(!(test & BSY))
+		{
+			if(test & (ERR | DF))	{
+				if(test & ERR)	{
+					printf("IO Error %d %d\n", !!(test & DF), !!(test & ERR) );
+				}
+				return -1;
+				break;
+			} else  {
+				break;
+			}
+		}
+	}
+	return 0;
+}
+
 // To read N bytes from hard disk, must alloc N+1 bytes for ans, as N+1 byte is used to null-character
-void _disk_read(int ata, char * ans, int numreads, unsigned int sector){
+int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	
 	// We need this to make it work, I just don't know why
 
 	Sti();
-//	_Halt();
 	_outw(0x3F6, BIT2);
-
-	while ((_inw(0x3F6) & (BIT7)));
 
 	int i = 0;
 	for(i = 0; i < SECTOR_SIZE; ++i)
 	{
 		ans[i] = 0;
 	}
+
 	
+	// _next_io();
+	int retry = 1;
+	while(retry) {
+		unsigned long long addr = ((unsigned long long)sector) & 0x00000000ffffffff;
+		// printf("error: %d\n", getErrorRegister(ATA0));
+
+		_outb(0x1F1, 0x00); 
+		_outb(0x1F1, 0x00);
+		_outb(0x1F2, 0x00); 
+		_outb(0x1F2, numreads);
+		_outb(0x1F3, (unsigned char)(addr >> 24));
+		_outb(0x1F3, (unsigned char)addr);
+		_outb(0x1F4, (unsigned char)(addr >> 32));
+		_outb(0x1F4, (unsigned char)(addr >> 8));
+		_outb(0x1F5, (unsigned char)(addr >> 40));
+		_outb(0x1F5, (unsigned char)(addr >> 16));
+		_outb(0x1F6, 0);
+		_outb(0x1F7, 0x24);
+
+		// printf("r1 %d\n", sector);
+		retry = _drq_wait() == -1;
+	}
 	
-	unsigned long long addr = ((unsigned long long)sector) & 0x00000000ffffffff;
-	// printf("error: %d\n", getErrorRegister(ATA0));
+
+	// printf("r2\n");	
 	
-	_outb(0x1F1, 0x00); 
-	_outb(0x1F1, 0x00);
-	_outb(0x1F2, 0x00); 
-	_outb(0x1F2, numreads);
-	_outb(0x1F3, (unsigned char)(addr >> 24));
-	_outb(0x1F3, (unsigned char)addr);
-	_outb(0x1F4, (unsigned char)(addr >> 32));
-	_outb(0x1F4, (unsigned char)(addr >> 8));
-	_outb(0x1F5, (unsigned char)(addr >> 40));
-	_outb(0x1F5, (unsigned char)(addr >> 16));
-	_outb(0x1F6, 0);
-	_outb(0x1F7, 0x24);
-	
-	_inb(0x3F6, 0);
-	_inb(0x3F6, 0);
-	_inb(0x3F6, 0);
-	_inb(0x3F6, 0);
-	_inb(0x3F6, 0);
-	
-	while ((_inw(0x3F6) & (BIT7)));
-	// printf("error: %d\n", getErrorRegister(ATA0));		
 	int b;
 	unsigned short data;
 	int errors = 0;
 	int c = 0;
-	for(i = 0; i < numreads; ++i)
+	for(i = 0; i < numreads;)
 	{
-		while (!(_inb(0x1F7) & 0x08)) {}
+		// printf("r3\n");
 		for(b=0 ; b < SECTOR_SIZE ; b+=2, c+=2){
 			data = getDataRegister(ata);
 			translateBytes(ans+c, data, sector);
 		}
+		++i;
+		if(i == numreads)	{
+			break;
+		}
+		retry = 1;
+		while(retry) {
+			retry = _next_io() == -1;
+		}
 	}
-	
 
-	// printf("error: %d\n", getErrorRegister(ATA0));
-	_outw(0x3F6, BIT2);
 	Cli();
+	return 1;
 }
 
 // Translate one word into two char
@@ -97,20 +177,24 @@ void translateBytes(char * ans, unsigned short databyte, int sector){
 }
 
 
+
+
 // Writes to the ata chosen the msg received the ammount of bytes requested starting from the secto chose + the offset
-void _disk_write(int ata, char * msg, int numreads, unsigned int sector){
+int _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 	
 
 	Sti();
 	//_Halt();
 	_outw(0x3F6, BIT2);
 	
-	while ((_inw(0x3F6) & (BIT7)));
 
+	// _next_io();
 
 	ata=ATA0;
 	int i = 0;
 
+	int retry = 1;
+	while(retry) {
 	unsigned long long addr = ((unsigned long long)sector) & 0x00000000ffffffff;
 
 	_outb(0x1F1, 0x00); 
@@ -125,109 +209,71 @@ void _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 	_outb(0x1F5, (unsigned char)(addr >> 16));
 	_outb(0x1F6, 0);
 	_outb(0x1F7, 0x34);
-
-	_inb(0x3F6, 0);
-	_inb(0x3F6, 0);
-	_inb(0x3F6, 0);
-	_inb(0x3F6, 0);
-	_inb(0x3F6, 0);
-
-	while ((_inw(0x1F7) & (BIT7)));
 	
+		// printf("r1 %d\n", sector);
+		retry = _drq_wait() == -1;
+	}
+
+
+	// printf("Write wait...\n");
+	
+	// printf("w1\n");
+	_drq_wait();
+	// printf("w2\n");
+	
+	// while (!(_inb(0x1F7) & DRQ)) {}	
 
 
 	// Now write all the sector
 	int b;
 	int c = 0;
-	for(i = 0; i < numreads; ++i)
+	for(i = 0; i < numreads;)
 	{
-		while (!(_inb(0x1F7) & 0x08)) {}
+		// printf("w3\n");
 		for (b=0; b<SECTOR_SIZE; b+=2, c+=2) {
 			writeDataToRegister(ata, msg[c+1], msg[c]);
 		}
+		if(i == numreads)	{
+			break;
+		}
+		++i;
+		retry = 1;
+		while(retry) {
+			retry = _next_io() == -1;
+		}
 	}
-
-	_outw(0x3F6, BIT2);
-	
 	Cli();
-
+	return 1;
 }
 
-void writeDataToRegister(int ata, char upper, char lower){
-	
+
+void writeDataToRegister (int ata, char upper, char lower) {
 	unsigned short out;
-	
-	// Wait for driver's ready signal.
-	while (!(_inw(0x1F7) & (BIT3)));
-	
 	out = (upper << 8) | lower;
-	_outw(ata + WIN_REG0, out);
-	
+	_outw(ata + WIN_REG0, out);	
 }
 
-unsigned short getDataRegister(int ata){
-
+unsigned short getDataRegister (int ata) {
 	unsigned short ans;
-
-	while (!(_inw(0x1F7) & (BIT3)));
 	ans = _inw(ata + WIN_REG0);
-
 	return ans;
 }
 
-unsigned short getErrorRegister(int ata){
-
-	unsigned short rta = _in(ata + WIN_REG1) & 0x00000FFFF;
-
-	return rta;
-}
-
-// Send a command to the disk in order to read or write
-void sendComm(int ata, int rdwr, unsigned int sector){
-
-	while (!(_inw(0x3F6) & (BIT6)));
-	
-	_out(ata + WIN_REG1, 0);
-	_out(ata + WIN_REG2, 1);	// Set count register sector in 1
-	
-	_out(ata + WIN_REG3, (unsigned char)sector);			// LBA low
-	_out(ata + WIN_REG4, (unsigned char)(sector >> 8));		// LBA mid
-	_out(ata + WIN_REG5, (unsigned char)(sector >> 16));	// LBA high
-	_out(ata + WIN_REG6, 0);
-	
-	// Set command
-	_out(ata + WIN_REG7, rdwr);
-}
-
-unsigned short getStatusRegister(int ata){
-	unsigned short rta;
-	_Cli();
-	rta = _in(ata + WIN_REG7) & 0x00000FFFF;
-	_Sti();
-	return rta;
-}
-
-void identifyDevice(int ata){
-
+void identifyDevice (int ata) {
 	_out(ata + WIN_REG6, 0xA0);
 	_out(ata + WIN_REG7, WIN_IDENTIFY);
-
 }
 
 // Check disk features
-void check_drive(int ata){
-	
+void check_drive(int ata) {
     identifyDevice(ata);
 
-
 	unsigned short data = 0;
-
 	char msg[512];
 	unsigned short sector=12;
 	int offset=0;
 	int count=512;
-	_Halt();
-
+	_400ns();
     int i;
     for(i=0;i<255;i++){
         data = getDataRegister(ata);
@@ -239,4 +285,3 @@ void check_drive(int ata){
 		}
     }
 }
-

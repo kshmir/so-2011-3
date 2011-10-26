@@ -58,6 +58,7 @@ static void block_write(void * data, unsigned int block_n) {
 }
 
 static void block_read(void * data, unsigned int block_n) {
+
 	hdd_read( data, block_n * 2 + 1);	
 //	hdd_read( data + SECTOR_SIZE, block_n * 2 + 2);		
 
@@ -357,7 +358,7 @@ void make_ph_block(inode * n, int * ph_block, int * log_block) {
 		n->data_blocks[inode_get_dir_block(*log_block)] = * ph_block;
 		dirty = 1;
 	} 
-	
+		printf("Indir0 %d %d %d\n", * ph_block, * log_block, indirects);	
 	if (indirects > 0) {
 		block_clear(&bi);
 		if (!dirty) {
@@ -367,7 +368,7 @@ void make_ph_block(inode * n, int * ph_block, int * log_block) {
 		dirty = 0;
 			
 		
-		
+
 		indirect_block_data = (int *) &bi;
 		old_ph = * ph_block;	
 		* ph_block = indirect_block_data[inode_get_1indir_block(*log_block)];
@@ -696,14 +697,17 @@ void delete_internal_inodes(int log_block) {
 	int * data = (int *) &bi;
 	block_clear(&bi);
 	if (indirects >= 1) {
+		printf("Indirect 1\n");
 		data_read_block(&bi, (i1_ptr = n.data_blocks[inode_get_dir_block(log_block)]) );
 		i1_delete = inode_get_1indir_block(log_block) == 0;
 		if (indirects >= 2) {
+			printf("Indirect 2\n");
 			data_read_block(&bi, (i2_ptr = data[inode_get_1indir_block(log_block)]) );
 			i2_delete = inode_get_2indir_block(log_block) == 0;
 
 			if (indirects >= 3) {
 				i3_ptr = data[inode_get_1indir_block(log_block)];
+				printf("Indirect 3\n");
 				i3_delete = inode_get_3indir_block(log_block) == 0;
 				
 				if (i3_delete) {
@@ -750,7 +754,6 @@ unsigned int fs_rm(unsigned int inode, int recursive) {
 		if (n.mode & EXT2_S_IFDIR) { // If it's a directory... then... RECURSION! D:
 			block entries;
 			data_read_block(&entries, ph_block);
-			
 			int off = 0;
 			dir_op_offset = 0;
 			dir_entry * old_dot = NULL;
@@ -779,19 +782,20 @@ unsigned int fs_rm(unsigned int inode, int recursive) {
 
 			data_write_block(&entries, ph_block);
 		}
-
 		bitmap_write(bm_blocks, ph_block - 1, 0);
 		delete_internal_inodes(log_block);
 	}
 	
 	if (!recursive) {
+		inode_read(inode, &n);
 		unsigned int folder_inode = n._dir_inode;
+		// printf("Deleting direntry %d", folder_inode);
 		inode_read(folder_inode, &n);		
+		// printf("Deleting direntry %d", folder_inode);
 		folder_rem_direntry(inode, folder_inode);
 	}
-	
-	bitmap_write(bm_inodes, inode, 0);
 
+	bitmap_write(bm_inodes, inode, 0);
 
 	fs_bitmaps_write_all();  
 
@@ -1018,9 +1022,6 @@ unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int 
 	n.size = 0;
 	n.blocks = 0; // Beware! This represents the SECTORS!
 	
-	log_block = n.blocks / 2;
-	
-	n.blocks = (log_block) * 2;
 	
 	n._last_write_offset = 0;
 	n.i_file_acl = 511;
@@ -1038,7 +1039,7 @@ unsigned int fs_mkdir(char * name, unsigned int parent_inode) {
 	unsigned int inode_id = 0;
 	
 	if ((inode_id = fs_indir(name, parent_inode))) {
-		return inode_id;
+		return 0;
 	}
 	inode_id = bitmap_first_valued(bm_inodes, FS_INODE_BITMAP_SIZE, 0) + 1;
 	
@@ -1135,6 +1136,7 @@ char *	fs_pwd() {
 	while(n._dir_inode != start_inode) {
 		int _old_dirnode = n._dir_inode;
 		char * name = fs_iname(start_inode, n._dir_inode);
+		// printf("Moving to %d\n", start_inode);
 		int k = strlen(name) - 2;
 		for(; k >= 0; k--, j--) {
 			pwd_string[j] = name[k];
@@ -1162,7 +1164,6 @@ char *	fs_pwd() {
 }
 
 int fs_ls(char * data, int size, unsigned long * f_offset) {
-
 	return fs_read_file(current_ttyc()->pwd, data, size, f_offset);
 }
 
@@ -1171,6 +1172,7 @@ int	fs_cd(char * name) {
 	
 	int namenode = fs_indir(name, start_inode);
 	if (namenode) {
+		// printf("Moving to %d\n", namenode);
 		current_ttyc()->pwd = namenode;
 		return 1;
 	} else {

@@ -21,7 +21,7 @@ typedef struct inode inode;
 
 #define EXT2_NAME_LEN			255
 
-#define FS_BLOCK_GROUP_COUNT	1
+#define FS_BLOCK_GROUP_COUNT	5
 #define	FS_BLOCK_GROUP_SIZE		sizeof(block_group)
 
 #define FS_BLOCK_SIZE		    1024

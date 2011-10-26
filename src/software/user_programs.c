@@ -379,34 +379,47 @@ int _dwrite (int argc, char ** argv)
 char ans[65536];
 int _dfill (int argc, char ** argv)
 {
+	int j = 0;
 
-	int bytes = 65536;
-	int sector = 1;
-	if(argc > 1)
+	for(j = 0; j < 1000; ++j)
 	{
-		int i;
-		sector = atoi(argv[1]);
-		for(i = 0; i < 65536; ++i)	{
-			ans[i] = '0' + (i / 512) % 10;
-		}
-		int offset = 0;
-		int ata = ATA0;
-
-		_disk_write(ata, ans, 128, sector);
-		
-		for(i = 0; i < 65536; ++i)	{
-			ans[i] = 0;
-		}
-
-		_disk_read(ata, ans, 128, sector);
-		
-		for(i = 0; i < 128; ++i)	{
-			if(ans[i * 512] != i % 10 + '0')	{
-				printf("Err %d %d\n", i % 10 + '0', ans[i * 512]);
-				getC();
+		int count = 128;
+		int bytes = 65536;
+		int sector = 1;
+		if(argc > 1)
+		{
+			int i;
+			sector = atoi(argv[1]);
+			for(i = 0; i < 65536; ++i)	{
+				ans[i] = '0' + (i / 512) % 10;
 			}
+			int offset = 0;
+			int ata = ATA0;
+
+			// if(j + 1 % 100 == 0)
+			// {
+			// 	printf("Next is %d\n", j);
+			// }
+
+
+
+			_disk_write(ata, ans, count, sector);
+
+			for(i = 0; i < 65536; ++i)	{
+				ans[i] = 0;
+			}
+
+			_disk_read(ata, ans, count, sector);
+
+			for(i = 0; i < count; ++i)	{
+				if(ans[i * 512] != i % 10 + '0')	{
+					printf("Err %d %d %d %d\n", i % 10 + '0', ans[i * 512], i, j);
+					getC();
+					break;
+				}
+			}
+
 		}
-		
 	}
 	return 0;
 }
@@ -512,6 +525,35 @@ int _cat(int argc, char ** argv)
 	}
 
 	return 0;
+}
+
+char sect[8096];
+
+int _fbulk(int argc, char ** argv) {
+	if(argc > 2)	{
+		int fd = open(argv[1], O_WR);
+		int times = atoi(argv[2]);
+
+		if(!times) {
+			times = 1;
+		}
+		printf("Printing %d times\n", times);
+		int i = 0;
+		for(i = 0; i < 8096; ++i)
+		{
+			sect[i] = 'a';
+		}
+		for(i = 0; i < times; ++i)
+		{
+			write(fd, sect, 8096);
+		}
+		
+
+	} else {
+		printf("Params required: fwrite filename data (-o)\n");
+		printf("Want to write more data? Try fbulk\n");
+	}
+	return 0;	
 }
 
 int _fwrite(int argc, char ** argv)
