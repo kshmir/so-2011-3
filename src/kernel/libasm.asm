@@ -217,7 +217,7 @@ _outb:
 		mov		ebp, esp		; Stack frame
 		mov		edx, [ebp+8]   	; Puerto
 		mov		eax, [ebp+12]  	; Lo que se va a mandar
-		out byte	dx, al
+		out 	dx, al
 		pop		ebp
 		ret
 

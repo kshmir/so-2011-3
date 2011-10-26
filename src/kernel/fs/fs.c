@@ -46,22 +46,24 @@ static dir_entry * _old_dot;
 static int * indirect_block_data;
 static int fs_done;
 
-
+int bitmap_handling = 0;
 
 ///////////// Block Handling
 
 static void block_write(void * data, unsigned int block_n) {
 	// printf("Start write\n");
-	hdd_write( data, block_n * 2 + 1);	
-//	hdd_write( data + SECTOR_SIZE, block_n * 2 + 2);	
 
+	
+
+	hdd_write( data, block_n * 2 + 1);	
+	//	hdd_write( data + SECTOR_SIZE, block_n * 2 + 2);	
+	
 }
 
 static void block_read(void * data, unsigned int block_n) {
-
 	hdd_read( data, block_n * 2 + 1);	
-//	hdd_read( data + SECTOR_SIZE, block_n * 2 + 2);		
-
+	//	hdd_read( data + SECTOR_SIZE, block_n * 2 + 2);		
+	
 }
 
 static void block_clear(block * b){
@@ -135,6 +137,7 @@ static void fs_gbdt_write() {
 ///////////// Bitmaps Cache
 
 static void fs_bitmaps_init() {
+	bitmap_handling = 1;
 	int i = 0;
 	for (; i < FS_BLOCK_GROUP_COUNT; i++) {
 		block_read((void *)&g_inode_bmps[i], gbdt[i].bg_inode_bitmap);
@@ -145,14 +148,17 @@ static void fs_bitmaps_init() {
 	
 	bm_inodes = bitmap_init(FS_INODE_TABLE_SIZE * FS_INODES_PER_BLOCK, FS_BLOCK_SIZE * 8, g_inode_bmps);
 	bm_blocks = bitmap_init(FS_DATA_TABLE_SIZE, FS_BLOCK_SIZE * 8, g_block_bmps);
+	bitmap_handling = 0;
 }
 
-static void fs_bitmaps_write_all() {
+void fs_bitmaps_write_all() {
+	bitmap_handling = 1;
 	int i = 0;
 	for (; i < FS_BLOCK_GROUP_COUNT; i++) {
 		block_write((void *)&g_inode_bmps[i], gbdt[i].bg_inode_bitmap);
 		block_write((void *)&g_block_bmps[i], gbdt[i].bg_block_bitmap);
 	}	
+		bitmap_handling = 0;
 }
 
 static void fs_bitmaps_write(int i) {
@@ -212,7 +218,7 @@ static void data_write_block(void * data, unsigned int block_n) {
 	// Write the bitmap in the disk
 	
 	bitmap_write(bm_blocks, block_n - 1, 1);
-	block_write(&g_block_bmps[block_group], bgroup_blockbmp(bgroup_get(block_group)));
+	//block_write(&g_block_bmps[block_group], bgroup_blockbmp(bgroup_get(block_group)));
 	
 	// The data is only persisted after it's saved in the bitmap.
 }
@@ -258,7 +264,7 @@ static void inode_write(unsigned int inode_n, inode * n){
 	block b;
 	block_clear(&b);
 	block_read((void *)&b, real_block_index);
-
+	
 	inode * inodes = (inode *) &b;
 	
 	int i = 0;
@@ -271,16 +277,16 @@ static void inode_write(unsigned int inode_n, inode * n){
 static void inode_read(unsigned int inode_n, inode * n) {
 	unsigned int locin_block_index	= inode_get_block_index(inode_n);
 	unsigned int real_block_index	= inode_get_block(inode_n);
-
-
-
+	
+	
+	block b;	
 	block_clear(&b);
 	
-
+	
 	block_read((void *)&b, real_block_index);
 	
-
-
+	
+	
 	int i = 0;
 	inode * inodes = (inode *) &b;
 	
@@ -366,9 +372,9 @@ void make_ph_block(inode * n, int * ph_block, int * log_block) {
 		}
 		
 		dirty = 0;
-			
 		
-
+		
+		
 		indirect_block_data = (int *) &bi;
 		old_ph = * ph_block;	
 		* ph_block = indirect_block_data[inode_get_1indir_block(*log_block)];
@@ -402,6 +408,7 @@ void make_ph_block(inode * n, int * ph_block, int * log_block) {
 			} 
 			
 			if (indirects > 2) {
+
 				block_clear(&bi);
 				if (!dirty) {
 					data_read_block(&bi, * ph_block);
@@ -428,14 +435,13 @@ void log_block_write(inode * n, int * log_block) {
 	int ph_block;	
 	
 	make_ph_block(n, &ph_block, log_block);
-	
 	// Write the data inside the data block
 	bitmap_write(bm_blocks, ph_block - 1, 1);
 	data_write_block(&b, ph_block);	
 }
 
 void log_block_read(inode * n, int * log_block) {
-	int ph_block;
+	int ph_block = 0;
 	
 	make_ph_block(n, &ph_block, log_block);
 	
@@ -451,7 +457,7 @@ void add_block(inode * n, int * log_block) {
 	(*log_block)++;	
 	
 	log_block_read(n, log_block);
-
+	
 	dir_op_offset = 0;
 	dot = (dir_entry *) ((char*)&b + dir_op_offset);	
 }
@@ -499,7 +505,6 @@ dir_entry * iterate_dir_entry(block * b) {
 	}
 	return dot;
 }
-
 /// Filesystem Initialization
 void fs_init() {
 	
@@ -648,7 +653,7 @@ unsigned int fs_write_file(int inode, char * data, int size) {
 
 	int log_block = n.blocks / 2;
 	block_clear(&b);
-	
+
 	int i = 0;
 	int block_index = n._last_write_offset;
 	log_block_read(&n, &log_block);
@@ -657,6 +662,7 @@ unsigned int fs_write_file(int inode, char * data, int size) {
 		block[block_index] = data[i];
 		if (block_index == FS_BLOCK_SIZE - 1) {
 			log_block_write(&n, &log_block);
+
 			log_block++;
 			log_block_read(&n, &log_block);
 			block_index = -1;
@@ -668,6 +674,7 @@ unsigned int fs_write_file(int inode, char * data, int size) {
 	n.blocks = log_block * 2;
 
 	inode_write(inode,&n);
+	fs_bitmaps_write_all();  
 
 	return i;
 }
@@ -691,19 +698,14 @@ void delete_internal_inodes(int log_block) {
 	int * data = (int *) &bi;
 	block_clear(&bi);
 	if (indirects >= 1) {
-		printf("Indirect 1\n");
 		data_read_block(&bi, (i1_ptr = n.data_blocks[inode_get_dir_block(log_block)]) );
 		i1_delete = inode_get_1indir_block(log_block) == 0;
 		if (indirects >= 2) {
-			printf("Indirect 2\n");
-			getC();
 			data_read_block(&bi, (i2_ptr = data[inode_get_1indir_block(log_block)]) );
 			i2_delete = inode_get_2indir_block(log_block) == 0;
 
 			if (indirects >= 3) {
 				i3_ptr = data[inode_get_1indir_block(log_block)];
-				printf("Indirect 3\n");
-				getC();
 				i3_delete = inode_get_3indir_block(log_block) == 0;
 				
 				if (i3_delete) {
@@ -720,11 +722,11 @@ void delete_internal_inodes(int log_block) {
 		i1_delete = i1_delete && i2_delete;
 		if (i1_delete) {
 			bitmap_write(bm_blocks, i1_ptr - 1, 0);
-			bitmap_write(bm_blocks, n.data_blocks[log_block] - 1, 0);
 		}
 
 	}	
 }
+
 
 unsigned int fs_rm(unsigned int inode, int recursive) {
 	
@@ -1265,7 +1267,8 @@ void fs_finfo(char * filename) {
 
 		printf("Filename: %s\n", filename);
 		printf("File inode: %d\n", namenode);
-		printf("File blocks: %d\n", n.blocks);
+		printf("File blocks: %d\n", n.blocks / 2);
+		
 		printf("File perms: %d\n", n.i_file_acl);
 		printf("File uid: %d\n", n.uid);
 

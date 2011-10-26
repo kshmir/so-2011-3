@@ -487,7 +487,7 @@ int _rm (int argc, char ** argv)
 int _touch(int argc, char ** argv)
 {
 	if(argc > 1)	{
-		open(argv[1], 0666);
+		open(argv[1], O_CREAT);
 	}
 	return 0;
 }
@@ -536,9 +536,9 @@ int _fbulk(int argc, char ** argv) {
 		{
 			sect[i] = 'a';
 		}
-		for(i = 0; i < times; ++i)
+		for(i = 0; i < times * 16; ++i)
 		{
-			write(fd, sect, 8096);
+			write(fd, sect, 512);
 		}
 		
 
@@ -552,7 +552,7 @@ int _fbulk(int argc, char ** argv) {
 int _fwrite(int argc, char ** argv)
 {
 	if(argc > 2)	{
-		int fd = open(argv[1], 0666);
+		int fd = open(argv[1], O_WR);
 		write(fd, argv[2], strlen(argv[2]) - 1);
 	} else {
 		printf("Params required: fwrite filename data (-o)\n");

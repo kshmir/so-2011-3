@@ -46,6 +46,11 @@
 
 int  hdddebug = 0;
 
+int  lastsect = 0;
+
+void translateBytes(char * ans, unsigned short databyte);
+void writeDataToRegister (int ata, char upper, char lower);
+
 void _400ns() {
 	_inb(0x3F6);
 	_inb(0x3F6);
@@ -63,6 +68,11 @@ int _drq_wait() {
 	
 	_400ns();
 	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+
 	int test;
 	while ((test = _inb(0x1F7)) && 1) {
 		if(!(test & BSY))
@@ -72,7 +82,8 @@ int _drq_wait() {
 			} else if(test & (ERR | DF))
 			{
 				if(test & ERR)	{
-					printf("OUCH ERROR! %d %d\n", !!(test & DF), !!(test & ERR));	
+					printf("OUCH ERROR! %d %d %d\n", !!(test & DF), !!(test & ERR), lastsect);	
+					while(1);
 				}
 
 				return 1;
@@ -87,13 +98,37 @@ int _next_io() {
 	int test;
 	_400ns();
 	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+	_400ns();
+
 	
 	while ((test = _inb(0x1F7)) && 1) {
 		if(!(test & BSY))
 		{
 			if(test & (ERR | DF))	{
 				if(test & ERR)	{
-					printf("IO Error %d %d\n", !!(test & DF), !!(test & ERR) );
+					printf("IO Error %d %d %d\n", !!(test & DF), !!(test & ERR), lastsect );
+					while(1);
 				}
 				return -1;
 				break;
@@ -111,7 +146,7 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	// We need this to make it work, I just don't know why
 
 	ata= ATA0;
-	Sti();
+//	Sti();
 	_outw(0x3F6, BIT2);
 
 	int i = 0;
@@ -120,6 +155,7 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 		ans[i] = 0;
 	}
 
+	lastsect = sector;
 	
 	// _next_io();
 	int retry = 1;
@@ -133,9 +169,9 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 		_outb(0x1F2, numreads);
 		_outb(0x1F3, (unsigned char)(addr >> 24));
 		_outb(0x1F3, (unsigned char)addr);
-		_outb(0x1F4, (unsigned char)(addr >> 32));
+		_outb(0x1F4, 0);
 		_outb(0x1F4, (unsigned char)(addr >> 8));
-		_outb(0x1F5, (unsigned char)(addr >> 40));
+		_outb(0x1F5, 0);
 		_outb(0x1F5, (unsigned char)(addr >> 16));
 		_outb(0x1F6, 0);
 		_outb(0x1F7, 0x24);
@@ -156,7 +192,7 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 		// printf("r3\n");
 		for(b=0 ; b < SECTOR_SIZE ; b+=2, c+=2){
 			data = getDataRegister(ata);
-			translateBytes(ans+c, data, sector);
+			translateBytes(ans+c, data);
 		}
 		++i;
 		if(i == numreads)	{
@@ -168,12 +204,12 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 		}
 	}
 
-	Cli();
+//	Cli();
 	return 1;
 }
 
 // Translate one word into two char
-void translateBytes(char * ans, unsigned short databyte, int sector){	
+void translateBytes(char * ans, unsigned short databyte){	
 	ans[0] = databyte & 0x000000FF;
 	ans[1] = (databyte >> 8) & 0x000000FF;
 }
@@ -185,11 +221,11 @@ void translateBytes(char * ans, unsigned short databyte, int sector){
 int _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 	
 
-	Sti();
+	// Sti();
 	//_Halt();
 	_outw(0x3F6, BIT2);
 	
-
+	lastsect = sector;
 	// _next_io();
 
 	ata=ATA0;
@@ -244,7 +280,7 @@ int _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 			retry = _next_io() == -1;
 		}
 	}
-	Cli();
+	// Cli();
 	return 1;
 }
 

@@ -33,7 +33,7 @@ int	users_init() {
 		existed = 0;
 	}
 	users_inode = fs_open_reg_file(".users", 1, O_RD | O_WR);
-
+	printf(".users inode: %d\n", users_inode);
 	
 	
 
@@ -61,7 +61,7 @@ int	users_init() {
 
 	if(!existed) // Create root and save it
 	{
-		user * root = malloc(sizeof(user));
+		user * root = (user *) malloc(sizeof(user));
 		strcpy(root->username, "root");
 		strcpy(root->password, "root");
 		root->uid = 0;
@@ -69,7 +69,7 @@ int	users_init() {
 
 		fs_write_file(users_inode, root, sizeof(user));		
 		
-		user * guest = malloc(sizeof(user));
+		user * guest = (user *) malloc(sizeof(user));
 		strcpy(guest->username, "guest");
 		strcpy(guest->password, "");
 		guest->uid = 1;
@@ -86,6 +86,8 @@ int	users_init() {
 		user * _u = list_get(users, i);
 		printf("Username: %s %d\n", _u->username, strlen(_u->username));
 	}			
+	
+	fs_bitmaps_write_all();
 
 	
 }
