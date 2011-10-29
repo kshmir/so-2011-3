@@ -405,7 +405,6 @@ int idle_main(int argc, char ** params) {
 
 	make_atomic();
 	mount();
-	users_init();
 	setready(); // Now we can read the keyboard
 	tty_init(0);
 	tty_init(1);
@@ -418,7 +417,7 @@ int idle_main(int argc, char ** params) {
 	release_atomic();
 	
 
-	
+	users_init();
 
 	while(1) {
 		_Halt(); // Now set to idle.

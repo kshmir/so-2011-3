@@ -151,10 +151,11 @@ int tty_main (int argc, char ** argv)
 	char * input;
 	char * username;
 	char * password;
-	printf("Monix v1 - TTY %d %d\n", tty_number, max_uid);
+	printf("Monix v1 - TTY %d\n", tty_number);
 	printf("Marseillan, Pereyra, Videla\n");
 	printf("Sistemas Operativos - 2011 - ITBA\n");
 	printf("Dennis Ritchie RIP\n");
+	
 
 	int child;
 	while(1) {
@@ -169,12 +170,14 @@ int tty_main (int argc, char ** argv)
 				}
 				break;
 			case 0:
+
 				child = pcreate("su", 1, NULL);
 				prun(child);
 				waitpid(child);
 				if(getuid(NULL) != -1)	{
 					status = 1;
 				}
+				clear_screen();
 				break;
 		}
 	}

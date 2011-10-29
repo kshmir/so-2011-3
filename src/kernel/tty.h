@@ -37,7 +37,7 @@ typedef struct TTY_Context {
 	Queue	* write_pblocks;
 	// Video Context
 	VIDEO_MODE_INFO *	video_context;
-	
+	int tty;
 	unsigned int	pwd;
 	int	uid;
 } TTY_Context;

@@ -223,13 +223,12 @@ int top_main  (int argc, char ** argv) {
 		i = 0;
 		while(!heap_empty(h)) {
 			top_data * data = heap_remove_min(h);
-			if(i > 24)	{
+			if(0)	{
 				break;
 			} else {
 				i++;
 				int pid = data->pid;
 				int ticks = data->ticks;
-
 
 				char * _pname = pname(pid);
 				char * status = NULL;
@@ -787,6 +786,22 @@ int _finfo(int argc, char ** argv)	{
 	return 0;
 }
 
+int _fsstat(int argc, char ** argv)	{
+	if(argc > 1)	{
+		int data[8];
+		fs_finfo(argv[1], &data);
+		printf("File name: %s\n", argv[1]);
+		printf("Inode: %d\n", data[0]);
+		printf("File blocks: %d\n", data[1]);
+		printf("File bytes: %d\n", data[2]);
+		printf("File permissions: %d\n", data[3]);
+		printf("File uid: %d\n", data[4]);
+		printf("File dir inode: %d\n", data[5]);
+	}
+	check_drive(0);
+	return 0;
+}
+
 int _su(int argc, char ** argv)	{
 	char * username = NULL;
 	char * password = NULL;
@@ -854,6 +869,7 @@ int _mv(int argc, char ** argv) {
 
 extern int val;
 int _smallhang(int argc, char ** argv) {
+	
 	if(argc > 1)
 	{
 		int msecs = atoi(argv[1]);

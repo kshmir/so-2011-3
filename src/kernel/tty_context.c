@@ -135,6 +135,7 @@ void init_context(int id) {
 	current_tty                  = id;
 	cont->pwd                    = 1;
 	cont->uid                    = -1;
+	cont->tty = id;
 
 
 	setVideoMode(tty_contexts[current_tty].video_context);
@@ -285,11 +286,8 @@ char scanCodeToChar(char scanCode) {
 		}
 		
 		if (sig) {
-			Process * p = process_getbypid(cnt()->owner_pid);
-			if (!p->is_tty) {
-				kernel_buffer[14] = 2;
-				kernel_buffer[13] = cnt()->owner_pid;
-			}
+			kernel_buffer[14] = 2;
+			kernel_buffer[13] = cnt()->tty + 1;
 			return EOF;
 		}
 

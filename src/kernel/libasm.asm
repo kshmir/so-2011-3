@@ -503,21 +503,6 @@ pdup2:
 		pop 	ebp
 		mov		eax, [kernel_buffer + 60]
 		ret
-; ESTO ESTA MAL!!! :TODO: CORREGIR!!		
-openfifo:
-		push 	ebp
-		mov 	ebp, esp
-		pusha
-		mov 	eax, 10				; eax en 10 para pdup2
-		mov 	ebx, [ebp+8]		; file descriptor
-		mov 	ecx, [ebp+12]		; file descriptor
-		mov 	edx, [ebp+16]		; file descriptor
-		int 	80h
-		popa
-		mov 	esp, ebp
-		pop 	ebp
-		mov		eax, [kernel_buffer + 60]
-		ret
 		
 getpid:
 		push 	ebp
@@ -530,7 +515,7 @@ getpid:
 		pop 	ebp
 		mov		eax, [kernel_buffer + 60]
 		ret
-;WTF???		
+
 waitpid:
 		push 	ebp
 		mov 	ebp, esp
@@ -987,5 +972,5 @@ sleep:
 		mov		esp, ebp
 		pop		ebp
 		mov		eax, [kernel_buffer + 60]
-		call	_yield
+		call	softyield
 		ret

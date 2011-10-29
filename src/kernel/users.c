@@ -53,8 +53,11 @@ int	users_init() {
 		u->gid = buffer.gid;
 		u->uid = buffer.uid;
 		
-	
-		list_add(users, u);
+		if(strlen(u->username) > 1)
+		{
+			list_add(users, u);
+		}
+
 
 		if(u->uid > max_uid)
 		{

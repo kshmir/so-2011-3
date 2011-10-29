@@ -44,6 +44,7 @@
 #define	ERR_EXISTS			-4
 #define	ERR_REPEATED		-5
 #define	ERR_INVALID_TYPE	-6
+#define	ERR_INVALID_PATH	-7
 
 // Signals
 #define SIGINT					2

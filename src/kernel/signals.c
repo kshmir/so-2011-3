@@ -3,12 +3,21 @@
 
 /* Kills the process with the pid recieved*/
 void sigkill_h(int pid){
-	process_cleanpid(pid);
+	Process * current = process_getbypid(pid);
+	if(!current->is_tty)
+	{
+		process_cleanpid(pid);
+	}
+
 	process_kill_children(SIGKILL, pid);	
 }
 /* Kills the process with the pid recieved*/
 void sigint_h(int pid){
-	process_cleanpid(pid);
+	Process * current = process_getbypid(pid);
+	if(!current->is_tty)
+	{
+		process_cleanpid(pid);
+	}
 	process_kill_children(SIGINT, pid);
 }
 /* Clears every previous functions and asigns only sigkill and sigint signals*/
