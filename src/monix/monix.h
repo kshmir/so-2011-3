@@ -38,6 +38,13 @@
 #define	O_WR					0x200		// Writes to file.
 #define	O_NEW					0x100		// Creates a new only if exists
 
+#define	ERR_GENERAL			-1
+#define	ERR_PERMS			-2
+#define	ERR_NO_EXIST		-3
+#define	ERR_EXISTS			-4
+#define	ERR_REPEATED		-5
+#define	ERR_INVALID_TYPE	-6
+
 // Signals
 #define SIGINT					2
 #define	SIGKILL					9
@@ -207,12 +214,6 @@ char * pwd();
  **/
 int cd(char * to);
 
-/* cd
- * Returns:
- * List of EXT2 directory entries in the raw buffer.
- **/
-int ls(char * data, int size, unsigned long * f_offset);
-
 /* mount
  * Returns:
  * List of EXT2 directory entries in the raw buffer.
@@ -227,7 +228,6 @@ int mount();
 int mkdir(char * name);
 
 int rm(char * name);
-
 
 
 int getuid(char * username); // if null... returns current UID
@@ -252,17 +252,15 @@ int fgetmod(char * filename);
 
 int fgetown(char * filename);
 
-// TODO
 int cp(char * from, char * to);
 
-// TODO
 int mv(char * from, char * to);
 
-// TODO
+int makelink(char * filename, char * target);
+
 void fsstat(int * data);
 
-// TODO? Really? O_RLY
-void fsformat(int * data);
+void sleep(int msecs);
 
 int logout();
 

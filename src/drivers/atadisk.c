@@ -55,23 +55,11 @@ void _400ns() {
 	_inb(0x3F6);
 	_inb(0x3F6);
 	_inb(0x3F6);
-	_inb(0x3F6);
-	_inb(0x3F6);
-	_inb(0x3F6);
-	_inb(0x3F6);
-	_inb(0x3F6);
-	_inb(0x3F6);
-	_inb(0x3F6);
 }
 
 int _drq_wait() {
 	
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
+	// _400ns();
 
 	int test;
 	while ((test = _inb(0x1F7)) && 1) {
@@ -96,32 +84,7 @@ int _drq_wait() {
 
 int _next_io() {
 	int test;
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-	_400ns();
-
-	
+	// _400ns();
 	while ((test = _inb(0x1F7)) && 1) {
 		if(!(test & BSY))
 		{
@@ -143,10 +106,8 @@ int _next_io() {
 // To read N bytes from hard disk, must alloc N+1 bytes for ans, as N+1 byte is used to null-character
 int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	
-	// We need this to make it work, I just don't know why
 
 	ata= ATA0;
-//	Sti();
 	_outw(0x3F6, BIT2);
 
 	int i = 0;
@@ -161,7 +122,7 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	int retry = 1;
 	while(retry) {
 		unsigned long long addr = ((unsigned long long)sector) & 0x00000000ffffffff;
-		// printf("error: %d\n", getErrorRegister(ATA0));
+
 
 		_outb(0x1F1, 0x00); 
 		_outb(0x1F1, 0x00);
@@ -176,12 +137,8 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 		_outb(0x1F6, 0);
 		_outb(0x1F7, 0x24);
 
-		// printf("r1 %d\n", sector);
 		retry = _drq_wait() == -1;
 	}
-	
-
-	// printf("r2\n");	
 	
 	int b;
 	unsigned short data;
@@ -204,7 +161,7 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 		}
 	}
 
-//	Cli();
+
 	return 1;
 }
 
@@ -300,27 +257,37 @@ unsigned short getDataRegister (int ata) {
 
 void identifyDevice (int ata) {
 	_out(ata + WIN_REG6, 0xA0);
-	_out(ata + WIN_REG7, WIN_IDENTIFY);
+	_out(ata + WIN_REG7, 0xEC);
 }
 
 // Check disk features
 void check_drive(int ata) {
+	ata = ATA0;
     identifyDevice(ata);
 
 	unsigned short data = 0;
-	char msg[512];
 	unsigned short sector=12;
 	int offset=0;
 	int count=512;
-	_400ns();
+	_next_io();
     int i;
+ 	short _60, _61, _100, _101, _102, _103;
+
     for(i=0;i<255;i++){
         data = getDataRegister(ata);
-		
-		switch(i){
-			case 47:
-			case 59:
-			printf("%d\n", data);
+		if(i >= 27 && i <= 46)
+		{
+			if(data > 0)
+			{
+				printf("%c%c", (data & 0xFF00) >> 8, data & 0xFF);
+			}
 		}
+
+		if(i == 60)
+			_60 = data;
+		if(i == 61)
+			_61 = data;
     }
+	printf("\n");
+	printf("%d %d %d MB addressable\n", _61, _60, (_61 << 14 + _60) / 512);
 }

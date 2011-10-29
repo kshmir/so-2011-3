@@ -1,7 +1,7 @@
 ENTRY (_loader)
 
 SECTIONS{
-    . = 0x00100000;
+    . = 0x00200000;
 
     .text :{
         *(.text)

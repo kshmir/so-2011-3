@@ -6,6 +6,7 @@
 #include "../software/user_programs.c"
 #include "../libs/string.h"
 #include "../libs/queue.h"
+#include "../libs/mcglib.h"
 #include "../monix/monix.h"
 
 int _first_time          = 0;
@@ -318,14 +319,14 @@ char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "w
 	"kill", "getc", "putc", "top", "hang", "setp", "setsched", "dcheck", 
 	"dread", "dwrite", "dfill", "ls", "cd", "pwd", "mkdir", "rm", "touch", "cat", "fwrite",
 	"logout", "makeuser", "setgid", "udelete", "chown", "chmod", "getown", "getmod", "fbulk",
-	"finfo", NULL };
+	"finfo", "su", "link", "cp", "mv", "smallhang", NULL };
 
 // Functions
 int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, 
 	reader_main, writer_main, _kill, getc_main, putc_main, top_main, _hang, 
 	_setp, _setsched, _dcheck, _dread, _dwrite, _dfill, _ls, _cd, _pwd, _mkdir, _rm, _touch,
 	_cat, _fwrite, _logout, _makeuser, _setgid, _udelete, _chown, _chmod, _getown, _getmod, _fbulk,
-	_finfo, NULL };
+	_finfo, _su, _link, _cp, _mv, _smallhang, NULL };
 
 main_pointer sched_ptr_from_string(char * string) {
 	int index;
@@ -338,7 +339,15 @@ main_pointer sched_ptr_from_string(char * string) {
 	return NULL;
 }
 
-
+void process_kill_children(int sigcode, int pid) {
+	int i = 0;
+	for(; i < PROCESS_MAX; ++i) {
+		if(process_pool[i].state != PROCESS_ZOMBIE && process_pool[i].state != -1
+		&& process_pool[i].ppid == pid) {
+			sg_handle(sigcode, process_pool[i].pid);
+		}
+	}
+}
 
 int sched_getpid() {
 	return current_process->pid;
@@ -438,6 +447,7 @@ void release_atomic() {
 	atomic--;
 }
 
+
 /** Here the scheduler decides which will be the next process to excecute*/
 void scheduler_think (void) {
 
@@ -498,6 +508,29 @@ void scheduler_think (void) {
 		current_process->state = PROCESS_RUNNING;
 
 	}
+}
+
+int scheduler_sleep(int msecs) {
+	current_process->state = PROCESS_BLOCKED;
+	current_process->sleeptime = msecs;
+	return current_process->pid;
+}
+
+void scheduler_tick() {
+	int i = 0;
+	for(; i < PROCESS_MAX; ++i)	{
+		if(process_pool[i].state == PROCESS_BLOCKED
+			&& process_pool[i].sleeptime > 0)	{
+			process_pool[i].sleeptime--;
+			if(!process_pool[i].sleeptime)	{
+				process_pool[i].state = PROCESS_READY;
+				sched_enqueue(&process_pool[i]);
+
+			}
+		} 
+	}
+	_outb(0x70, 0x0C);
+	_inb(0x71);
 }
 
 void * storage_index() {

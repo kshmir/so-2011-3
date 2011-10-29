@@ -25,7 +25,7 @@ typedef struct Process {
 	int					esp;
 	int					file_descriptors[PROCESS_FD_SIZE];
 	int					open_fds;
-	int					calls;
+	int					sleeptime;
 	void *				signals[PROCESS_SIGNALS];
 	Queue				* wait_queue;
 } Process;
@@ -73,6 +73,8 @@ int scheduler_load_esp();
 int sched_fork();
 
 int sched_getpid();
+
+void scheduler_tick();
 
 Process * process_getbypid(int pid);
 

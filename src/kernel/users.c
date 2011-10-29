@@ -29,11 +29,15 @@ int	users_init() {
 	int existed = 1;
 
 	if (!(users_inode = fs_indir(".users", 1))) {
-		printf("Not in dir...\n");
 		existed = 0;
 	}
-	users_inode = fs_open_reg_file(".users", 1, O_RD | O_WR);
-	printf(".users inode: %d\n", users_inode);
+	if(!existed)
+	{
+		users_inode = fs_open_file(".users", 1, O_RD | O_WR | O_CREAT );
+	} else {
+		users_inode = fs_open_file(".users", 1, O_RD | O_WR | O_NEW );
+	}
+
 	
 	
 
@@ -108,7 +112,6 @@ int	user_create(char * username, char * password, int gid) {
 }
 
 int user_table_reload() {
-	fs_rm(".users", 1);
 	users_inode = fs_open_reg_file(".users", 1, O_CREAT); // Editing such file would be a pain, wouldn't it? D:
 	
 	int i = 0;

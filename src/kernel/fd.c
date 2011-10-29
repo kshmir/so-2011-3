@@ -9,9 +9,10 @@ typedef struct file {
 	int	   type;
 	void * data;
 	unsigned long    offset;
+	int    fifo_inode;
 	int    gid;
 	int	   uid;
-	int	   params;
+	int	   perms;
 	int	   used;	
 } file;
 
@@ -34,7 +35,7 @@ static void files_alloc() {
 		files[i].type  = 0;
 		files[i].data  = (void *)0;
 		files[i].uid   = 0;
-		files[i].params = 0600;
+		files[i].perms = 0600;
 		files[i].used  = 0;
 	}
 	files_allocd = 1;
@@ -52,7 +53,7 @@ int fd_find(int type, int key) {
 }
 
 /* Opens a file descriptor whcich could be a FIFO or just a file. On error returns -1*/
-int fd_open (int type, void * data, int params) {
+int fd_open (int type, void * data, int perms) {
 	int fd = 0;
 
 	if(type == _FD_FIFO) {
@@ -82,37 +83,49 @@ int fd_open (int type, void * data, int params) {
 		return -1;
 	}
 
-	return fd_open_with_index(fd, type, data, params);
+	return fd_open_with_index(fd, type, data, perms);
 }
 
 /* Opens a file descriptor and sets it's type, data and permissions*/
-int fd_open_with_index (int fd, int type, void * data, int params) {
+int fd_open_with_index (int fd, int type, void * data, int perms) {
 	if(files_allocd == 0) {
 		files_alloc();
 	}
 	if(!files[fd].used)		{
 		files[fd].type = type;
 		files[fd].data = data;
-		files[fd].params = params;
+		files[fd].perms = perms;
 		switch(files[fd].type) {
 			case _FD_TTY:
 			//
 			break;
 			case _FD_FIFO:
-				files[fd].data = (void *)fifo_make(data, params);                    // Fifos are stored with their own id...
+				files[fd].fifo_inode = (int) fs_open_fifo(data, current_ttyc()->pwd, perms);                    // Fifos are stored with their own id...
+				if(files[fd].fifo_inode > 0)	{
+					files[fd].data = (void *) fifo_make(files[fd].fifo_inode);
+				}
 			break;
 			case _FD_FILE:
-				files[fd].data = (void *)fs_open_reg_file(data, current_ttyc()->pwd, params);             // Inodes are stoded with their inode number.
-				printf("INODE: %d\n", files[fd].data);
+				files[fd].data = (void *)fs_open_reg_file(data, current_ttyc()->pwd, perms);             // Inodes are stoded with their inode number.
+
+				if(files[fd].data > 0 && fs_is_fifo((int)files[fd].data))
+				{
+					files[fd].fifo_inode = (int) files[fd].data;
+					files[fd].data = (void *) fifo_make(files[fd].fifo_inode);
+					files[fd].type = _FD_FIFO;
+				}
 			break;
 			default:
 			return -1;
 		}
 	}
-
-
-	if(!files[fd].data && type == _FD_FILE)	{
-		return -1;
+	
+	// Errors...
+	if((int)files[fd].fifo_inode < 0 && type == _FD_FIFO)	{
+		return (int)files[fd].fifo_inode;
+	}
+	if((int)files[fd].data < 0 && type == _FD_FILE)	{
+		return (int)files[fd].data;
 	}
 	files[fd].used++;
 	return fd;
@@ -160,12 +173,15 @@ int fd_write(int fd, char * buffer, int block_size) {
 }
 /* Closes the file descriptor and writes EOF to it.*/
 int fd_close(int fd) {
-	
-	if (fd != -1 && files[fd].used) {
-		char c = EOF;
-		fd_write(fd, &c, 1);
+	if (fd != -1 && files[fd].used)	{
+		if(files[fd].used == 0)	{
+			fifo_close(files[fd].data);
+		}
 		files[fd].used--;
 	} else if (fd != -1){
+		if(files[fd].used == 0)	{
+			fifo_close(files[fd].data);
+		}
 	}
 	// TODO: Make the remaining clears
 }

@@ -42,6 +42,19 @@ char** split_string(char* c, char ch, int* len) {
 	return result;
 }
 
+char * file_in_pwd(char * pwd) {
+	int i = 0;
+	int len = strlen(pwd);
+	int last_slash = 0;
+	for(i = 0; i < len; ++i)
+	{
+		if(pwd[i] == '/') {
+			last_slash = i;
+		}
+	}
+	return pwd + last_slash + 1;
+}
+
 int string_ends_with(char * str, char c) { 
 	int i = 0;
 	// I dont give a f...

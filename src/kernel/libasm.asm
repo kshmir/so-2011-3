@@ -59,12 +59,17 @@ GLOBAL	chmod
 GLOBAL	logout
 GLOBAL	fgetown
 GLOBAL	fgetmod
+GLOBAL	makelink
+GLOBAL	cp
+GLOBAL	mv
+GLOBAL	fsstat
+GLOBAL	sleep
 
-GLOBAL	_disk
+GLOBAL	_rtc
 GLOBAL	_inb
 GLOBAL	_outb
 
-EXTERN	disk
+EXTERN	scheduler_tick
 EXTERN	signal_on_demand
 EXTERN  int_08
 EXTERN  int_09
@@ -111,7 +116,7 @@ _mascaraPIC1:			; Escribe mascara del PIC 1
 		mov		ax, [ss:ebp+8]  ; ax = mascara de 16 bits
 		out		21h,al
 		pop		ebp
-		retn
+		ret
 
 _mascaraPIC2:			; Escribe mascara del PIC 2
 		push	ebp
@@ -119,7 +124,7 @@ _mascaraPIC2:			; Escribe mascara del PIC 2
 		mov		ax, [ss:ebp+8]  ; ax = mascara de 16 bits
 		out		0A1h,al
 		pop		ebp
-		retn
+		ret
 
 _read_msw:
         smsw    ax		; Obtiene la Machine Status Word
@@ -168,11 +173,11 @@ __stack_chk_fail:
 		ret
 
 
-_disk:
+_rtc:
 		call Cli
-		call disk
-		mov 	al,20h			; Envio de EOI generico al PIC
-		out 	20h,al
+		call scheduler_tick
+		mov 	al,020h			; Envio de EOI generico al PIC
+		out 	020h,al
 		mov 	al,0a0h			; Envio de EOI generico al PIC
 		out 	0a0h,al
 		call Sti
@@ -911,4 +916,76 @@ fgetmod:
 		pop		ebp
 		mov		eax, [kernel_buffer + 60]
 		ret
+cp:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 40				; eax en 40 para chmod
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+mv:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 41				; eax en 41 para chmod
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+makelink:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 42				; eax en 42 para chmod
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
 
+fsstat:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 43				; eax en 43 para chmod
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		ret
+		
+sleep:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 44				; eax en 43 para chmod
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
+		mov		esp, ebp
+		pop		ebp
+		mov		eax, [kernel_buffer + 60]
+		call	_yield
+		ret

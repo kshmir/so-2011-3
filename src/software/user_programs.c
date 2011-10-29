@@ -1,8 +1,19 @@
 #include "user_programs.h"
 #include "../monix/monix.h"
 #include "../libs/pqueue.h"
+#include "../libs/mcglib.h"
 #include "../drivers/atadisk.h"
 #include "../kernel/fs/fs.h"
+#include "../libs/heap.h"
+
+typedef struct top_data {
+	int pid;
+	int ticks;
+} top_data;
+
+int proc_comparer(top_data * t1, top_data * t2) {
+	return t2->ticks - t1->ticks;
+}
 
 // Helps teachers to understand a bit our mess, well, no
 int _printHelp(int size, char** args) {
@@ -82,7 +93,7 @@ int writer_main (int argc, char ** argv)
 {
 	if(argc > 1)
 	{
-		int fifo = mkfifo("teta", 0666);
+		int fifo = mkfifo("fifo", O_NEW);
 		int i = 1;
 		for(; i < argc; ++i)
 		{
@@ -98,7 +109,7 @@ int writer_main (int argc, char ** argv)
 }
 
 int reader_main (int argc, char ** argv) {
-	int fifo = mkfifo("teta", 0666);
+	int fifo = mkfifo("fifo", O_NEW);
 
 	
 	char buff[1024];
@@ -115,7 +126,7 @@ int reader_main (int argc, char ** argv) {
 
 int putc_main (int argc, char ** argv) {
 	if(argc > 1) {
-		printf("%s\n", argv[1]);
+		printf("%s", argv[1]);
 	}
 
 	return 0;
@@ -123,12 +134,10 @@ int putc_main (int argc, char ** argv) {
 
 
 int top_main  (int argc, char ** argv) {
-	printf("TOP\n");	
-	printf("PRESS q TO EXIT\n");
+
 	char c;
+	heap h = heap_init(1024, (void *) proc_comparer);
 	do {
-
-
 		int allow_zombies = 0;
 
 		if (argc > 1 && !strcmp(argv[1], "zombies")) {
@@ -189,6 +198,8 @@ int top_main  (int argc, char ** argv) {
 			len -= zombs;
 		}
 
+
+
 		i = 0;
 		int printed = 0;
 		for(; i < PROCESS_MAX; ++i)	{
@@ -201,10 +212,27 @@ int top_main  (int argc, char ** argv) {
 						break;
 					}
 				}
+				int ticks = ( j == -1 ) ? 0 : active_pids_ticks[j];
+				top_data * data = (top_data *) malloc(sizeof(top_data));
+				data->ticks = ticks;
+				data->pid = pid;
+				heap_insert(data, h);
+
+			}
+		} 
+		i = 0;
+		while(!heap_empty(h)) {
+			top_data * data = heap_remove_min(h);
+			if(i > 24)	{
+				break;
+			} else {
+				i++;
+				int pid = data->pid;
+				int ticks = data->ticks;
+
 
 				char * _pname = pname(pid);
 				char * status = NULL;
-
 
 				int stat = pstatus(pid);
 				switch(stat){
@@ -225,25 +253,23 @@ int top_main  (int argc, char ** argv) {
 				}
 
 				int priority = ppriority(pid);
-				int ticks = ( j == -1 ) ? 0 : active_pids_ticks[j];
+
 				len = (!len) ? 1 : len;
 
 				if (stat != PROCESS_ZOMBIE || (stat == PROCESS_ZOMBIE && allow_zombies) ) {
-					if (printed % 25 == 23) {
-						printf("PRESS A KEY TO CONTINUE LISTING...");
-						getC();
-					}
 					printed++;
-					
+
 					printf("PID: %d \t NAME: %s \t CPU:%% %d \t STATUS: %s \t PRIORITY: %d\n",
 						pid, _pname, 
 						(100 * ticks) / len, status, priority);
 				}
 			}
 		}
+		
 		printf("--------------------------------------------------------------------------------\n");
+		sleep(1024);
 	}
-	while((c = getC()) != 'q');
+	while(1);
 	
 	return 0;
 }
@@ -302,6 +328,8 @@ int _setsched (int argc, char ** argv)
 
 int _hang (int argc, char ** argv)
 {
+	int pid = pcreate("smallhang", 0, NULL);
+	prun(pid);
 	while(1);
 	return 0;
 }
@@ -309,7 +337,7 @@ int _hang (int argc, char ** argv)
 
 
 int _dcheck(int size, char** args) {
-	check_drive(ATA0);
+	// check_drive(ATA0);
 }
 
 
@@ -382,9 +410,9 @@ int _dfill (int argc, char ** argv)
 	
 	for(j = 0; j < 1000; ++j)
 	{
-		int count = 2;
+		int count = 384;
 		int bytes = 65536;
-		int sector = 1;
+		int sector = 1 + j * 128;
 		if(argc > 1)
 		{
 			int i;
@@ -395,22 +423,24 @@ int _dfill (int argc, char ** argv)
 			int offset = 0;
 			int ata = ATA0;
 	
-	
+			Cli();
 			_disk_write(ata, ans, count, sector);
-	
 			for(i = 0; i < 65536; ++i)	{
 				ans[i] = 0;
 			}
+			// _disk_read(ata, ans, count, sector);
+			Sti();
+			
+				printf("%d\n", j);
+			
 	
-			_disk_read(ata, ans, count, sector);
-	
-			for(i = 0; i < count; ++i)	{
-				if(ans[i * 512] != i % 10 + '0')	{
-					printf("Err %d %d %d %d\n", i % 10 + '0', ans[i * 512], i, j);
-					getC();
-					break;
-				}
-			}
+			// for(i = 0; i < count; ++i)	{
+			// 	if(ans[i * 512] != i % 10 + '0')	{
+			// 		printf("Err %d %d %d %d\n", i % 10 + '0', ans[i * 512], i, j);
+			// 		getC();
+			// 		break;
+			// 	}
+			// }
 	
 		}
 	}
@@ -420,7 +450,10 @@ int _dfill (int argc, char ** argv)
 int _cd(int argc, char ** argv) {
 	if(argc > 1)
 	{
-		cd(argv[1]);
+		int dir = cd(argv[1]);
+		if(dir == ERR_NO_EXIST) { 
+			printf("Folder %s doesn't exist\n", argv[1]);			
+		}
 	}
 }
 
@@ -431,9 +464,16 @@ int _pwd(int argc, char ** argv) {
 int _ls (int argc, char ** argv)
 {
 	char buffer[1024];
-	unsigned long f_offset = 0;
 	int off = 0;
-	ls(buffer, 1024, &f_offset);
+	int dir = open("", O_RD);
+	if(dir == ERR_PERMS) { 
+		printf("You don't have the permissions to list %s\n", pwd());			
+		return;
+	}
+	
+	
+	
+	read(dir, buffer, 1024);
 	dir_entry * d = (dir_entry *) &buffer;
 	while(d->inode) {
 		int len = d->name_len;
@@ -453,7 +493,7 @@ int _ls (int argc, char ** argv)
 		off += d->rec_len;
 		
 		if(off >= 1024)	{
-			ls(buffer, 1024, &f_offset);
+			read(dir,buffer, 1024);
 		}
 		d = (dir_entry *) ((char*)&buffer + off);
 	}
@@ -479,7 +519,14 @@ int _mkdir (int argc, char ** argv)
 int _rm (int argc, char ** argv)
 {
 	if(argc > 1)	{
-		rm(argv[1]);
+		int code = rm(argv[1]);
+		if(code > 0)	{
+			printf("File %s deleted sucessfully.\n", argv[1]);
+		} else if(code == ERR_NO_EXIST) {
+			printf("File %s doesn't exist, focus boy!\n", argv[1]);
+		} else if(code == ERR_PERMS) { 
+			printf("You don't have the permissions to delete %s\n", argv[1]);			
+		}
 	}
 	return 0;
 }
@@ -487,7 +534,14 @@ int _rm (int argc, char ** argv)
 int _touch(int argc, char ** argv)
 {
 	if(argc > 1)	{
-		open(argv[1], O_CREAT);
+		int code = open(argv[1], O_NEW);// FIXTHIS
+		if(code > 0)	{
+			printf("File %s created sucessfully.\n", argv[1]);
+		} else if(code == ERR_NO_EXIST) {
+			printf("File %s doesn't exist, focus boy!\n", argv[1]);
+		} else if(code == ERR_PERMS) { 
+			printf("You don't have the permissions to create %s\n", argv[1]);			
+		}
 	}
 	return 0;
 }
@@ -496,6 +550,15 @@ int _cat(int argc, char ** argv)
 {
 	if(argc > 1)	{
 		int fd = open(argv[1], O_RD);
+		
+		if(fd == ERR_PERMS)	{
+			printf("You are not allowed to read %s!\n", argv[1]);
+			return;
+		}
+		if(fd == ERR_NO_EXIST)	{
+			printf("The file %s doesn't exist\n", argv[1]);
+			return;
+		}
 		char buffer[512];
 		int i = 0;
 		int readsomething = 0;
@@ -526,7 +589,17 @@ int _fbulk(int argc, char ** argv) {
 	if(argc > 2)	{
 		int fd = open(argv[1], O_WR);
 		int times = atoi(argv[2]);
-
+		if(fd == ERR_PERMS)
+		{
+			printf("You are not allowed to write on %s!\n", argv[1]);
+			return;
+		}
+		if(fd == ERR_NO_EXIST)
+		{
+			printf("The file %s doesn't exist\n", argv[1]);
+			return;
+		}
+		
 		if(!times) {
 			times = 1;
 		}
@@ -536,14 +609,11 @@ int _fbulk(int argc, char ** argv) {
 		{
 			sect[i] = 'a';
 		}
-		for(i = 0; i < times * 16; ++i)
-		{
+		for(i = 0; i < times * 16; ++i)	{
 			write(fd, sect, 512);
 		}
-		
-
 	} else {
-		printf("Params required: fwrite filename data (-o)\n");
+		printf("Params required: fbulk filename times\n");
 		printf("Want to write more data? Try fbulk\n");
 	}
 	return 0;	
@@ -553,9 +623,17 @@ int _fwrite(int argc, char ** argv)
 {
 	if(argc > 2)	{
 		int fd = open(argv[1], O_WR);
+		if(fd == ERR_PERMS)	{
+			printf("You are not allowed to write on %s!\n", argv[1]);
+			return;
+		}
+		if(fd == ERR_NO_EXIST)	{
+			printf("The file %s doesn't exist\n", argv[1]);
+			return;
+		}
 		write(fd, argv[2], strlen(argv[2]) - 1);
 	} else {
-		printf("Params required: fwrite filename data (-o)\n");
+		printf("Params required: fwrite filename data\n");
 		printf("Want to write more data? Try fbulk\n");
 	}
 	return 0;
@@ -612,12 +690,9 @@ int _setgid(int argc, char ** argv) {
 }
 
 int _udelete(int argc, char ** argv) {
-	if(argc > 1)
-	{
-		if(uexists(argv[1]) != -1)
-		{
-			if(udelete(argv[1]) == -1)
-			{
+	if(argc > 1)	{
+		if(uexists(argv[1]) != -1)	{
+			if(udelete(argv[1]) == -1)	{
 				printf("User %s doesn't exist or invalid perms.\n", argv[1]);
 			} else {
 				printf("User %s deleted, poor boy!\n", argv[1]);
@@ -652,7 +727,6 @@ int _chmod(int argc, char ** argv) {
 		while(i >= 0) {
 			if((argv[1][i] - '0') <= 9 && (argv[1][i] - '0') >= 0)
 			{
-				printf("%c\n", argv[1][i]);
 				val += j * (argv[1][i] - '0');
 				j *= 8;
 			}
@@ -697,10 +771,96 @@ int _getmod(int argc, char ** argv) {
 	return 0;
 }
 
-int _finfo(int argc, char ** argv) {
+int _finfo(int argc, char ** argv)	{
+	if(argc > 1)	{
+		int data[8];
+		fs_finfo(argv[1], &data);
+		printf("File name: %s\n", argv[1]);
+		printf("Inode: %d\n", data[0]);
+		printf("File blocks: %d\n", data[1]);
+		printf("File bytes: %d\n", data[2]);
+		printf("File permissions: %d\n", data[3]);
+		printf("File uid: %d\n", data[4]);
+		printf("File dir inode: %d\n", data[5]);
+	}
+	check_drive(0);
+	return 0;
+}
+
+int _su(int argc, char ** argv)	{
+	char * username = NULL;
+	char * password = NULL;
+	printf("Login: ");
+	username = (char *) getConsoleString(1);
+	if(strlen(username) > 0)	{
+		printf("Password: ");
+		password = (char *) getConsoleString(0);
+		if (ulogin(username,password) != -1)	{
+			printf("Successfully logged in as %s\n", username);
+		} else {
+			printf("Bad credentials, try again...\n");
+		}
+	}
+	free(username);
+	free(password);
+}
+
+int _link(int argc, char ** argv)	{
+	if(argc > 2)
+	{
+		int code = makelink(argv[1],argv[2]);
+		if(code > 0)	{
+			printf("Link from %s to %s deleted sucessfully.\n", argv[1], argv[2]);
+		} else if(code == ERR_NO_EXIST) {
+			printf("File or folder %s doesn't exist, focus boy!\n", argv[2]);
+		} else if(code == ERR_PERMS) { 
+			printf("You don't have the permissions to create %s\n", argv[1]);			
+		}
+	}
+}
+
+int _cp(int argc, char ** argv) {
+	if(argc > 2)
+	{
+		int code = cp(argv[1], argv[2]);
+		if(code > 0)
+		{
+			printf("Copied from %s to %s successfully\n", argv[1], argv[2]);
+		} 	else if(code == ERR_PERMS) { 
+			printf("You don't have the permissions to copy %s\n", argv[1]);			
+		}
+	}
+}
+
+int _mv(int argc, char ** argv) {
+	if(argc > 2)
+	{
+		int code = mv(argv[1], argv[2]);
+		if(code > 0)
+		{
+			printf("Moved from %s to %s successfully\n", argv[1], argv[2]);
+		} 	else if(code == ERR_PERMS) { 
+			printf("You don't have the permissions to move %s to %s\n", argv[1], argv[2]);			
+		} else if(code == ERR_INVALID_TYPE)
+		{
+			printf("Can't move: invalid filetype for %s\n", argv[2]);
+		} else if(code == ERR_REPEATED)	{
+			printf("Can't move: file %s already exists in destination %s\n", argv[1], argv[2]);
+		} else {
+			printf("WTF %d uncached error code D:\n", code);
+		}
+	}
+}
+
+extern int val;
+int _smallhang(int argc, char ** argv) {
 	if(argc > 1)
 	{
-		fs_finfo(argv[1]);
+		int msecs = atoi(argv[1]);
+		printf("I wait %d msecs\n", msecs);
+		sleep(msecs);
+		printf("%d have passed\n", msecs);
 	}
-	return 0;
+
+ 	waitpid(getpid());
 }

@@ -44,13 +44,15 @@
 #define KILL         19
 #define PSETP        20
 #define SETSCHED     21
+
 // FS
 #define PWD          22
 #define CD           23
-#define LS           24
+#define FINFO        24
 #define MOUNT        25
 #define MKDIR        26
 #define RM           27
+
 // Users and sessions
 #define GETUID       28
 #define GETGID       29
@@ -65,6 +67,15 @@
 #define GETOWN       38
 #define GETMOD       39
 
+// FS Again...
+#define CP           40
+#define MV           41
+#define LINK         42
+
+// FS Data...
+#define FSSTAT       43
+
+#define SLEEP        44
 
 void _disk();
 void setready();

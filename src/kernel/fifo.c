@@ -50,19 +50,14 @@ int fifo_exists(char * file_name) {
 
 
 
-int fifo_make(char * file_name) {
+int fifo_make(int ptr) {
 	if(fifos == NULL)	{
 		fifos = list_init();
 	}
 	
-	int n = 31; 
-	
-	// TODO: Use a filesystem function.
-	int i = 0;
-	int len = strlen(file_name);
-	for(i = 0; i < len; ++i) {
-		n += file_name[i] * file_name[i] * i;
-	}
+	int n;
+	int i;
+	n = ptr;
 	
 	fifo * f = NULL;
 	if((f = fifo_find(n)) == NULL)
@@ -132,13 +127,13 @@ int fifo_write(int fd, char * msg, int len){
 		process_setready(f->rd_lck_p);
 		f->rd_lck_p = NULL;
 	}
-//	printf("Written len %d\n", len);
 }
 
 int fifo_read(int fd, char * buffer, int read_size){	
 	fifo * f = (fifo *) fd;
 	while(f->writes == 0) {
 		f->rd_lck_p = getp();
+
 		getp()->state = PROCESS_BLOCKED;
 		return SYSR_BLOCK;
 	}
@@ -166,6 +161,24 @@ int fifo_read(int fd, char * buffer, int read_size){
 }
 
 int fifo_close(int fd){
-	// TODO;
+	fifo * f = (fifo *) fd;
+	if(f->wr_lck_p != NULL) {
+		process_setready(f->wr_lck_p);
+	}
+	if(f->rd_lck_p != NULL) {
+		process_setready(f->rd_lck_p);
+	}
+	f->wr_i         = 0;
+	f->rd_i         = 0;
+	f->writes       = 0;
+	f->write_locked = 0;
+	f->buf_wr_i     = 0;
+	f->buf_rd_i     = 0;
+	f->wr_lck_p     = NULL;
+	f->rd_lck_p     = NULL;
+	int i = 0;
+	for(; i < FIFO_DATA_SIZE; ++i)	{
+		f->data[i] = 0;
+	}
 	return 1;
 }

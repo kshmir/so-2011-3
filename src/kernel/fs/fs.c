@@ -51,19 +51,11 @@ int bitmap_handling = 0;
 ///////////// Block Handling
 
 static void block_write(void * data, unsigned int block_n) {
-	// printf("Start write\n");
-
-	
-
 	hdd_write( data, block_n * 2 + 1);	
-	//	hdd_write( data + SECTOR_SIZE, block_n * 2 + 2);	
-	
 }
 
 static void block_read(void * data, unsigned int block_n) {
 	hdd_read( data, block_n * 2 + 1);	
-	//	hdd_read( data + SECTOR_SIZE, block_n * 2 + 2);		
-	
 }
 
 static void block_clear(block * b){
@@ -117,9 +109,9 @@ void fs_sb_write() {
 static void fs_gbdt_init() {
 	int i = 0;
 	for (; i < FS_BLOCK_GROUP_COUNT; i++) {
-		gbdt[i].bg_block_bitmap       = i * FS_BLOCK_GROUP_SIZE + FS_GLOB_GB_OFFSET;
-		gbdt[i].bg_inode_bitmap       = i * FS_BLOCK_GROUP_SIZE + FS_GLOB_GB_OFFSET + 1;
-		gbdt[i].bg_inode_table        = i * FS_BLOCK_GROUP_SIZE + FS_GLOB_GB_OFFSET + 2;
+		gbdt[i].bg_block_bitmap       = i * FS_BLOCK_GROUP_SIZE / 1024 + FS_GLOB_GB_OFFSET;
+		gbdt[i].bg_inode_bitmap       = i * FS_BLOCK_GROUP_SIZE / 1024 + FS_GLOB_GB_OFFSET + 1;
+		gbdt[i].bg_inode_table        = i * FS_BLOCK_GROUP_SIZE / 1024 + FS_GLOB_GB_OFFSET + 2;
 		gbdt[i].bg_free_inodes_count  = FS_INODE_TABLE_SIZE * sizeof(block) / sizeof(inode);
 		gbdt[i].bg_free_blocks_count  = FS_DATA_TABLE_SIZE;
 		gbdt[i].bg_used_dirs_count    = 0;
@@ -444,10 +436,9 @@ void log_block_read(inode * n, int * log_block) {
 	int ph_block = 0;
 	
 	make_ph_block(n, &ph_block, log_block);
-	
 	// Write the data inside the data block
+	data_read_block(&b, ph_block);
 	bitmap_write(bm_blocks, ph_block - 1, 1);
-	data_read_block(&b, ph_block);	
 }
 
 // When a buffer is full, writes the block and gets the next one.
@@ -586,7 +577,7 @@ void fs_init() {
 		printf("Creating /tmp\n");
 		int tmp_inode   = fs_mkdir("tmp", slash_inode);
 		printf("Creating /tmp/testfile\n");
-		int f1 = fs_open_reg_file("testfile", tmp_inode, 0);
+		int f1 = fs_open_reg_file("testfile", tmp_inode, O_NEW);
 		
 		printf("FS ended...\n");
 		
@@ -620,14 +611,14 @@ unsigned int fs_read_file(int inode, char * data, int size, unsigned long * f_of
 		top_log_block = 1;
 	}
 
-	if (log_block < top_log_block || log_block == top_log_block && block_index <= n._last_write_offset) {
+	if (log_block < top_log_block || log_block == top_log_block && block_index < n._last_write_offset) {
 
 		log_block_read(&n, &log_block);
 		char * block = (char *) &b;
 		for (; i < size; i++, block_index++) {
 			data[i] = block[block_index];
 			
-			if (top_log_block == log_block && block_index == n._last_write_offset) {
+			if (top_log_block == log_block && block_index == n._last_write_offset - 1) {
 				break;
 			}
 			
@@ -658,14 +649,15 @@ unsigned int fs_write_file(int inode, char * data, int size) {
 	int block_index = n._last_write_offset;
 	log_block_read(&n, &log_block);
 	char * block = (char *) &b;
-	for (; i < size; i++,block_index++) {
+	for (; i < size; i++) {
 		block[block_index] = data[i];
 		if (block_index == FS_BLOCK_SIZE - 1) {
 			log_block_write(&n, &log_block);
-
 			log_block++;
 			log_block_read(&n, &log_block);
-			block_index = -1;
+			block_index = 0;
+		} else {
+			block_index++;
 		}
 	}
 	n._last_write_offset = block_index;
@@ -729,17 +721,21 @@ void delete_internal_inodes(int log_block) {
 
 
 unsigned int fs_rm(unsigned int inode, int recursive) {
-	
-	
 	inode_read(inode, &n);
 
-	// if (!recursive) { // I'm not sure about this, but well... at least it's just a security flaw.
-	// 	inode_read(n._dir_inode, &n);
-	// 	if(!fs_has_perms(&n, ACTION_WRITE))
-	// 	{
-	// 		return 0;
-	// 	}
-	// }
+	if(!fs_has_perms(&n, ACTION_WRITE))
+	{
+		return ERR_PERMS;
+	}
+	
+	if (!recursive) { // I'm not sure about this, but well... at least it's just a security flaw.
+		inode_read(n._dir_inode, &n);
+		if(!fs_has_perms(&n, ACTION_WRITE))	{
+			return ERR_PERMS;
+		}
+		
+		inode_read(inode, &n);
+	}
 	
 
 	int log_block = n.blocks / 2 + 1;
@@ -763,10 +759,11 @@ unsigned int fs_rm(unsigned int inode, int recursive) {
 				} else {
 					if (dot->name_len > 0 && dot->inode != inode && dot->inode != n._dir_inode) {
 						int _rm = fs_rm(dot->inode, 1);
-						if(!_rm)
+						if(_rm < 0)
 						{
 							data_write_block(&entries, ph_block);
-							return 0;
+							bitmap_write(bm_blocks, ph_block - 1, 0);
+							return _rm;
 						}
 						off = dir_op_offset;
 						dot->name_len = 0;
@@ -926,58 +923,91 @@ unsigned int folder_rem_direntry(unsigned int file_inode, unsigned int folder_in
 					dot->name_len = 0; // Sets as deleted
 				}
 				int to_write = index - 1;
-				
 				log_block_write(&n, &to_write);
+				break;
 			}
 		}
 	}	
 	return 0;
 }
 
-unsigned int fs_open_link(char * name, unsigned int folder_inode, int mode) {
-	return fs_open_file(name, folder_inode, mode, EXT2_S_IFLNK);
+unsigned int fs_open_link(char * name, char * target_name) {
+	unsigned int folder_inode = current_ttyc()->pwd;
+	int target_inode = fs_indir(target_name, folder_inode);
+	if(target_inode > 0)
+	{
+		int result = fs_open_file(name, folder_inode, O_NEW, EXT2_S_IFLNK);
+		if(result > 0)	{
+			inode_read(result, &n);
+			n.data_blocks[0] = target_inode;
+			inode_write(result, &n);	
+			return 1;
+		}
+		else {
+			return result;
+		}
+	} else {
+		return ERR_NO_EXIST;
+	}
+
 }
 
 unsigned int fs_open_fifo(char * name, unsigned int folder_inode, int mode) {
 	return fs_open_file(name, folder_inode, mode, EXT2_S_IFIFO);
 }
 
-unsigned int fs_open_reg_file(char * name, unsigned int folder_inode, int mode) {
-	return fs_open_file(name, folder_inode, mode, EXT2_S_IFREG);
+unsigned int fs_open_reg_file(char * name, unsigned int folder_inode, int mode) {	
+	int i = fs_open_file(name, folder_inode, mode, EXT2_S_IFREG);
+	return i;
 }
 
 unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int type) {
 	unsigned int inode_id = 0;
 
-	inode_id = fs_indir(name, folder_inode);
+	if(strcmp(name, "/") == 0 && strlen(name) == strlen("/"))	{
+		return 1; // root
+	}
+
+
+	if(name[0] == 0)
+	{
+		inode_id = current_ttyc()->pwd;
+	} else {
+		inode_id = fs_indir(name, folder_inode);
+	}
+	
 	if (inode_id) {
 		if (mode & O_CREAT) {
 			int _rm_res = fs_rm(inode_id, 0);
-			if(!_rm_res) {
-				return 0;
+			if(_rm_res < 0) {
+				return _rm_res;
 			}
 		} else if(mode & O_NEW) {
-			return 0;
-		} else {
+			inode_read(inode_id, &n);
+			if(n.mode == EXT2_S_IFLNK)	{
+				return n.data_blocks[0];
+			}
+			return inode_id;
+		} 
+		else {
+			inode_read(inode_id, &n);
 			int can = 1;
-			// &n comes from the indir call up there... 
-			// stackless is fun, but dangerous!
 			if((mode & O_RD) && !fs_has_perms(&n, ACTION_READ))	{
 				can = 0;
 			}
-			
+
 			if((mode & O_WR) && !fs_has_perms(&n, ACTION_WRITE))	{
 				can = 0;
 			}
-			
-			if(can || !fs_done)
-			{
+
+			if(can || !fs_done)	{
 				return inode_id;
 			} else {
-				return 0;
+				return ERR_PERMS;
 			}
-
 		}
+	} else if (!(mode & (O_NEW | O_CREAT))) {
+		return ERR_NO_EXIST;
 	}
 	
 	inode_id = bitmap_first_valued(bm_inodes, FS_INODE_BITMAP_SIZE, 0) + 1;
@@ -992,7 +1022,7 @@ unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int 
 		inode_read(folder_inode, &n);
 		
 		if(!fs_has_perms(&n, ACTION_WRITE))	{
-			return 0;
+			return ERR_PERMS;
 		}
 		
 		log_block = n.blocks / 2;
@@ -1016,6 +1046,7 @@ unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int 
 	} else {
 		n.uid = current_ttyc()->uid;
 	}
+	
 	n.mode =  type;
 	n.size = 0;
 	n.blocks = 0; // Beware! This represents the SECTORS!
@@ -1029,13 +1060,15 @@ unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int 
 	
 	inode_clear(&n);
 
+	if(n.mode == EXT2_S_IFLNK)	{
+		return n.data_blocks[0];
+	}
 	
 	return inode_id;
 }
 
 unsigned int fs_mkdir(char * name, unsigned int parent_inode) {
 	unsigned int inode_id = 0;
-	
 	if ((inode_id = fs_indir(name, parent_inode))) {
 		return 0;
 	}
@@ -1051,9 +1084,8 @@ unsigned int fs_mkdir(char * name, unsigned int parent_inode) {
 		inode_read(parent_inode, &n);
 		
 		if(!fs_has_perms(&n, ACTION_WRITE))	{
-			return 0;
+			return ERR_PERMS;
 		}
-		
 		
 		log_block = n.blocks / 2;
 		
@@ -1112,8 +1144,6 @@ unsigned int fs_mkdir(char * name, unsigned int parent_inode) {
 	return inode_id;
 }
 
-
-
 static char pwd_string[1024];
 
 char *	fs_pwd() {
@@ -1127,14 +1157,11 @@ char *	fs_pwd() {
 		
 	int start_inode = current_ttyc()->pwd;
 
-
 	inode_read(start_inode, &n);
-
 
 	while(n._dir_inode != start_inode) {
 		int _old_dirnode = n._dir_inode;
 		char * name = fs_iname(start_inode, n._dir_inode);
-		// printf("Moving to %d\n", start_inode);
 		int k = strlen(name) - 2;
 		for(; k >= 0; k--, j--) {
 			pwd_string[j] = name[k];
@@ -1161,20 +1188,26 @@ char *	fs_pwd() {
 	return pwd_string;
 }
 
-int fs_ls(char * data, int size, unsigned long * f_offset) {
-	return fs_read_file(current_ttyc()->pwd, data, size, f_offset);
-}
 
 int	fs_cd(char * name) {
 	int start_inode = current_ttyc()->pwd;
 	
 	int namenode = fs_indir(name, start_inode);
 	if (namenode) {
-		// printf("Moving to %d\n", namenode);
-		current_ttyc()->pwd = namenode;
+		inode_read(namenode, &n);
+		if(n.mode & EXT2_S_IFLNK)	{
+			if (bitmap_read(bm_inodes, n.data_blocks[0] - 1))
+				current_ttyc()->pwd = n.data_blocks[0];
+			else {
+				return ERR_NO_EXIST;
+			}
+			
+		} else {
+			current_ttyc()->pwd = namenode;
+		}
 		return 1;
 	} else {
-		return 0;
+		return ERR_NO_EXIST;
 	}
 }
 
@@ -1222,7 +1255,7 @@ unsigned int fs_getown(char * filename) {
 		inode_read(namenode, &n);
 		return n.uid;
 	} else {
-		return -2;
+		return ERR_NO_EXIST;
 	}
 }
 
@@ -1233,7 +1266,7 @@ unsigned int fs_getmod(char * filename) {
 		inode_read(namenode, &n);
 		return n.i_file_acl & 0777;
 	} else {
-		return -2;
+		return ERR_NO_EXIST;
 	}
 }
 
@@ -1249,38 +1282,37 @@ unsigned int fs_chown(char * filename, char * username) {
 			n.uid = new_uid;
 			inode_write(namenode, &n);
 		} else {
-			return -1;
+			return ERR_PERMS;
 		}
 		return 1;
 	} else {
-		return -2;
+		return ERR_NO_EXIST;
 	}
 }
 
-void fs_finfo(char * filename) {
+void fs_finfo(char * filename, int * data) {
 	int start_inode = current_ttyc()->pwd;
 	int namenode = fs_indir(filename, start_inode);
 	if(namenode)
 	{
 		inode_read(namenode, &n);	
 		
+		data[0] = namenode;						// Inode
+		data[1] = n.blocks / 2;					// Blocks
+		data[2] = n.blocks / 2 * 1024;			// Bytes
+		data[3] = n.i_file_acl;					// Permissions
+		data[4] = n.uid;						// UID
+		data[5] = n._dir_inode;					// Directory inode
+ 	}
+}
 
-		printf("Filename: %s\n", filename);
-		printf("File inode: %d\n", namenode);
-		printf("File blocks: %d\n", n.blocks / 2);
-		
-		printf("File perms: %d\n", n.i_file_acl);
-		printf("File uid: %d\n", n.uid);
-
-	}
-	
-	printf("SUPERBLOCK DEBUGGING\n");
-	printf("\tFree Blocks: %d\t Total Blocks: %d\n", 
-		   bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0),
-		   FS_DATA_BITMAP_SIZE);
-	printf("\tFree Inodes: %d\t Total Inodes: %d\n",
-		   bitmap_block_count(bm_inodes, FS_INODE_BITMAP_SIZE, 0),
-		   FS_INODE_BITMAP_SIZE);
+void fs_stat(int * data) {
+	data[0] = bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0);        // Free Blocks
+	data[1] = FS_DATA_BITMAP_SIZE;                                          // Total Blocks
+	data[2] = bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0);        // Free Inodes
+	data[3] = FS_DATA_BITMAP_SIZE;                                          // Total Inodes
+	data[4] = bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0) * 1024; // Free Bytes
+	data[5] = bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0) * 1024; // Total available bytes.
 }
 
 unsigned int fs_chmod(char * filename, int perms) {
@@ -1293,10 +1325,146 @@ unsigned int fs_chmod(char * filename, int perms) {
 			n.i_file_acl = perms;
 			inode_write(namenode, &n);
 		} else {
-			return -1;
+			return ERR_PERMS;
 		}
 		return 1;
 	} else {
-		return -2;
+		return ERR_NO_EXIST;
 	}
+}
+
+unsigned int fs_is_fifo(int inode) {
+	if(inode < 0)	{
+		return 0;
+	}
+	inode_read(inode, &n);
+	return n.mode & EXT2_S_IFIFO;
+}
+
+unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode) {
+	int i1 = fs_open_file(name, from_inode, O_RD, EXT2_S_IFREG);
+	if(i1 < 0)	{
+		return i1; // If there's an error with the first name then there's nothing to do actually.
+	}
+	inode_read(i1, &n);	
+	int i2;
+	if(!(n.mode & EXT2_S_IFDIR))
+	{
+		i2 = fs_open_file(newname, to_inode, O_WR, n.mode & (~EXT2_S_IFDIR)); 
+		inode_read(i1, &n);	
+		if(i2 < 0) { 
+			i2 = fs_open_file(newname, to_inode, O_WR | O_NEW , n.mode & (~EXT2_S_IFDIR));
+		}
+		
+		if(i2 < 0) { 
+			return ERR_EXISTS;
+		}
+	} else {
+		i2 = fs_mkdir(newname, to_inode);
+		if(i2 < 0) { 
+			return ERR_EXISTS;
+		}
+	}
+
+	inode_read(i1, &n);
+	block data;
+	unsigned long offset = 0;
+	
+	while(fs_read_file(i1, (void *) &data, sizeof(block), &offset) > 0) {
+		if(n.mode & EXT2_S_IFDIR)
+		{
+			int off = 0;
+			dir_op_offset = 0;
+			dir_entry * old_dot = NULL;
+			dir_entry * dot = iterate_dir_entry(&data);
+			// Iterates dir entries
+			while (dot != NULL) {
+				if (dot == NULL) {
+					break;
+				} else {
+					if (dot->name_len > 0 && dot->inode != i1 && dot->inode != n._dir_inode && i2 != 0) {
+						int _cp = fs_cp(dot->name, dot->name, i1, i2);
+
+						if(_cp < 0)
+						{
+							return _cp;
+						}
+						off = dir_op_offset;
+						dot->name_len = 0;
+						dir_op_offset = off;
+					}
+				}
+				old_dot = dot;
+				dot = iterate_dir_entry(&data);
+			}
+			inode_read(i1, &n);
+		} else {
+			fs_write_file(i2, (void *)&data, sizeof(block));		
+		}
+	}
+
+	return i2;
+}
+
+unsigned int fs_mv(char * name, char * newname, int from_inode) {
+	int i1 = fs_open_file(name, from_inode, O_WR | O_RD, EXT2_S_IFREG);
+	if(i1 < 0)	{
+		return i1; // If there's an error with the first name then there's nothing to do actually.
+	}
+	
+	int i2 = fs_indir(newname, from_inode);
+	if(i2 == 0)	{
+		folder_rem_direntry(i1, n._dir_inode);
+
+		inode_read(from_inode, &n);
+		int log_block = n.blocks / 2;
+
+		block_clear(&b);
+		dir_op_offset = 0;
+		log_block_read(&n, &log_block);
+		add_dir_entry(&n, EXT2_FT_DIR, i1, newname, &log_block);
+		log_block_write(&n, &log_block);		
+		
+		n.blocks = log_block * 2;
+		inode_write(from_inode, &n);
+		
+		return 1;
+	} else {
+		inode_read(i2, &n);
+
+		if(!fs_has_perms(&n, ACTION_READ))	{
+			return ERR_PERMS;
+		}
+		
+		if(!(n.mode & EXT2_S_IFDIR))	{
+			return ERR_INVALID_TYPE;
+		}
+		
+		if (fs_indir(name, i2)) {
+			return ERR_REPEATED;
+		}
+
+		int log_block = n.blocks / 2;
+
+		block_clear(&b);
+		dir_op_offset = 0;
+		log_block_read(&n, &log_block);
+		add_dir_entry(&n, EXT2_FT_DIR, i1, name, &log_block);
+		log_block_write(&n, &log_block);
+
+		n.blocks = log_block * 2;
+		inode_write(i2, &n);
+
+		inode_read(i1, &n);
+		folder_rem_direntry(i1, n._dir_inode);
+		inode_read(i1, &n);
+		folder_rem_direntry(n._dir_inode, i1);
+		log_block_read(&n, &log_block);
+		add_dir_entry(&n, EXT2_FT_DIR, i2, "..", &log_block);
+		log_block_write(&n, &log_block);
+		n._dir_inode = i2;
+		inode_write(i1, &n);
+	}	
+	return i1;
+	
 }

@@ -21,7 +21,7 @@ typedef struct inode inode;
 
 #define EXT2_NAME_LEN			255
 
-#define FS_BLOCK_GROUP_COUNT	1
+#define FS_BLOCK_GROUP_COUNT	2
 #define	FS_BLOCK_GROUP_SIZE		sizeof(block_group)
 
 #define FS_BLOCK_SIZE		    1024
@@ -37,6 +37,7 @@ typedef struct inode inode;
 #define FS_CACHE_SIZE			2048
 #define FS_GLOB_GB_OFFSET		3
 
+#define FS_INFO_LEN				8
 
 #define ACTION_READ 		10
 #define ACTION_WRITE 		11
@@ -130,7 +131,7 @@ typedef struct ext2_group_desc
 
 
 struct inode {
-	short	mode;
+	int	mode;
 	
 	unsigned int		size;
 	
@@ -140,6 +141,7 @@ struct inode {
 	int		delete_date;
 	
 	int		uid;
+	int		gid;
 	short 	links;
 	
 	int		blocks;
@@ -150,7 +152,7 @@ struct inode {
 	
 	int		i_file_acl;
 	int		i_dir_acl;
-	int		i_faddr;
+	short	i_faddr;
 	
 	// Ousize EXT2 Standard, used by our OS
 	int		_dir_log_block;
@@ -204,9 +206,11 @@ char *       fs_pwd();
 
 unsigned int folder_rem_direntry(unsigned int file_inode, unsigned int folder_inode);
 
-int          fs_ls(char * data, int size, unsigned long * f_offset);
+unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode);
 
-unsigned int fs_open_link(char * name, unsigned int folder_inode, int mode);
+unsigned int fs_mv(char * name, char * newname, int from_inode);
+
+unsigned int fs_open_link(char * name, char * target_name);
 
 unsigned int fs_open_fifo(char * name, unsigned int folder_inode, int mode);
 
@@ -221,3 +225,5 @@ unsigned int fs_getown(char * filename);
 unsigned int fs_getmod(char * filename);
 
 unsigned int fs_has_perms(inode * n, int for_what);
+
+unsigned int fs_is_fifo(int inode);

@@ -3,7 +3,7 @@
 
 int fifo_exists(char * file_name);
 
-int fifo_make(char * file_name);
+int fifo_make(int inode);
 
 int fifo_open(char * file_name);
 

@@ -144,13 +144,13 @@ void int_80() {
 		case OPEN:
 			_fd = process_getfreefd();
 			fd = fd_open(_FD_FILE, (void *) kernel_buffer[1], kernel_buffer[2]);
-			if(_fd != -1)
+			if(_fd != -1 && fd >= 0)
 			{
 				getp()->file_descriptors[_fd] = fd;
 				kernel_buffer[KERNEL_RETURN] = _fd;
 			}
 			else {
-				kernel_buffer[KERNEL_RETURN] = -1;
+				kernel_buffer[KERNEL_RETURN] = fd;
 			}
 			break;
 		case CLOSE:
@@ -242,11 +242,11 @@ void int_80() {
 		case CD:
 			kernel_buffer[KERNEL_RETURN] = (int) fs_cd(kernel_buffer[1]);
 			break;
+		case FINFO:
+			fs_finfo(kernel_buffer[1], kernel_buffer[2]);
+			break;
 		case MOUNT:
 			fs_init();
-			break;
-		case LS:
-			kernel_buffer[KERNEL_RETURN] = (int) fs_ls(kernel_buffer[1],kernel_buffer[2],kernel_buffer[3]);
 			break;
 		case MKDIR:
 			kernel_buffer[KERNEL_RETURN] = (int) fs_mkdir(kernel_buffer[1],current_ttyc()->pwd);
@@ -255,6 +255,8 @@ void int_80() {
 			inode = fs_indir(kernel_buffer[1],current_ttyc()->pwd);
 			if (inode) {
 				kernel_buffer[KERNEL_RETURN] = (int) fs_rm(inode,0);
+			} else {
+				kernel_buffer[KERNEL_RETURN] = ERR_NO_EXIST;
 			}
 			break;
 		case GETUID:
@@ -309,6 +311,21 @@ void int_80() {
 		case GETMOD:
 			kernel_buffer[KERNEL_RETURN] = fs_getmod(kernel_buffer[1]);
 			break;
+		case CP:
+			kernel_buffer[KERNEL_RETURN] = fs_cp(kernel_buffer[1], kernel_buffer[2], current_ttyc()->pwd, current_ttyc()->pwd);
+			break;
+		case MV:
+			kernel_buffer[KERNEL_RETURN] = fs_mv(kernel_buffer[1], kernel_buffer[2], current_ttyc()->pwd);
+			break;
+		case LINK:
+			kernel_buffer[KERNEL_RETURN] = fs_open_link(kernel_buffer[1], kernel_buffer[2], current_ttyc()->pwd);
+			break;
+		case FSSTAT:
+			kernel_buffer[KERNEL_RETURN] = fs_stat(kernel_buffer[1]);
+			break;
+		case SLEEP:
+			kernel_buffer[KERNEL_RETURN] = scheduler_sleep(kernel_buffer[1]);
+			break;
 		default:
 			break;
 	}
@@ -341,6 +358,7 @@ void signal_on_demand() {
 
 ///////////// Fin Handlers de interrupciones.
 
+int val = 0;
 Process * p1, * idle, * kernel;
 
 int idle_main(int argc, char ** params) {
@@ -386,33 +404,28 @@ int idle_main(int argc, char ** params) {
 	}
 
 	make_atomic();
-
-
-
-
-	release_atomic();
-	
+	mount();
+	users_init();
 	setready(); // Now we can read the keyboard
-	
-
 	tty_init(0);
 	tty_init(1);
 	tty_init(2);
 	tty_init(3);
 	tty_init(4);
-	tty_init(5);
+	tty_init(5);		
+	fs_finish();
+
+	release_atomic();
+	
+
 	
 
 	while(1) {
-
-		fs_finish();		
 		_Halt(); // Now set to idle.
 	}
 }
 
-void disk()	{
-	printf("Wo\n");
-}
+void _rtc();
 
 ///////////// Inicio KMAIN
 
@@ -423,12 +436,7 @@ void disk()	{
 kmain() {
 	int i, num;
 
-	// setup_IDT_entry(&idt[0x0E], 0x08, (dword) & _disk, ACS_INT, 0);
-	setup_IDT_entry(&idt[0x76], 0x08, (dword) & _disk, ACS_INT, 0);
-	// setup_IDT_entry(&idt[0x0D], 0x08, (dword) & _disk, ACS_INT, 0);
-	// setup_IDT_entry(&idt[0x78], 0x08, (dword) & _disk, ACS_INT, 0);
-	// setup_IDT_entry(&idt[0x79], 0x08, (dword) & _disk, ACS_INT, 0);
-	// setup_IDT_entry(&idt[0x74], 0x08, (dword) & _disk, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x70], 0x08, (dword) & _rtc, ACS_INT, 0);
 
 	/* CARGA DE IDT CON LA RUTINA DE ATENCION DE IRQ0    */
 
@@ -452,18 +460,27 @@ kmain() {
 	idtr.base += (dword) & idt;
 	idtr.limit = sizeof(idt) - 1;
 
-	_lidt(&idtr);
-
-
-
-	
+	_lidt(&idtr);	
 	
 	Cli();
+	int rate = 0x06;
+	_outb(0x70, 0x0A); //set index to register A
+	char prev=_inb(0x71); //get initial value of register A
+	_outb(0x70, 0x0A); //reset index to A
+	_outb(0x71, (prev & 0xF0) | rate); //write only our rate to A. Note, rate is the bottom 4 bits.
+	
 
 	scheduler_init();
+
+
 	/* Habilito interrupcion de timer tick*/
 	_mascaraPIC1(0x00);
 	_mascaraPIC2(0x00);
+	
+	_outb(0x70, 0x0B); //set the index to register B
+	prev= _inb(0x71); //read the current value of register B
+	_outb(0x70, 0x0B); //set the index again(a read will reset the index to register D)
+	_outb(0x71, prev | 0x40); //write the previous value or'd with 0x40. This turns on bit 6 of register B
 
 	Sti();
 

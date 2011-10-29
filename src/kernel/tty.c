@@ -91,22 +91,22 @@ int process_input(const char * input, int tty_number) {
 		if(pid != -1)
 		{
 			if(stdout_file) {
-				int _stdout = open(stdout_call_buffer, O_RD | O_WR);
-				if(_stdout != -1)
+				int _stdout = open(stdout_call_buffer, O_WR | O_NEW);
+				if(_stdout >= 0)
 				{
 					pdup2(pid, _stdout, STDOUT);
  				} else {
-					printf("TTY: file %s could not be opened for output\n", stdout_call_buffer);
+					printf("TTY: file %s could not be opened for output, invalid perms?\n", stdout_call_buffer);
 				}
 			}
 			
 			if(stdin_file) {
-				int _stdin = open(stdin_call_buffer, O_RD | O_WR);
-				if(_stdin != -1)
+				int _stdin = open(stdin_call_buffer, O_RD);
+				if(_stdin >= 0)
 				{
 					pdup2(pid, _stdin, STDIN);				
 				} else {
-					printf("TTY: file %s could not be opened for input\n", stdin_call_buffer);
+					printf("TTY: file %s could not be opened for input, invalid perms?\n", stdin_call_buffer);
 				}
 
 			}
@@ -115,11 +115,12 @@ int process_input(const char * input, int tty_number) {
 			if(stdin)	{
 				pdup2(pid, stdin, STDIN);
 			}
-			
+			char cad[20];
 			if(piped)
 			{
-				char cad[20];
-				itoa(pid, cad);
+
+				cad[0] = '.';
+				itoa(pid, cad + 1);
 				stdout = mkfifo(cad, 0600);
 				pdup2(pid,stdout,STDOUT);
 				
@@ -130,6 +131,7 @@ int process_input(const char * input, int tty_number) {
 			prun(pid);
 			if(!string_ends_with(file_call_buffer, '&') && !piped) {
 				waitpid(pid);
+				rm(cad);
 			}
 		}
 	} while(piped);
@@ -153,16 +155,12 @@ int tty_main (int argc, char ** argv)
 	printf("Marseillan, Pereyra, Videla\n");
 	printf("Sistemas Operativos - 2011 - ITBA\n");
 	printf("Dennis Ritchie RIP\n");
- 	if(tty_number == 1)	{
-		fs_init();
-		users_init();
-	}
 
+	int child;
 	while(1) {
 		switch (status){
 			case 1:
 				printf("user@tty%d:", tty_number);
-
 				input = (char *) getConsoleString(1);
 				process_input(input, tty_number);
 				if(getuid(NULL) == -1)
@@ -171,20 +169,11 @@ int tty_main (int argc, char ** argv)
 				}
 				break;
 			case 0:
-				username = NULL; // HUGE LEAK, but..... we dont have free :P
-				password = NULL;
-				printf("Login: ");
-				username = (char *) getConsoleString(1);
-				if(strlen(username) > 0)
-				{
-					printf("Password: ");
-					password = (char *) getConsoleString(0);
-					if (ulogin(username,password) != -1) {
-						printf("Successfully logged in as %s\n", username);
-						status = 1;
-					} else {
-						printf("Bad credentials, try again...\n");
-					}
+				child = pcreate("su", 1, NULL);
+				prun(child);
+				waitpid(child);
+				if(getuid(NULL) != -1)	{
+					status = 1;
 				}
 				break;
 		}
