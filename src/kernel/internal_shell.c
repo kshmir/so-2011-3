@@ -3,7 +3,7 @@
 
 // Makes a new line
 void newLine() {
-	make_atomic();
+	_Cli();
 	setCursorX(0);
 	if (!(getCursorY() >= getVideoMode()->height - 1)) {
 		setCursorY(getCursorY() + 1);
@@ -25,11 +25,12 @@ void newLine() {
 		setCursorY(getCursorY() - 1);
 		setCursorX(0);
 	}
-	release_atomic();
+	_Sti();
 }
 
 /**	Copies everything from the screen buffer (Not the Video buffer) and re draw it*/
 void reDrawLines() {
+	_Cli();
 	int i, j;
 	setCursor(FALSE);
 	setCursorY(0);
@@ -42,6 +43,7 @@ void reDrawLines() {
 	}
 	setCursor(TRUE);
 	setCursorX(0);
+	_Sti();
 }
 
 // Puts a space

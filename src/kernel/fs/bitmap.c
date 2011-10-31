@@ -23,12 +23,18 @@
 // indexes:          012345  6789ab
 // It would 'jump' the X's.
 
+// This is useful for the bitmaps in the EXT2 filesystem1
+
 struct bitmap {
 	int		real_block_size;
 	int		block_size;
 	void *	data;
 };
 
+// Starts a bitmap
+// real_block_size: real_block_size is always < to block_size, and makes the gaps between blocks after n > real_block_size
+// block_size:      the actual size of the block
+// data:            the pointer to the data there the bitmap is held.
 bitmap * bitmap_init(int real_block_size, int block_size, void * data) {
 	bitmap * bm = (bitmap *) malloc(sizeof(bitmap));
 	bm->real_block_size = real_block_size;
@@ -37,6 +43,7 @@ bitmap * bitmap_init(int real_block_size, int block_size, void * data) {
 	return bm;
 }
 
+// Reads from a bitmap in the given index
 unsigned int bitmap_read(bitmap * bm, unsigned int index) {
 	
 	// This code makes the weird indexing.
@@ -54,6 +61,7 @@ unsigned int bitmap_read(bitmap * bm, unsigned int index) {
 	return (*((char*)bm->data + bytes) >> (BYTE - offset)) & 0x1;
 }
 
+// Writes inside the bitmap, with the given index and value
 void bitmap_write(bitmap * bm, unsigned int index, unsigned int value) {
 	
 	// This code makes the weird indexing.
@@ -73,6 +81,7 @@ void bitmap_write(bitmap * bm, unsigned int index, unsigned int value) {
 	}
 }
 
+// Tells the maximum amount of blocks with the given value inside the bitmap
 unsigned int bitmap_max_blocks(bitmap * bm, unsigned int size, unsigned int val) {
 	unsigned int i = 0;
 	unsigned int max = 0, c = 0;
@@ -85,6 +94,7 @@ unsigned int bitmap_max_blocks(bitmap * bm, unsigned int size, unsigned int val)
 	return max;
 }
 
+// Tells the amount of blocks with the given value inside the bitmap
 unsigned int bitmap_block_count(bitmap * bm, unsigned int size, unsigned int val) {
 	unsigned int i = 0;
 	unsigned int c = 0;
@@ -94,6 +104,7 @@ unsigned int bitmap_block_count(bitmap * bm, unsigned int size, unsigned int val
 	return c;
 }
 
+// Gives the index of the first value which matches val
 unsigned int bitmap_first_valued(bitmap * bm, unsigned int size, unsigned int val) {
 	unsigned int i = 0;
 	for (; i < size; i++) {

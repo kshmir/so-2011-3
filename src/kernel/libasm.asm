@@ -347,11 +347,9 @@ _int_80_hand:
 		mov 	[kernel_buffer + 4],  ebx
 		mov 	[kernel_buffer],      eax
 		
-
+		; TODO: Put back the stack exchange here, broken god knows why by the disk driver.
 		
 		call int_80									; Make the syscall
-		
-
 		
 		popad
 		pop		es

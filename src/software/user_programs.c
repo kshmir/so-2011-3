@@ -339,7 +339,7 @@ int _dcheck(int size, char** args) {
 	// check_drive(ATA0);
 }
 
-
+///////// TEST PROGRAM, NOT FOR ACTUAL USERS, MAKES DIRECT KERNEL CALLS !
 int _dread(int argc, char** argv) {
 	if(argc > 1)	{
 		int i; 
@@ -372,7 +372,7 @@ int _dread(int argc, char** argv) {
 	}
 }
 
-
+///////// TEST PROGRAM, NOT FOR ACTUAL USERS, MAKES DIRECT KERNEL CALLS !
 int _dwrite (int argc, char ** argv)
 {
 	char ans[1024] = "HARA BARA";
@@ -402,6 +402,7 @@ int _dwrite (int argc, char ** argv)
 	return 0;
 }
 
+///////// TEST PROGRAM, NOT FOR ACTUAL USERS, MAKES DIRECT KERNEL CALLS !
 char ans[65536];
 int _dfill (int argc, char ** argv)
 {
@@ -786,21 +787,6 @@ int _finfo(int argc, char ** argv)	{
 	return 0;
 }
 
-int _fsstat(int argc, char ** argv)	{
-	if(argc > 1)	{
-		int data[8];
-		fs_finfo(argv[1], &data);
-		printf("File name: %s\n", argv[1]);
-		printf("Inode: %d\n", data[0]);
-		printf("File blocks: %d\n", data[1]);
-		printf("File bytes: %d\n", data[2]);
-		printf("File permissions: %d\n", data[3]);
-		printf("File uid: %d\n", data[4]);
-		printf("File dir inode: %d\n", data[5]);
-	}
-	check_drive(0);
-	return 0;
-}
 
 int _su(int argc, char ** argv)	{
 	char * username = NULL;
@@ -825,7 +811,7 @@ int _link(int argc, char ** argv)	{
 	{
 		int code = makelink(argv[1],argv[2]);
 		if(code > 0)	{
-			printf("Link from %s to %s deleted sucessfully.\n", argv[1], argv[2]);
+			printf("Link from %s to %s created sucessfully.\n", argv[1], argv[2]);
 		} else if(code == ERR_NO_EXIST) {
 			printf("File or folder %s doesn't exist, focus boy!\n", argv[2]);
 		} else if(code == ERR_PERMS) { 
@@ -851,13 +837,11 @@ int _mv(int argc, char ** argv) {
 	if(argc > 2)
 	{
 		int code = mv(argv[1], argv[2]);
-		if(code > 0)
-		{
+		if(code > 0)	{
 			printf("Moved from %s to %s successfully\n", argv[1], argv[2]);
 		} 	else if(code == ERR_PERMS) { 
 			printf("You don't have the permissions to move %s to %s\n", argv[1], argv[2]);			
-		} else if(code == ERR_INVALID_TYPE)
-		{
+		} else if(code == ERR_INVALID_TYPE)	{
 			printf("Can't move: invalid filetype for %s\n", argv[2]);
 		} else if(code == ERR_REPEATED)	{
 			printf("Can't move: file %s already exists in destination %s\n", argv[1], argv[2]);
@@ -867,7 +851,6 @@ int _mv(int argc, char ** argv) {
 	}
 }
 
-extern int val;
 int _smallhang(int argc, char ** argv) {
 	
 	if(argc > 1)
@@ -879,4 +862,15 @@ int _smallhang(int argc, char ** argv) {
 	}
 
  	waitpid(getpid());
+}
+
+int _fsstat(int argc, char ** argv) {
+	int data[8];
+	fsstat(data);
+	printf("Free blocks: %d\n", data[0]);
+	printf("Total blocks: %d\n", data[1]);
+	printf("Free inodes: %d\n", data[2]);
+	printf("Total inodes: %d\n", data[3]);
+	printf("Free Bytes: %d\n", data[4]);
+	printf("Total available bytes: %d\n", data[5]);
 }

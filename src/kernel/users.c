@@ -66,7 +66,7 @@ int	users_init() {
 	}
 
 
-	if(!existed) // Create root and save it
+	if(!existed || !list_size(users)) // Create root and save it
 	{
 		user * root = (user *) malloc(sizeof(user));
 		strcpy(root->username, "root");
@@ -80,7 +80,7 @@ int	users_init() {
 		strcpy(guest->username, "guest");
 		strcpy(guest->password, "");
 		guest->uid = 1;
-		guest->gid = 0;
+		guest->gid = 1;
 		
 		fs_write_file(users_inode, guest, sizeof(user));
 		

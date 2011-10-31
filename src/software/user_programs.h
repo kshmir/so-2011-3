@@ -2,6 +2,7 @@
 #ifndef _USER_PROGRAMS_H_
 #define _USER_PROGRAMS_H_
 
+// All this programs are documented in the formal documentation in the report.
 
 // Helps teachers to understand a bit our mess, well, no
 int _printHelp(int size, char** args);
@@ -43,5 +44,6 @@ int _fwrite(int argc, char ** argv);
 
 int _logout(int argc, char ** argv);
 
+int _fsstat(int argc, char ** argv);
 
 #endif

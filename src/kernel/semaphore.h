@@ -1,3 +1,4 @@
+// This whole section (Semaphore) is no longer used in the kernel.
 
 #ifndef _SEMAPHORE_H_
 #define _SEMAPHORE_H_

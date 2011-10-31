@@ -9,11 +9,11 @@
 #include "kernel.h"
 #include "fd.h"
 
-
 static int tty_index = 0;
 extern int max_uid;
 extern int current_tty;
-/** Reads the command received and excecutes the corrisponding process sending  it it's arguments and 
+
+/** Reads the command received and excecutes the corrisponding process sending it it's arguments and 
 also responds to special characters.*/
 int process_input(const char * input, int tty_number) { 
 
@@ -137,7 +137,7 @@ int process_input(const char * input, int tty_number) {
 	} while(piped);
 	return 1;
 }
-/** Starts a tty*/
+/** Starts a shell, it's a user process, but yes, resides in the kernel's code */
 int tty_main (int argc, char ** argv)
 {	
 	clear_screen();
@@ -155,7 +155,6 @@ int tty_main (int argc, char ** argv)
 	printf("Marseillan, Pereyra, Videla\n");
 	printf("Sistemas Operativos - 2011 - ITBA\n");
 	printf("Dennis Ritchie RIP\n");
-	
 
 	int child;
 	while(1) {
@@ -170,14 +169,12 @@ int tty_main (int argc, char ** argv)
 				}
 				break;
 			case 0:
-
 				child = pcreate("su", 1, NULL);
 				prun(child);
 				waitpid(child);
 				if(getuid(NULL) != -1)	{
 					status = 1;
 				}
-				clear_screen();
 				break;
 		}
 	}

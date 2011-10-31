@@ -277,6 +277,8 @@ char scanCodeToChar(char scanCode) {
 				break;
 		}
 		tty_contexts[current_tty].video_context->visible = 1;
+		
+		// Ctrl N changes tty context (N in 0..8)
 		if(in)	{
 			switch_tty(current_tty);
 			video_reload();
@@ -285,24 +287,19 @@ char scanCodeToChar(char scanCode) {
 			return 0;
 		}
 		
+		// Ctrl C sends SIGINT
 		if (sig) {
 			kernel_buffer[14] = 2;
-			kernel_buffer[13] = cnt()->tty + 1;
+			kernel_buffer[13] = kb_tty + 1;
 			return EOF;
 		}
-
 	}
-
-	
 	if (scanCode >= 0x02 && scanCode <= 0x0d)
 		return keyboard[scanCode][isShifted()];
 	return keyboard[scanCode][isCapital()];
 }
 
 int controlKey(int scancode) {
-	
-
-	
 	if (scancode == 42) //SHIFT IZQ
 		cnt()->lShift = 1;
 	else if (scancode == 54) //054 SHIFT DER
@@ -358,7 +355,6 @@ int controlKey(int scancode) {
 				pushArr(2);
 				break;
 			}
-
 		}
 
 		if (scancode == 0xFFFFFFAA)
@@ -427,8 +423,10 @@ char getA() {
 	
 }
 
+
 int tty_read(char * buf, int len) {
 	if(cnt()->charBufferSize == 0 || current_tty != current_p_tty()) {
+		// Lock if nothing to read.
 		getp()->state = PROCESS_BLOCKED;
 		queue_enqueue(cnt()->read_pblocks, getp());
 		cnt()->owner_pid = getp()->pid;

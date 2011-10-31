@@ -3,7 +3,7 @@
 
 // Default user: root
 // Default gid : 0  (root's gid)
-// Default logged user: guest
+// Default secondary user: guest
 // Guest's gid: 1  
 
 typedef struct user {

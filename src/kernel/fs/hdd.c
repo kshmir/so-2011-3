@@ -7,7 +7,7 @@
  *
  */
 
-// Made for debugging purposes, used as RAM on OSX.
+// Made for debugging purposes, used as RAM on OSX, and as a wrapper in real life, probably used for cache later on.
 
 
 #include "hdd.h"

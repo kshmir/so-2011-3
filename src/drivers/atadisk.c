@@ -50,6 +50,7 @@ int  lastsect = 0;
 
 void translateBytes(char * ans, unsigned short databyte);
 void writeDataToRegister (int ata, char upper, char lower);
+unsigned short getDataRegister(int ata);
 
 void _400ns() {
 	_inb(0x3F6);
@@ -103,7 +104,6 @@ int _next_io() {
 	return 0;
 }
 
-// To read N bytes from hard disk, must alloc N+1 bytes for ans, as N+1 byte is used to null-character
 int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	
 
@@ -172,9 +172,6 @@ void translateBytes(char * ans, unsigned short databyte){
 }
 
 
-
-
-// Writes to the ata chosen the msg received the ammount of bytes requested starting from the secto chose + the offset
 int _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 	
 

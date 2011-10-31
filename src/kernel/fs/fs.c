@@ -12,22 +12,25 @@
 #include "bitmap.h"
 #include "../tty.h"
 
-#ifdef __MACH__
+
+#ifdef __MACH__                      // For compiling in mac, using RAM disk.
 	#include <stdio.h>
 	#include <string.h>
-#else 
+#else                                // For compiling in an ubuntu environment
 	#include "../../libs/stdio.h"
 	#include "../../libs/string.h" 
 #endif
 
+// Enables some printf's, you don't want this on.
 #define _FS_DEBUG 0
 
 
-
-// Where all the magic actually happens :D
+// Header data of the filesystem
 static fs_data dat;
 static super_block * sb = NULL;
 static group_descriptor * gbdt = NULL;
+
+// Bitmaps for each group block
 static block g_inode_bmps[FS_BLOCK_GROUP_COUNT];
 static block g_block_bmps[FS_BLOCK_GROUP_COUNT];
 static bitmap * bm_inodes;
@@ -35,29 +38,32 @@ static bitmap * bm_blocks;
 
 
 
-// For use in IO
-static block b; // Block containing data.
-static block bi; // Block containing indirects.
+// For use in IO and avoiding the use of stack or mallocs, both are quite unsafe.
+static block b;             // Block containing data.
+static block bi;            // Block containing indirects.
 static inode n;
 static int dir_op_offset;
 static int f_op_offset;
 static dir_entry * dot;
 static dir_entry * _old_dot;
 static int * indirect_block_data;
-static int fs_done;
+static int fs_done;         // Without this set to 1, all ACLs pass.
 
-int bitmap_handling = 0;
+int bitmap_handling = 0;	// For debugging
 
 ///////////// Block Handling
 
+// Writes a block to disk (or disk cache)
 static void block_write(void * data, unsigned int block_n) {
-	hdd_write( data, block_n * 2 + 1);	
+	hdd_write( data, block_n * 2 + 1);
 }
 
+// Reads a block from disk (or disk cache)
 static void block_read(void * data, unsigned int block_n) {
 	hdd_read( data, block_n * 2 + 1);	
 }
 
+// Clears a block setting it all up to 0
 static void block_clear(block * b){
 	int i = 0;
 	for(; i < FS_BLOCK_SIZE / sizeof(int); i++) {
@@ -68,12 +74,14 @@ static void block_clear(block * b){
 
 //////////// MBR
 
+// Reads the MBR, never actually used, but it would be sooooooooooo coool.
 void fs_mbr_read() {
 	block_read((char *)&dat.head._start               ,0);
 }
 
 //////////// Superblock
 
+// Starts the superblock
 void fs_sb_init() {
 	
 	// Blocks
@@ -96,16 +104,19 @@ void fs_sb_init() {
 	sb->s_magic	= 0xEF53;		// ext2's magic number.
 }
 
+// Reads the superblock from disk
 void fs_sb_read() {
 	block_read( (char *)&dat.head._super               ,1);
 }
 
+// Writes the superblock to disk
 void fs_sb_write() {
 	block_write((char *)&dat.head._super               ,1);
 }
 
 //////////// GBDT
 
+// Same actions as superblock
 static void fs_gbdt_init() {
 	int i = 0;
 	for (; i < FS_BLOCK_GROUP_COUNT; i++) {
@@ -128,6 +139,7 @@ static void fs_gbdt_write() {
 
 ///////////// Bitmaps Cache
 
+// Starts the bitmaps setting em all to 0
 static void fs_bitmaps_init() {
 	bitmap_handling = 1;
 	int i = 0;
@@ -143,6 +155,7 @@ static void fs_bitmaps_init() {
 	bitmap_handling = 0;
 }
 
+// Writes all the bitmaps to disk
 void fs_bitmaps_write_all() {
 	bitmap_handling = 1;
 	int i = 0;
@@ -153,6 +166,7 @@ void fs_bitmaps_write_all() {
 		bitmap_handling = 0;
 }
 
+// Writes all the bitmap for the given group block in disk
 static void fs_bitmaps_write(int i) {
 	block_write((void *)&g_inode_bmps[i], gbdt[i].bg_inode_bitmap);
 	block_write((void *)&g_block_bmps[i], gbdt[i].bg_block_bitmap);	
@@ -160,28 +174,30 @@ static void fs_bitmaps_write(int i) {
 
 //////////// Block group
 
+// Gets the block of a block group given it's index
 static unsigned int bgroup_get(unsigned int index) {	
 	return FS_GLOB_GB_OFFSET + index * FS_BLOCK_GROUP_SIZE / FS_BLOCK_SIZE;
 }
 
+// Gets the block bitmap block of a block group
 static unsigned int bgroup_blockbmp(unsigned int index) {
 	return index;
 }
 
+// Gets the inode bitmap block of a block group
 static unsigned int bgroup_inodebmp(unsigned int index) {
 	return index + 1;
 }
 
+// Gets the inode table start block of a block group
 static unsigned int bgroup_inodetbl(unsigned int index) {
 	return index + 2;
 }
 
+// Gets the block table start block of a block group
 static unsigned int bgroup_blocktbl(unsigned int index) {
 	return index + 2 + FS_INODE_TABLE_SIZE;
 }
-
-
-
 
 //////////// Data Block Handling 
 
@@ -194,11 +210,13 @@ static unsigned int data_get_block(unsigned int block_n) {
 	return bgroup_blocktbl(bgroup_get(block_group)) + locd_block_i; 	
 }
 
+// Read a data block given a data block number
 static void data_read_block(void * data, unsigned int block_n) {
 	unsigned int block_in_disk		= data_get_block(block_n);
 	block_read(data, block_in_disk);
 }
 
+// Write a data block given a data block number
 static void data_write_block(void * data, unsigned int block_n) {			  
 	
 	unsigned int block_group		= (block_n - 1) / sb->s_blocks_per_group; 
@@ -215,6 +233,7 @@ static void data_write_block(void * data, unsigned int block_n) {
 	// The data is only persisted after it's saved in the bitmap.
 }
 
+// Release (erase) a data block
 static void data_release_block(unsigned int block_n) {			  
 	unsigned int block_group		= (block_n - 1) / sb->s_blocks_per_group; 
 	
@@ -266,6 +285,7 @@ static void inode_write(unsigned int inode_n, inode * n){
 	block_write((void *)&b, real_block_index);
 }
 
+// Reads an inode from disk
 static void inode_read(unsigned int inode_n, inode * n) {
 	unsigned int locin_block_index	= inode_get_block_index(inode_n);
 	unsigned int real_block_index	= inode_get_block(inode_n);
@@ -341,36 +361,34 @@ static int inode_get_3indir_block(int log_block) {						// Gets 'h'
 	return -1; // If it's -1, then it's over the file size limit (16GB, WOOOO!)
 }
 
-
+// MAGIC: Translates a logical block from a file (block 0 to N), to a physical block in the disk
 void make_ph_block(inode * n, int * ph_block, int * log_block) {
-	int indirects = inode_get_indir_level(*log_block);
+	int indirects = inode_get_indir_level(*log_block); // Gets the level of indirects inside the direction.
 	
 	int old_ph = * ph_block;
 	int dirty = 0;
 	
  	* ph_block = n->data_blocks[inode_get_dir_block(*log_block)];
-	// Gets the next blocks's direction.
+	// If we've got no block, then we alloc one
 	if(!* ph_block) {
 		* ph_block = bitmap_first_valued(bm_blocks, FS_DATA_BITMAP_SIZE, 0) + 1;
 		bitmap_write(bm_blocks, (* ph_block) - 1, 1);
-		n->data_blocks[inode_get_dir_block(*log_block)] = * ph_block;
+		n->data_blocks[inode_get_dir_block(*log_block)] = * ph_block; 
 		dirty = 1;
 	} 
 	
 	if (indirects > 0) {
 		block_clear(&bi);
-		if (!dirty) {
+		if (!dirty) { // If it's dirty, then probably it's new and we want the block to be absolutely clear
 			data_read_block(&bi, * ph_block);
 		}
 		
 		dirty = 0;
-		
-		
-		
+				
 		indirect_block_data = (int *) &bi;
 		old_ph = * ph_block;	
 		* ph_block = indirect_block_data[inode_get_1indir_block(*log_block)];
-		// Gets the next blocks's direction.
+		// If we've got no block, then we alloc one
 		if(!* ph_block) {
 			bitmap_write(bm_blocks, old_ph - 1, 1);
 			* ph_block = bitmap_first_valued(bm_blocks, FS_DATA_BITMAP_SIZE, 0) + 1;
@@ -381,7 +399,7 @@ void make_ph_block(inode * n, int * ph_block, int * log_block) {
 		} 
 		if (indirects > 1) {
 			block_clear(&bi);
-			if (!dirty) {
+			if (!dirty) { // If it's dirty, then probably it's new and we want the block to be absolutely clear
 				data_read_block(&bi, * ph_block);
 			}
 			
@@ -389,7 +407,7 @@ void make_ph_block(inode * n, int * ph_block, int * log_block) {
 			old_ph = * ph_block;		
 			* ph_block = indirect_block_data[inode_get_2indir_block(*log_block)];
 			
-			// Gets the next blocks's direction.
+			// If we've got no block, then we alloc one
 			if(!* ph_block) {
 				bitmap_write(bm_blocks, old_ph - 1, 1);
 				* ph_block = bitmap_first_valued(bm_blocks, FS_DATA_BITMAP_SIZE, 0) + 1;
@@ -400,9 +418,8 @@ void make_ph_block(inode * n, int * ph_block, int * log_block) {
 			} 
 			
 			if (indirects > 2) {
-
 				block_clear(&bi);
-				if (!dirty) {
+				if (!dirty) { // If it's dirty, then probably it's new and we want the block to be absolutely clear
 					data_read_block(&bi, * ph_block);
 				}
 				
@@ -410,7 +427,7 @@ void make_ph_block(inode * n, int * ph_block, int * log_block) {
 				old_ph = * ph_block;		
 				* ph_block = indirect_block_data[inode_get_3indir_block(*log_block)];
 				
-				// Gets the next blocks's direction.
+				// If we've got no block, then we alloc one
 				if(!* ph_block) {
 					bitmap_write(bm_blocks, old_ph - 1, 1);
 					* ph_block = bitmap_first_valued(bm_blocks, FS_DATA_BITMAP_SIZE, 0) + 1;
@@ -423,6 +440,7 @@ void make_ph_block(inode * n, int * ph_block, int * log_block) {
 	}	
 }
 
+// Reads a logical block from an inode
 void log_block_write(inode * n, int * log_block) {
 	int ph_block;	
 	
@@ -432,6 +450,7 @@ void log_block_write(inode * n, int * log_block) {
 	data_write_block(&b, ph_block);	
 }
 
+// Writes a logical block from an inode
 void log_block_read(inode * n, int * log_block) {
 	int ph_block = 0;
 	
@@ -453,6 +472,7 @@ void add_block(inode * n, int * log_block) {
 	dot = (dir_entry *) ((char*)&b + dir_op_offset);	
 }
 
+// Adds a directory entry to an inode
 int add_dir_entry(inode * n, int file_type, int inode, char * name, int * log_block) {
 	int ret = 0;
 	
@@ -484,6 +504,7 @@ int add_dir_entry(inode * n, int file_type, int inode, char * name, int * log_bl
 	return ret;
 }	
 
+// Used to iterate inside a directory
 dir_entry * iterate_dir_entry(block * b) {
 	if (dir_op_offset > FS_BLOCK_SIZE) {
 		return NULL;
@@ -496,7 +517,8 @@ dir_entry * iterate_dir_entry(block * b) {
 	}
 	return dot;
 }
-/// Filesystem Initialization
+
+// Filesystem Initialization
 void fs_init() {
 	
 	int i = 0;
@@ -594,32 +616,39 @@ void fs_init() {
 	}
 }
 
+// Called when the FS is done
 void fs_finish() {
 	fs_done = 1;
 }
 
+
+///////////// All of the above where low level functions, the easy ones start here!
+
+// Reads from a file, f_offset must be kept in the client to remember the last point read
 unsigned int fs_read_file(int inode, char * data, int size, unsigned long * f_offset) {
-	inode_clear(&n);
+	inode_clear(&n);								// Clear inode to take off the trash
 	
-	inode_read(inode, &n);
-	int log_block = * f_offset / FS_BLOCK_SIZE;
-	int block_index = * f_offset % FS_BLOCK_SIZE;
-	int top_log_block = n.blocks / 2;
+	inode_read(inode, &n);							// Read the current inode
+	int log_block = * f_offset / FS_BLOCK_SIZE;		// Current logical block
+	int block_index = * f_offset % FS_BLOCK_SIZE;	// Current block index
+	int top_log_block = n.blocks / 2;				// Maximum logical block
 	int i = 0;
 	
 	if (!top_log_block && n.mode & EXT2_S_IFDIR) {
-		top_log_block = 1;
+		top_log_block = 1;							// Directory hack
 	}
 
+	// If we match the conditions, start reading
 	if (log_block < top_log_block || log_block == top_log_block && block_index < n._last_write_offset) {
-
 		log_block_read(&n, &log_block);
 		char * block = (char *) &b;
+		
+		// Read iteratively and easy :)
 		for (; i < size; i++, block_index++) {
 			data[i] = block[block_index];
 			
 			if (top_log_block == log_block && block_index == n._last_write_offset - 1) {
-				break;
+				break;	// If it's a top, get out
 			}
 			
 			if (block_index == FS_BLOCK_SIZE - 1) {
@@ -630,47 +659,53 @@ unsigned int fs_read_file(int inode, char * data, int size, unsigned long * f_of
 		}
 		* f_offset += i;
 	} else {
-		return 0; // Bad Offsetttttt!!!!
+		return 0; // Bad offset given
 	}
 
 	
 	return i;
 }
 
+// Writes to a file, as simple as unix
 unsigned int fs_write_file(int inode, char * data, int size) {
-	inode_clear(&n);
-	inode_read(inode, &n);
+	inode_clear(&n);							// Clear the inode to take off the trash
+	inode_read(inode, &n);						// Read the current inode.
 	
 
 	int log_block = n.blocks / 2;
-	block_clear(&b);
+	block_clear(&b);							// Prepare to read the data, clear it.
 
 	int i = 0;
 	int block_index = n._last_write_offset;
-	log_block_read(&n, &log_block);
+	log_block_read(&n, &log_block);				// Set up the point where we'll write
 	char * block = (char *) &b;
+	
+	// Write until we reach end
 	for (; i < size; i++) {
 		block[block_index] = data[i];
 		if (block_index == FS_BLOCK_SIZE - 1) {
 			log_block_write(&n, &log_block);
-			log_block++;
+			log_block++;						// Iterate if necessary.
 			log_block_read(&n, &log_block);
 			block_index = 0;
 		} else {
 			block_index++;
 		}
 	}
-	n._last_write_offset = block_index;
-	log_block_write(&n, &log_block);	
 	
-	n.blocks = log_block * 2;
+	n._last_write_offset = block_index;
+	log_block_write(&n, &log_block);			// Save the last bits
+	
+	n.blocks = log_block * 2;					// Update the inodes
 
 	inode_write(inode,&n);
-	fs_bitmaps_write_all();  
+	fs_bitmaps_write_all();  					// Persist the changes in the FS
 
 	return i;
 }
 
+// Deletes the internal nodes of a block when deleting the file.
+// The internal nodes are the blocks used to make the indirects
 void delete_internal_inodes(int log_block) {
 
 	int indirects = inode_get_indir_level(log_block);
@@ -719,28 +754,31 @@ void delete_internal_inodes(int log_block) {
 	}	
 }
 
-
-unsigned int fs_rm(unsigned int inode, int recursive) {
+// Removes an inode from the filesystem, documented in header
+unsigned int fs_rm(unsigned int inode, int inside_recursion) {
 	inode_read(inode, &n);
-
-	if(!fs_has_perms(&n, ACTION_WRITE))
-	{
-		return ERR_PERMS;
+	
+	if(!(inode > 1))	{
+		return ERR_PERMS; 					// Permissions check
 	}
 	
-	if (!recursive) { // I'm not sure about this, but well... at least it's just a security flaw.
+	if(!fs_has_perms(&n, ACTION_WRITE))	{
+		return ERR_PERMS;					// If you can't write you can't delete...
+	}
+	
+	if (!inside_recursion) { // I'm not sure about this, but well... at least it's just a security flaw.
 		inode_read(n._dir_inode, &n);
-		if(!fs_has_perms(&n, ACTION_WRITE))	{
-			return ERR_PERMS;
+		if(!fs_has_perms(&n, ACTION_WRITE))	{		
+			return ERR_PERMS;				// If you can't write on the parent folder you can't delete
 		}
-		
 		inode_read(inode, &n);
 	}
 	
 
-	int log_block = n.blocks / 2 + 1;
+	int log_block = n.blocks / 2 + 1;		// Logical block top
 	int ph_block = 0;
 	
+	// Go from top to bottom to delete everything.
 	while(log_block > 0) {
 		log_block--;
 		make_ph_block(&n, &ph_block, &log_block);
@@ -758,6 +796,7 @@ unsigned int fs_rm(unsigned int inode, int recursive) {
 					break;
 				} else {
 					if (dot->name_len > 0 && dot->inode != inode && dot->inode != n._dir_inode) {
+						// If we get an error we don't actually make anything :D, but we might delete other files.
 						int _rm = fs_rm(dot->inode, 1);
 						if(_rm < 0)
 						{
@@ -777,27 +816,27 @@ unsigned int fs_rm(unsigned int inode, int recursive) {
 
 			data_write_block(&entries, ph_block);
 		}
-		bitmap_write(bm_blocks, ph_block - 1, 0);
-		delete_internal_inodes(log_block);
+		bitmap_write(bm_blocks, ph_block - 1, 0); // This deletes the stuff actually
+		delete_internal_inodes(log_block);        // This deletes the EXT2 ugly but wise indirects.
 	}
 	
-	if (!recursive) {
+	// Delete the directory entry of the file.
+	if (!inside_recursion) {
 		inode_read(inode, &n);
 		unsigned int folder_inode = n._dir_inode;
-		// printf("Deleting direntry %d", folder_inode);
 		inode_read(folder_inode, &n);		
-		// printf("Deleting direntry %d", folder_inode);
 		folder_rem_direntry(inode, folder_inode);
 	}
 
-	bitmap_write(bm_inodes, inode - 1, 0);
+	bitmap_write(bm_inodes, inode - 1, 0);		 // Persist the directory liberation.
 
-	fs_bitmaps_write_all();  
+	fs_bitmaps_write_all();  					 // Persist in the FS.
 
 						  
 	return 1;
 }
 
+// Tells if an name is inside the folder entries
 unsigned int fs_indir(char * name, int folder_inode) {
 	inode_read(folder_inode, &n);
 	
@@ -841,6 +880,8 @@ unsigned int fs_indir(char * name, int folder_inode) {
 }
 
 static char iname[255];
+
+// Tells the name of the inode, by reading it's parent
 char * fs_iname(int inode, int folder_inode) {
 	inode_read(folder_inode, &n);
 	
@@ -886,6 +927,7 @@ char * fs_iname(int inode, int folder_inode) {
 	return 0;
 }
 
+// Removes an entry from a folder
 unsigned int folder_rem_direntry(unsigned int file_inode, unsigned int folder_inode) {
 	inode_read(folder_inode, &n);
 	
@@ -931,6 +973,7 @@ unsigned int folder_rem_direntry(unsigned int file_inode, unsigned int folder_in
 	return 0;
 }
 
+// Opens a link filetype
 unsigned int fs_open_link(char * name, char * target_name) {
 	unsigned int folder_inode = current_ttyc()->pwd;
 	int target_inode = fs_indir(target_name, folder_inode);
@@ -952,15 +995,18 @@ unsigned int fs_open_link(char * name, char * target_name) {
 
 }
 
+// Opens a fifo
 unsigned int fs_open_fifo(char * name, unsigned int folder_inode, int mode) {
 	return fs_open_file(name, folder_inode, mode, EXT2_S_IFIFO);
 }
 
+// Opens a regular file
 unsigned int fs_open_reg_file(char * name, unsigned int folder_inode, int mode) {	
 	int i = fs_open_file(name, folder_inode, mode, EXT2_S_IFREG);
 	return i;
 }
 
+// Opens a file
 unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int type) {
 	unsigned int inode_id = 0;
 
@@ -995,12 +1041,13 @@ unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int 
 			if((mode & O_RD) && !fs_has_perms(&n, ACTION_READ))	{
 				can = 0;
 			}
-
 			if((mode & O_WR) && !fs_has_perms(&n, ACTION_WRITE))	{
 				can = 0;
 			}
-
 			if(can || !fs_done)	{
+				if(n.mode == EXT2_S_IFLNK)	{
+					return n.data_blocks[0];
+				}
 				return inode_id;
 			} else {
 				return ERR_PERMS;
@@ -1067,6 +1114,7 @@ unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int 
 	return inode_id;
 }
 
+// Makes a new directory
 unsigned int fs_mkdir(char * name, unsigned int parent_inode) {
 	unsigned int inode_id = 0;
 	if ((inode_id = fs_indir(name, parent_inode))) {
@@ -1146,6 +1194,7 @@ unsigned int fs_mkdir(char * name, unsigned int parent_inode) {
 
 static char pwd_string[1024];
 
+// Tells the current location
 char *	fs_pwd() {
 	
 	int j = 1023;
@@ -1188,7 +1237,7 @@ char *	fs_pwd() {
 	return pwd_string;
 }
 
-
+// Changes the directory
 int	fs_cd(char * name) {
 	int start_inode = current_ttyc()->pwd;
 	
@@ -1211,6 +1260,7 @@ int	fs_cd(char * name) {
 	}
 }
 
+// Tells if the current user has permissions to make an action in the given inode
 unsigned int fs_has_perms(inode * n, int for_what) {
 	if (!fs_done) {
 		// If the kernel's not ready then we can do anything.
@@ -1248,6 +1298,7 @@ unsigned int fs_has_perms(inode * n, int for_what) {
 	return can;
 }
 
+// Returns the owner's inode
 unsigned int fs_getown(char * filename) {
 	int start_inode = current_ttyc()->pwd;
 	int namenode = fs_indir(filename, start_inode);
@@ -1259,6 +1310,7 @@ unsigned int fs_getown(char * filename) {
 	}
 }
 
+// Returns the inode's permissions
 unsigned int fs_getmod(char * filename) {
 	int start_inode = current_ttyc()->pwd;
 	int namenode = fs_indir(filename, start_inode);
@@ -1270,6 +1322,7 @@ unsigned int fs_getmod(char * filename) {
 	}
 }
 
+// Changes the inode's owner
 unsigned int fs_chown(char * filename, char * username) {
 	int new_uid = user_exists(username);
 	int current_uid = current_ttyc()->uid;
@@ -1290,6 +1343,7 @@ unsigned int fs_chown(char * filename, char * username) {
 	}
 }
 
+// Gets info from the file
 void fs_finfo(char * filename, int * data) {
 	int start_inode = current_ttyc()->pwd;
 	int namenode = fs_indir(filename, start_inode);
@@ -1306,15 +1360,17 @@ void fs_finfo(char * filename, int * data) {
  	}
 }
 
+// Gets the status from the file
 void fs_stat(int * data) {
 	data[0] = bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0);        // Free Blocks
 	data[1] = FS_DATA_BITMAP_SIZE;                                          // Total Blocks
-	data[2] = bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0);        // Free Inodes
-	data[3] = FS_DATA_BITMAP_SIZE;                                          // Total Inodes
+	data[2] = bitmap_block_count(bm_inodes, FS_INODE_BITMAP_SIZE, 0);       // Free Inodes
+	data[3] = FS_INODE_BITMAP_SIZE;                                         // Total Inodes
 	data[4] = bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0) * 1024; // Free Bytes
-	data[5] = bitmap_block_count(bm_blocks, FS_DATA_BITMAP_SIZE, 0) * 1024; // Total available bytes.
+	data[5] = FS_DATA_BITMAP_SIZE * 1024; // Total available bytes.
 }
 
+// Changes the permissions of the file
 unsigned int fs_chmod(char * filename, int perms) {
 	int current_uid = current_ttyc()->uid;
 	int start_inode = current_ttyc()->pwd;
@@ -1333,6 +1389,7 @@ unsigned int fs_chmod(char * filename, int perms) {
 	}
 }
 
+// Used to check if the file is a fifo or not.
 unsigned int fs_is_fifo(int inode) {
 	if(inode < 0)	{
 		return 0;
@@ -1341,6 +1398,7 @@ unsigned int fs_is_fifo(int inode) {
 	return n.mode & EXT2_S_IFIFO;
 }
 
+// Used to copy a file
 unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode) {
 	int i1 = fs_open_file(name, from_inode, O_RD, EXT2_S_IFREG);
 	if(i1 < 0)	{
@@ -1406,6 +1464,7 @@ unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode) {
 	return i2;
 }
 
+// Used to move a file
 unsigned int fs_mv(char * name, char * newname, int from_inode) {
 	int i1 = fs_open_file(name, from_inode, O_WR | O_RD, EXT2_S_IFREG);
 	if(i1 < 0)	{

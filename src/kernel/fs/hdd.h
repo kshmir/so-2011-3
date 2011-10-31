@@ -19,7 +19,6 @@ void hdd_read(char * answer, unsigned int sector);
 
 void hdd_write(char * buffer, unsigned int sector);
 
-// Only used for memory temporal hdd.
 void hdd_close();
 
 #endif

@@ -3,13 +3,14 @@
 #ifndef _AT_WINI_H_
 #define _AT_WINI_H_
 
+// Many of the declarations of this header file are deprecated and the important ones are declared in the .c
 
 #define ATA0 0x1f0
 #define ATA1 0x170
 
 #define WIN_REG0       0x0
 #define WIN_REG1       0x1 // Error
-#define WIN_REG2       0x2
+#define WIN_REG2       0x2 
 #define WIN_REG3       0x3
 #define WIN_REG4       0x4
 #define WIN_REG5       0x5
@@ -48,15 +49,39 @@ enum{
 	ERROR
 };
 
-int driver(char * ata);
 
-void sendComm(int ata, int rdwr, unsigned int sector);
 
+
+
+// The following calls are used by our filesystem to write to the disk.
+
+
+/*
+	INTERRUPTS MUST BE DISABLED BEFORE USING THIS CALL
+
+	 _disk_read
+	ata: ATA controller to use, but actually deprecated to mantain compatibility.
+	ans: Buffer to read in.
+	numreads: Number of sectors to read.
+	sector: Sector to start reading in.
+*/
 int _disk_read(int ata, char * ans, int numreads, unsigned int sector);
-unsigned short getDataRegister(int ata);
 
+
+/*
+	INTERRUPTS MUST BE DISABLED BEFORE USING THIS CALL
+
+	 _disk_write
+	ata: ATA controller to use, but actually deprecated to mantain compatibility.
+	ans: Buffer to write in.
+	numreads: Number of sectors to write.
+	sector: Sector to start writing in.
+*/
 int _disk_write(int ata, char * msg, int numreads, unsigned int sector);
 
+/*
+	400ns wait
+*/
 void _400ns();
 
 #endif

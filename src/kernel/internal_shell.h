@@ -7,12 +7,9 @@
 
 
 void newLine();
-
-
 void drawComandLine();
 void nextRow();
 void reDrawLines();
-
 void putChar(char c);
 void putTab();
 void putSpace();

@@ -18,11 +18,17 @@ unsigned int current_pid = 0;
 static int	think_storage_index = 0;
 static int	think_storage[PROCESS_HISTORY_SIZE];
 
+// Idle process
 static Process				* idle;
+// All processes but the idle one
 static Process 				process_pool[PROCESS_MAX];
+// Process running right now
 static Process				* current_process = NULL;
+// Queue of ready processes
 static Queue 				* ready_queue;
+// Queue of yielded processes
 static Queue 				* yield_queue;
+// Queue of priority processes, for priority scheduling.
 static PQueue 				* priority_queue;
 
 ///////////// Inicio Funciones Scheduler
@@ -32,18 +38,19 @@ static PQueue 				* priority_queue;
 
 static int interrupts = 0;
 
+// Used in our worst moments to make nasty things, just ignore them
 int Sti() {
-		_Sti();
+	_Sti();
 }
 
 int Cli() {
-		_Cli();
+	_Cli();
 }
 
 
 int sched_mode = MODE_ROUNDR;
 
-/** Swithches the scheduler mode to round robin or priority*/
+/** Switches the scheduler mode to round robin or priority*/
 void sched_set_mode(int m) {
 	if (m == 0 || m == 1) {
 		sched_mode = m;
@@ -79,7 +86,6 @@ int sched_isempty() {
 void sched_enqueue(Process * p) {
 	switch(sched_mode) {
 		case MODE_PRIORITY:
-//			printf("Enqueuing in pq %d %d %d\n", priority_queue, p, p->priority);
 			pqueue_enqueue(priority_queue,p,p->priority);
 			break;
 		case MODE_ROUNDR:
@@ -88,11 +94,10 @@ void sched_enqueue(Process * p) {
 			break;
 	}
 }
-/** Removes a process from the reasy queue*/
+/** Removes a process from the ready queue*/
 void * sched_dequeue() {
 	switch(sched_mode) {
 		case MODE_PRIORITY:
-//					printf("Dequeuing in pq\n");
 			return pqueue_dequeue(priority_queue);
 			break;
 		case MODE_ROUNDR:
@@ -306,28 +311,27 @@ int sched_pcreate(char * name, int argc, void * params) {
 		_name[i] = name[i];
 	}
 	
-	
-
 	Process * p = create_process(_name, ptr, current_process->priority, current_process->tty, 0, 
 		FD_TTY0 + current_process->tty, FD_TTY0 + current_process->tty, FD_TTY0 + current_process->tty, 
 		argc, params, 1);
 	return p->pid;
 }
 
-// Function names
+// User processes names
 char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", 
 	"kill", "getc", "putc", "top", "hang", "setp", "setsched", "dcheck", 
 	"dread", "dwrite", "dfill", "ls", "cd", "pwd", "mkdir", "rm", "touch", "cat", "fwrite",
 	"logout", "makeuser", "setgid", "udelete", "chown", "chmod", "getown", "getmod", "fbulk",
-	"finfo", "su", "link", "cp", "mv", "smallhang", NULL };
+	"finfo", "su", "link", "cp", "mv", "smallhang", "fsstat", NULL };
 
-// Functions
+// User processes pointers
 int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, 
 	reader_main, writer_main, _kill, getc_main, putc_main, top_main, _hang, 
 	_setp, _setsched, _dcheck, _dread, _dwrite, _dfill, _ls, _cd, _pwd, _mkdir, _rm, _touch,
 	_cat, _fwrite, _logout, _makeuser, _setgid, _udelete, _chown, _chmod, _getown, _getmod, _fbulk,
-	_finfo, _su, _link, _cp, _mv, _smallhang, NULL };
+	_finfo, _su, _link, _cp, _mv, _smallhang, _fsstat, NULL };
 
+// Makes a pointer from a function string given
 main_pointer sched_ptr_from_string(char * string) {
 	int index;
 	for (index = 0; _function_names[index] != NULL; ++index) {
@@ -339,6 +343,7 @@ main_pointer sched_ptr_from_string(char * string) {
 	return NULL;
 }
 
+// Kills all the child processes from a child given
 void process_kill_children(int sigcode, int pid) {
 	int i = 0;
 	for(; i < PROCESS_MAX; ++i) {
@@ -352,6 +357,7 @@ void process_kill_children(int sigcode, int pid) {
 int sched_getpid() {
 	return current_process->pid;
 }
+
 /** Builds the stack frame of a process*/
 int	stackf_build(void * stack, main_pointer _main, int argc, void * argv) {
 
@@ -451,11 +457,13 @@ void release_atomic() {
 /** Here the scheduler decides which will be the next process to excecute*/
 void scheduler_think (void) {
 
+	// Only thinks when not atomic and outside the kernel.
 	if(atomic || in_kernel()) {
 		return;
 	}
 
 
+	// Handles the yields
 	if(yielded == 0) {
 		while(!queue_isempty(yield_queue)) {
 			sched_enqueue(queue_dequeue(yield_queue));
@@ -464,6 +472,7 @@ void scheduler_think (void) {
 		yielded--;
 	}
 
+	// Enqueues the current process for the next time
 	if (current_process != NULL                       // Kinda old condition, stays for good
 		&& current_process->state == PROCESS_RUNNING  // This way zombies 'pass out'
 		&& current_process != idle)
@@ -473,7 +482,7 @@ void scheduler_think (void) {
 		current_process = NULL;
 	}
 
-	
+	// If the scheduler is not empty then we take one out of there
 	if (!sched_isempty()) {
 		current_process = sched_dequeue();
 		
@@ -483,14 +492,17 @@ void scheduler_think (void) {
 			soft_yielded = 1;
 		}
 	
+		// Proccess dead? next one!
 		if (current_process->state == PROCESS_ZOMBIE) {
 			softyield();
 		}
 	}
 	else {
+		// Then we're idling
 		current_process = idle;
 	}
 	
+	// Well... just avoids wrongly the times.
 	if (soft_yielded) {
 		soft_yielded = 0;
 	} else {
@@ -503,19 +515,22 @@ void scheduler_think (void) {
 		}
 	}
 
+	// Sets the tty as the one of the current process.
 	switch_tty(current_process->tty);
 	if (current_process != idle) {
+		// Just for fancy
 		current_process->state = PROCESS_RUNNING;
-
 	}
 }
 
+// Sleeps the process.
 int scheduler_sleep(int msecs) {
 	current_process->state = PROCESS_BLOCKED;
 	current_process->sleeptime = msecs;
 	return current_process->pid;
 }
 
+// Handles the ticks
 void scheduler_tick() {
 	int i = 0;
 	for(; i < PROCESS_MAX; ++i)	{
@@ -533,10 +548,12 @@ void scheduler_tick() {
 	_inb(0x71);
 }
 
+// Handles the ticks
 void * storage_index() {
-	return think_storage;
+	return think_storage; // Array storing the ticks of the processes
 }
 
+// Used by scheduler in context switching
 int scheduler_load_esp()
 {
 	return current_process->esp;

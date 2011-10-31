@@ -10,46 +10,40 @@
 
 #define FIFO_DATA_SIZE 1024
 
+
+// Data structure for handling the FIFO
 typedef struct fifo {
-	int inode;
-	char data[FIFO_DATA_SIZE];
-	int	wr_i;
-	int rd_i;
-	int buf_rd_i;
-	int buf_wr_i;
-	int write_locked;
-	int writes;
-	Process * wr_lck_p;
-	Process * rd_lck_p;
+	int key;							// Fifo key
+	char data[FIFO_DATA_SIZE];			// Buffer
+	int	wr_i;							// Index of where we're writing.
+	int rd_i;							// Index of where we're reading.
+	int buf_rd_i;						// Index of where in the data we're reading.
+	int buf_wr_i;						// Index of where in the data we're writing.
+	int write_locked;					// Flag for locking.
+	int writes;							// Tells the amount of writes, for locking.
+	Process * wr_lck_p;					// Process locked in the fifo for writing.
+	Process * rd_lck_p;					// Process locked in the fifo for reading.
 } fifo;
 
 static list fifos = NULL;
 
-/* Searchs for the fifo containing the inode.*/
-static fifo * fifo_find(int inode) {
+/* Searchs for the fifo containing the key.*/
+static fifo * fifo_find(int key) {
 	foreach(fifo *, f, fifos) { 
-		if(inode == f->inode)	{
+		if(key == f->key)	{
 			return f;
 		}
 	}
 	return NULL;
 }
 
-/* #TODO*/
-int fifo_exists(char * file_name) {
-	int n = 31; 
-	
-	// TODO: Use a filesystem function.
-	int i = 0;
-	int len = strlen(file_name);
-	for(i = 0; i < len; ++i) {
-		n += file_name[i] * file_name[i] * i;
-	}	
-	return (int)fifo_find(n);
+// Tells if a fifo exists
+int fifo_exists(int file_name) {
+	return (int)fifo_find(file_name);
 }
 
 
-
+//  Builds a fifo.
 int fifo_make(int ptr) {
 	if(fifos == NULL)	{
 		fifos = list_init();
@@ -63,7 +57,7 @@ int fifo_make(int ptr) {
 	if((f = fifo_find(n)) == NULL)
 	{
 		f               = (fifo *) malloc(sizeof(fifo));
-		f->inode        = n;
+		f->key          = n;
 		f->wr_i         = 0;
 		f->rd_i         = 0;
 		f->writes       = 0;
@@ -81,24 +75,6 @@ int fifo_make(int ptr) {
 	return (int)f;
 }
 
-int	fifo_open(char * file_name) {
-	int n = 31; 
-	
-	// TODO: Use a filesystem function.
-	int i = 0;
-	int len = strlen(file_name);
-	for(i = 0; i < len; ++i) {
-		n += file_name[i] * file_name[i] * i;
-	}
-	
-	fifo * f = NULL;
-	if((f = fifo_find(n)) == NULL) {
-		return -1;
-	} else {
-		return (int)f;
-	}
-	
-}
 /* Writes a message to the fifo's file descriptor. #TODO: complete*/
 int fifo_write(int fd, char * msg, int len){ 
 	fifo * f = (fifo *) fd;
@@ -129,9 +105,10 @@ int fifo_write(int fd, char * msg, int len){
 	}
 }
 
+// Reads a fifo, it might block.
 int fifo_read(int fd, char * buffer, int read_size){	
 	fifo * f = (fifo *) fd;
-	while(f->writes == 0) {
+	while(f->writes == 0) {										// No writes? Then block!
 		f->rd_lck_p = getp();
 
 		getp()->state = PROCESS_BLOCKED;
@@ -140,13 +117,13 @@ int fifo_read(int fd, char * buffer, int read_size){
 	for(; f->buf_rd_i < read_size && (f->writes > 0 || f->write_locked); f->buf_rd_i++, f->rd_i++)
 	{
 		if(f->writes > 0 && f->wr_lck_p != NULL) {
-			process_setready(f->wr_lck_p);
+			process_setready(f->wr_lck_p);						// If there's a write and it's blocked, unlock the writer
 			f->wr_lck_p = NULL;
 		}
 		else if(f->writes == 0 && f->buf_wr_i > 0) {
 			f->rd_lck_p = getp();
 			getp()->state = PROCESS_BLOCKED;
-			return SYSR_BLOCK;
+			return SYSR_BLOCK;									// If we've got no writes, then we must block, just like before.
 		}
 		
 		if(f->rd_i == FIFO_DATA_SIZE) {
@@ -160,6 +137,7 @@ int fifo_read(int fd, char * buffer, int read_size){
 	return i;
 }
 
+// Closes a fifo, formality :p
 int fifo_close(int fd){
 	fifo * f = (fifo *) fd;
 	if(f->wr_lck_p != NULL) {

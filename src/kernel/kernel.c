@@ -17,8 +17,7 @@ DESCR_INT idt[0x81];
 /* IDTR */
 IDTR idtr; 
 
-
-
+// Clears the kernel passage variables.
 void clear_kernel_buffer() {
 	int i = 0;
 	for(i = 0; i < KERNEL_BUFFER_SIZE; ++i)	{
@@ -56,19 +55,23 @@ int krn = 0;
 
 int ready = 0;
 
+// Sets the kernel as ready
 void setready() {
 	ready = 1;
 }
 
+// Tells if the kernel is ready
 int kernel_rd() {
 	return ready;
 }
 
+// Tells if the kernel is ready to the keyboard
 int kernel_ready() {
  	_in(0x60);	 // Needed for not blcoking the keyboard on idleness
 	return ready;
 }
 
+// Keyboard handler
 void int_09() {
 	krn++;
 	char scancode;
@@ -82,7 +85,7 @@ void int_09() {
 	if (flag)	{
 		char sc = scanCodeToChar(scancode);
 		if(sc != 0 && sc != EOF)	{
-			pushC(sc); //guarda un char en el stack
+			pushC(sc); 		  //guarda un char en el stack
 		}
 	}
 	else {
@@ -92,16 +95,16 @@ void int_09() {
 	kernel_buffer[0] = KILL;
 	
 	krn--;
-	
 }
 
+// Tells the other kernel functions if the code they are using is in the kernel or not.
 int in_kernel(){
 	return krn;
 }
 
+// INT 80h Handler, kernel entry.
 void int_80() {
-	if(krn)
-	{
+	if(krn)	{
 		return;
 	}
 	
@@ -117,7 +120,7 @@ void int_80() {
 	Process * p;
 	int inode;
 	int _fd;
-	// Yeah, wanna know why we don't access an array directly? ... Because of big bugs we had that way.
+	// Yeah, wanna know why we don't access an array directly? ... Because of big bugs we might have.
 	switch(systemCall) {
 		case READY:
 			kernel_buffer[KERNEL_RETURN] = kernel_ready();
@@ -333,19 +336,15 @@ void int_80() {
 	krn--;
 }
 
-
+// This call is done outside the kernel, since we had maaaaaaaany problems with it inside #nofun
 // Fires a signal after a syscall, only if the kernel has been set to do so.
 void signal_on_demand() {
-
 	if (kernel_buffer[KERNEL_RETURN - 1] != 0) {
 		
 		if (kernel_buffer[0] == KILL) {
 			make_atomic();
 			int sigcode = kernel_buffer[KERNEL_RETURN - 1];
 			int pid = kernel_buffer[KERNEL_RETURN - 2];
-
-			kernel_buffer[KERNEL_RETURN - 1] = 0; // SIGCODE
-			kernel_buffer[KERNEL_RETURN - 2] = 0; // PID
 		
 			sg_handle(sigcode, pid);
 			release_atomic();
@@ -361,9 +360,10 @@ void signal_on_demand() {
 int val = 0;
 Process * p1, * idle, * kernel;
 
+
+// Starts the kernel's idle process. This process has kernel permissions.
 int idle_main(int argc, char ** params) {
 	
-
 	int i = 0;
 	char a[] = { ' ', 0x07 };
 	
@@ -371,9 +371,8 @@ int idle_main(int argc, char ** params) {
 		memcpy((char*)0xb8000 + i * 2, a, 2);
 	}
 	
-	
 	// The funny message, windows says starting windows... why shouldn't we? D:
-	char start_msg[][2] ={ 
+	char start_msg[][2] =	{ 
 		{ 'S', 0x07 },
 		{ 't', 0x08 },
 		{ 'a', 0x09 },
@@ -393,31 +392,31 @@ int idle_main(int argc, char ** params) {
 	};
 	
 	i = 0;
-	for(; i < 16; ++i)
-	{
-		if(i == 15)
-		{
-			_Halt();_Halt();_Halt();_Halt();
-		}
+	for(; i < 16; ++i)	{
 		memcpy((char*)0xb8000 + i * 2, start_msg[i], 2);
 		_setCursor(i);
 	}
-
+	
+	Cli();
 	make_atomic();
-	mount();
-	setready(); // Now we can read the keyboard
-	tty_init(0);
+
+	mount();					// Mount or start the FS
+
+	tty_init(0);				// Load up the TTY's
 	tty_init(1);
 	tty_init(2);
 	tty_init(3);
 	tty_init(4);
 	tty_init(5);		
+	
+	setready(); 				// Set the kernel as ready and the FS as loaded
+	users_init();				// Init the users
+	
 	fs_finish();
 
-	release_atomic();
-	
+	release_atomic();	
+	Sti();
 
-	users_init();
 
 	while(1) {
 		_Halt(); // Now set to idle.

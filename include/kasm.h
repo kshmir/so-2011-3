@@ -5,12 +5,13 @@
 #include "defs.h"
 
 
-unsigned int _read_msw();
-
+// Sets the IDTR register
 void _lidt(IDTR *idtr);
 
+// Restarts the PC
 void _restart();
 
+// Sets the cursor
 void _setCursor(int a);
 
 /* Writes PIC1's mask */
@@ -29,9 +30,10 @@ void _int_08_hand();
 void _int_09_hand();
 /* Handler INT 80h */
 void _int_80_hand(int systemCall, int fd, char *buffer, int count);
-
+// For signals
 void _int_79_hand();
 
+// RDTSC
 int _rdtsc();
 
 /* System call write */
@@ -48,4 +50,3 @@ int _in(unsigned int port);
 
 /* Call for debug */
 void _debug(void);
-

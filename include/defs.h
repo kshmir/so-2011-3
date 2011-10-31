@@ -7,7 +7,7 @@
 #define _defs_
 
 /** Usado para borrar el buffer **/
-#define BORRA_BUFFER 	while (getC() != 0)
+#define BORRA_BUFFER		while (getC() != 0)
 #define EOI 				0x20
 #define NULL 				0
 #define PIC1 				2
@@ -56,7 +56,7 @@ typedef struct {
 	word limit, base_l;byte base_m, access, attribs, base_h;
 } DESCR_SEG;
 
-/** Creado para poder extender los modos de video en un uso futuro */
+/** Used for a possible shell change */
 typedef struct {
 	int height, 
 		width;
