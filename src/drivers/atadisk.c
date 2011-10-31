@@ -17,21 +17,21 @@
 #define BIT14 (1<<14)
 #define BIT15 (1<<15)
 
-#define DATA_PORT		BIT0
-#define ATAPI_PORT		BIT1
-#define SECTOR_COUNT	BIT2
-#define LBA_LO			BIT3
-#define LBA_MID			BIT4
-#define LBA_HI			BIT5
-#define DRIVE_PORT		BIT6
-#define STATUS_PORT		BIT7
+#define DATA_PORT		BIT0 //Read/Write PIO data bytes on this port
+#define ATAPI_PORT		BIT1 //Usually used for ATAPI devices 
+#define SECTOR_COUNT	BIT2 //Number of sectors to read/write
+#define LBA_LO			BIT3 //Partial disc sector address
+#define LBA_MID			BIT4 //Partial disc sector address
+#define LBA_HI			BIT5 //Partial disc sector address
+#define DRIVE_PORT		BIT6 //Used to select a drive and/or head
+#define STATUS_PORT		BIT7 //Used to send commands or read the current status
 
-#define ERR				BIT0
-#define	DRQ				BIT3
-#define	SRV				BIT4
-#define	DF				BIT5
-#define	RDY				BIT6
-#define	BSY				BIT7
+#define ERR				BIT0 //Error made by user
+#define	DRQ				BIT3 //Set when the drive is ready to transfer/recieve data
+#define	SRV				BIT4 //Overlapped mode service request 
+#define	DF				BIT5 //Drive fault error
+#define	RDY				BIT6 //When the bit is set, driver is ready
+#define	BSY				BIT7 //Indicates the drive is preparing to send/recieve data
 
 /* This defines are to check the sepecifications of the disk.
 	#TODO: check size!*/
@@ -58,6 +58,7 @@ void _400ns() {
 	_inb(0x3F6);
 }
 
+//Waits 400 nanoseconds to make sure the drive gets info before taking further actions.
 int _drq_wait() {
 	
 	// _400ns();
@@ -83,6 +84,7 @@ int _drq_wait() {
 	return 0;
 }
 
+//Says if disk is ready for another sector read/write
 int _next_io() {
 	int test;
 	// _400ns();
@@ -104,6 +106,7 @@ int _next_io() {
 	return 0;
 }
 
+//reads "numreads" sectors from disk starting at "sector"
 int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	
 
@@ -123,7 +126,7 @@ int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	while(retry) {
 		unsigned long long addr = ((unsigned long long)sector) & 0x00000000ffffffff;
 
-
+		//sets flags for disk reading
 		_outb(0x1F1, 0x00); 
 		_outb(0x1F1, 0x00);
 		_outb(0x1F2, 0x00); 
@@ -171,7 +174,8 @@ void translateBytes(char * ans, unsigned short databyte){
 	ans[1] = (databyte >> 8) & 0x000000FF;
 }
 
-
+//writes "msg" in the "sector" of the disk, numreads indicates the amount
+//of sectors the message will need
 int _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 	
 
@@ -238,7 +242,7 @@ int _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 	return 1;
 }
 
-
+//writes the data in ATA language
 void writeDataToRegister (int ata, char upper, char lower) {
 	unsigned short out = 0;
 	out = ((upper << 8) & 0xFF00) | (lower & 0xFF);
@@ -246,6 +250,7 @@ void writeDataToRegister (int ata, char upper, char lower) {
 	_outw(ata + WIN_REG0, out);	
 }
 
+//converts data from ATA language
 unsigned short getDataRegister (int ata) {
 	unsigned short ans;
 	ans = _inw(ata + WIN_REG0);
