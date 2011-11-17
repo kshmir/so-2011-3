@@ -1,6 +1,9 @@
 #include "internal_shell.h"
 #include "../kernel/scheduler.h"
 
+
+
+
 // Makes a new line
 void newLine() {
 	_Cli();

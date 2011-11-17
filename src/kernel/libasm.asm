@@ -17,6 +17,7 @@ GLOBAL  __stack_chk_fail
 GLOBAL	_rdtsc
 
 GLOBAL _GetCS
+GLOBAL _GetCR2
 GLOBAL _GetESP
 GLOBAL _Halt
 GLOBAL _yield
@@ -65,9 +66,11 @@ GLOBAL	mv
 GLOBAL	fsstat
 GLOBAL	sleep
 
+GLOBAL  _pfault
 GLOBAL	_rtc
 GLOBAL	_inb
 GLOBAL	_outb
+
 
 EXTERN	scheduler_tick
 EXTERN	signal_on_demand
@@ -83,6 +86,7 @@ EXTERN	softyield
 EXTERN	Cli
 EXTERN	kernel_ready
 EXTERN	Sti
+EXTERN  pfault
 
 
 
@@ -108,6 +112,10 @@ _GetCS: 		; For debugging
 		
 _GetESP:		; For debugging
 		mov eax, esp
+		ret
+		
+_GetCR2:	; For debugging
+		mov eax, cr2
 		ret
 
 _mascaraPIC1:			; Escribe mascara del PIC 1
@@ -143,7 +151,7 @@ _lidt:
 		retn
 
 _yield:
-		int 08h
+		int 020h
 		ret
 
 ; Handler de INT 8 (Timer tick)
@@ -176,6 +184,16 @@ __stack_chk_fail:
 _rtc:
 		call Cli
 		call scheduler_tick
+		mov 	al,020h			; Envio de EOI generico al PIC
+		out 	020h,al
+		mov 	al,0a0h			; Envio de EOI generico al PIC
+		out 	0a0h,al
+		call Sti
+		iret
+		
+_pfault:
+		call Cli
+		call pfault
 		mov 	al,020h			; Envio de EOI generico al PIC
 		out 	020h,al
 		mov 	al,0a0h			; Envio de EOI generico al PIC

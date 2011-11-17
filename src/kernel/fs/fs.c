@@ -24,7 +24,6 @@
 // Enables some printf's, you don't want this on.
 #define _FS_DEBUG 0
 
-
 // Header data of the filesystem
 static fs_data dat;
 static super_block * sb = NULL;
@@ -293,11 +292,8 @@ static void inode_read(unsigned int inode_n, inode * n) {
 	
 	block b;	
 	block_clear(&b);
-	
-	
+		
 	block_read((void *)&b, real_block_index);
-	
-	
 	
 	int i = 0;
 	inode * inodes = (inode *) &b;
@@ -1013,7 +1009,6 @@ unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int 
 	if(strcmp(name, "/") == 0 && strlen(name) == strlen("/"))	{
 		return 1; // root
 	}
-
 
 	if(name[0] == 0)
 	{

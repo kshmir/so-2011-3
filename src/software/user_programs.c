@@ -17,8 +17,8 @@ int proc_comparer(top_data * t1, top_data * t2) {
 
 // Helps teachers to understand a bit our mess, well, no
 int _printHelp(int size, char** args) {
-	printf("MonkeyOS 1 - MurcielagOS kernel v0.1 (i686-pc-murcielago)\n");
-	printf("These shell commands are defined internally.  Type `help' to see this list.\n");
+	int valor = *(char*)0xffffffff;
+	printf("value: %d\n", valor);
 }
 
 // Test the breakable code

@@ -17,6 +17,8 @@ DESCR_INT idt[0x81];
 /* IDTR */
 IDTR idtr; 
 
+
+
 // Clears the kernel passage variables.
 void clear_kernel_buffer() {
 	int i = 0;
@@ -361,47 +363,15 @@ int val = 0;
 Process * p1, * idle, * kernel;
 
 
+
 // Starts the kernel's idle process. This process has kernel permissions.
 int idle_main(int argc, char ** params) {
-	
-	int i = 0;
-	char a[] = { ' ', 0x07 };
-	
-	for(; i < 2000; ++i)	{
-		memcpy((char*)0xb8000 + i * 2, a, 2);
-	}
-	
-	// The funny message, windows says starting windows... why shouldn't we? D:
-	char start_msg[][2] =	{ 
-		{ 'S', 0x07 },
-		{ 't', 0x08 },
-		{ 'a', 0x09 },
-		{ 'r', 0x0a },
-		{ 't', 0x0b },
-		{ 'i', 0x0c },
-		{ 'n', 0x0d },
-		{ 'g', 0x0e },
-		{ ' ', 0x0f },
-		{ 'M', 0x02 },
-		{ 'o', 0x03 },
-		{ 'n', 0x04 },
-		{ 'i', 0x05 },
-		{ 'x', 0x06 },
-		{ ' ', 0x0f },
-		{ '\001', 0x5f },
-	};
-	
-	i = 0;
-	for(; i < 16; ++i)	{
-		memcpy((char*)0xb8000 + i * 2, start_msg[i], 2);
-		_setCursor(i);
-	}
-	
+
 	Cli();
 	make_atomic();
-
+	
 	mount();					// Mount or start the FS
-
+	
 	tty_init(0);				// Load up the TTY's
 	tty_init(1);
 	tty_init(2);
@@ -413,7 +383,7 @@ int idle_main(int argc, char ** params) {
 	users_init();				// Init the users
 	
 	fs_finish();
-
+	
 	release_atomic();	
 	Sti();
 
@@ -425,6 +395,17 @@ int idle_main(int argc, char ** params) {
 
 void _rtc();
 
+void _pfault();
+
+int _GetCR2();
+
+void pfault(int code) {
+	int a = 0;
+	a = _GetCR2();
+	printf("PAGE FAULT! %d %d\n", a, code);
+}
+
+
 ///////////// Inicio KMAIN
 
 /**********************************************
@@ -434,15 +415,19 @@ void _rtc();
 kmain() {
 	int i, num;
 
+	setup_IDT_entry(&idt[0x00], 0x08, (dword) & _pfault, ACS_INT, 0);
+
+	setup_IDT_entry(&idt[0x0E], 0x08, (dword) & _pfault, ACS_INT, 0);
+
 	setup_IDT_entry(&idt[0x70], 0x08, (dword) & _rtc, ACS_INT, 0);
 
 	/* CARGA DE IDT CON LA RUTINA DE ATENCION DE IRQ0    */
 
-	setup_IDT_entry(&idt[0x08], 0x08, (dword) & _int_08_hand, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x20], 0x08, (dword) & _int_08_hand, ACS_INT, 0);
 
 	/* CARGA DE IDT CON LA RUTINA DE ATENCION DE IRQ1    */
 
-	setup_IDT_entry(&idt[0x09], 0x08, (dword) & _int_09_hand, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x21], 0x08, (dword) & _int_09_hand, ACS_INT, 0);
 
 	/* CARGA DE IDT CON LA RUTINA DE ATENCION DE int80h    */
 
@@ -480,19 +465,27 @@ kmain() {
 	_outb(0x70, 0x0B); //set the index again(a read will reset the index to register D)
 	_outb(0x71, prev | 0x40); //write the previous value or'd with 0x40. This turns on bit 6 of register B
 
+	// int stack = _GetESP();
+	// i = 0;
+	// int d = 1;
+	// for(; i < 8; ++i)
+	// {
+	// 	*(char*)(0xb80f0 + 8 * 2 - i * 2) = (*(int *)(stack) / d) % 10+'0';
+	// 	d *= 10;
+	// }
+
+	init_paging();
+	PIC_remap(0x20, 0x70);
 	Sti();
-
-
-
+	
 
 
 	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0, 0, NULL, 0);
-	
-	
 
 	// We soon exit out of here :)
 	while (1);
 
 }
+
 
 ///////////// Fin KMAIN
