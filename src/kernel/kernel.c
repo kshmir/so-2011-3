@@ -366,12 +366,12 @@ Process * p1, * idle, * kernel;
 
 // Starts the kernel's idle process. This process has kernel permissions.
 int idle_main(int argc, char ** params) {
-
 	Cli();
 	make_atomic();
 	
 	mount();					// Mount or start the FS
 	
+
 	tty_init(0);				// Load up the TTY's
 	tty_init(1);
 	tty_init(2);
@@ -381,12 +381,11 @@ int idle_main(int argc, char ** params) {
 	
 	setready(); 				// Set the kernel as ready and the FS as loaded
 	users_init();				// Init the users
-	
+// 	
 	fs_finish();
 	
 	release_atomic();	
 	Sti();
-
 
 	while(1) {
 		_Halt(); // Now set to idle.

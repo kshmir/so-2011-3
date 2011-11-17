@@ -141,6 +141,7 @@ int process_input(const char * input, int tty_number) {
 int tty_main (int argc, char ** argv)
 {	
 	clear_screen();
+	
 	char cadena[50];
 	
 	int status     = 0; // 0: logged out; 1: logged in
@@ -151,6 +152,8 @@ int tty_main (int argc, char ** argv)
 	char * input;
 	char * username;
 	char * password;
+
+	
 	printf("Monix v1 - TTY %d\n", tty_number);
 	printf("Marseillan, Pereyra, Videla\n");
 	printf("Sistemas Operativos - 2011 - ITBA\n");
@@ -191,7 +194,9 @@ int tty_init(int tty_num) {
 	_params[1] = _num;
 	itoa(tty_num, _num);
 	fd_open_with_index(FD_TTY0 + tty_num, _FD_TTY, NULL, 0666);
-	create_process("tty", tty_main, 0, tty_num, 1, FD_TTY0 + tty_num, FD_TTY0 + tty_num, FD_TTY0 + tty_num, 1, _params, 0);
 	init_context(tty_index);
+	create_process("tty", tty_main, 0, tty_num, 1, FD_TTY0 + tty_num, FD_TTY0 + tty_num, FD_TTY0 + tty_num, 1, _params, 0);
+
+
 	tty_index++;
 }

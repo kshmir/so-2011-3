@@ -13,18 +13,18 @@ void newLine() {
 	} else {
 		int i, j;
 		int last_len = 0, current_len;
-
 		for (j = 0; j < getVideoMode()->height; j++) {
 			for (i = 0; i < getVideoMode()->width; i++) {
 				getVideoMode()->screen[i][j]
 					= getVideoMode()->screen[i][j + 1];
+
 			}
 		}
 		for (i = 0; i < getVideoMode()->width; i++) {
 			getVideoMode()->screen[i][getVideoMode()->height] = ' ';
 		}
 		reDrawLines();
-
+							
 		setCursorY(getCursorY() - 1);
 		setCursorX(0);
 	}
@@ -92,14 +92,13 @@ void putChar(char c) {
 	make_atomic();
 	int x = getCursorX();
 	int y = getCursorY();
-	if (x <= getVideoMode()->width) {
+	if (x < getVideoMode()->width) {
 		if (c != '\r')	{
 			getVideoMode()->screen[x][y] = c;
 		}
 		x += (c != '\r') ? 1 : -1;
 	} else {
 		newLine();
-		getVideoMode()->screen[x][y] = c;
 	}
 	release_atomic();
 }
