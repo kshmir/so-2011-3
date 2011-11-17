@@ -322,14 +322,14 @@ char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "w
 	"kill", "getc", "putc", "top", "hang", "setp", "setsched", "dcheck", 
 	"dread", "dwrite", "dfill", "ls", "cd", "pwd", "mkdir", "rm", "touch", "cat", "fwrite",
 	"logout", "makeuser", "setgid", "udelete", "chown", "chmod", "getown", "getmod", "fbulk",
-	"finfo", "su", "link", "cp", "mv", "smallhang", "fsstat", NULL };
+	"finfo", "su", "link", "cp", "mv", "smallhang", "fsstat", "sync", NULL };
 
 // User processes pointers
 int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, 
 	reader_main, writer_main, _kill, getc_main, putc_main, top_main, _hang, 
 	_setp, _setsched, _dcheck, _dread, _dwrite, _dfill, _ls, _cd, _pwd, _mkdir, _rm, _touch,
 	_cat, _fwrite, _logout, _makeuser, _setgid, _udelete, _chown, _chmod, _getown, _getmod, _fbulk,
-	_finfo, _su, _link, _cp, _mv, _smallhang, _fsstat, NULL };
+	_finfo, _su, _link, _cp, _mv, _smallhang, _fsstat, _sync, NULL };
 
 // Makes a pointer from a function string given
 main_pointer sched_ptr_from_string(char * string) {

@@ -874,3 +874,7 @@ int _fsstat(int argc, char ** argv) {
 	printf("Free Bytes: %d\n", data[4]);
 	printf("Total available bytes: %d\n", data[5]);
 }
+
+int _sync(int argc, char ** argv) {
+	hdd_cache_sync();
+}

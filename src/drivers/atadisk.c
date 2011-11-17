@@ -110,6 +110,7 @@ int _next_io() {
 int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
 	
 
+
 	ata= ATA0;
 	_outw(0x3F6, BIT2);
 
