@@ -270,6 +270,9 @@ unsigned int fs_read_file(int inode, char * data, int size, unsigned long * f_of
 // returns: a MONIX error code (like open) or something > 1 if OK.
 unsigned int fs_rm(unsigned int inode, int in_recursion);
 
+// Tells if the given physical blocks are allowed inside the kernel
+unsigned int fs_ph_blocks_are_empty(unsigned int ph_block, int amount);
+
 // fs_pwd
 // Tells the current position in the filesystem
 // Returns the PWD.

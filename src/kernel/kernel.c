@@ -387,8 +387,17 @@ int idle_main(int argc, char ** params) {
 	release_atomic();	
 	Sti();
 
+	int count = 0;
 	while(1) {
 		_Halt(); // Now set to idle.
+		count++;
+		if(count % 10000 == 0)
+		{
+			// Cli();
+			// hdd_cache_sync();
+			// Sti();
+		}
+
 	}
 }
 
@@ -401,7 +410,9 @@ int _GetCR2();
 void pfault(int code) {
 	int a = 0;
 	a = _GetCR2();
+	krn = 1;
 	printf("PAGE FAULT! %d %d\n", a, code);
+	krn = 0;
 }
 
 
@@ -414,9 +425,13 @@ void pfault(int code) {
 kmain() {
 	int i, num;
 
-	setup_IDT_entry(&idt[0x00], 0x08, (dword) & _pfault, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x00], 0x08, (dword) & _e00, ACS_INT, 0);
+	setup_IDT_entry(&idt[13], 0x08, (dword) & _e0d, ACS_INT, 0);
+	setup_IDT_entry(&idt[12], 0x08, (dword) & _e0c, ACS_INT, 0);
+	setup_IDT_entry(&idt[11], 0x08, (dword) & _e0b, ACS_INT, 0);
+	setup_IDT_entry(&idt[8], 0x08, (dword) & _e08, ACS_INT, 0);
 
-	setup_IDT_entry(&idt[0x0E], 0x08, (dword) & _pfault, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x0E], 0x08, (dword) & _e0e, ACS_INT, 0);
 
 	setup_IDT_entry(&idt[0x70], 0x08, (dword) & _rtc, ACS_INT, 0);
 

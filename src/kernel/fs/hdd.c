@@ -13,6 +13,7 @@
 #include "hdd.h"
 #include "fs.h"
 
+extern int krn;
 
 hdd * hd;
 
@@ -47,6 +48,8 @@ int least_reads_family_index() {
 	}
 
 	if (min_reads_index == -1) {
+		printf("i must clear cache\n");
+		hdd_cache_sync();
 		for (i = 0; i < HDD_READ_GROUP_COUNT; i++) {
 			int reads = 0;
 			for (j = 0; j < HDD_READ_GROUP_SIZE; j++) {
@@ -56,11 +59,13 @@ int least_reads_family_index() {
 				min_reads = reads;
 				min_reads_index = i;
 				if (!reads) {
+					printf("I find shit\n");
+					return min_reads_index;
 					break;
 				}
 			}
 		}
-
+		printf("I dont find anything :(\n");
 	}
 
 	return min_reads_index;
@@ -85,6 +90,7 @@ int hdd_cache_add(hdd_block * buff, int len, int start_block, int write) {
 }
 
 void * hdd_get_block(int block_id, int write) {
+	
 	int i = 0;
 	for (; i < HDD_CACHE_SIZE; i++) {
 		if (cache.metadata[i].block == block_id) {
@@ -98,18 +104,23 @@ void * hdd_get_block(int block_id, int write) {
 	_disk_read(ATA0, (void*)&buffer, 2 * HDD_READ_GROUP_SIZE, 
 		(block_id / HDD_READ_GROUP_SIZE) * HDD_READ_GROUP_SIZE * 2 + 1);
 
+	printf("Adding to cache\n");
 	hdd_cache_add((void *)&buffer, HDD_READ_GROUP_SIZE, (block_id / HDD_READ_GROUP_SIZE) 
 			* HDD_READ_GROUP_SIZE, write);
+			
+	printf("Added to cache\n");	
 	i = 0;
 	for (; i < HDD_CACHE_SIZE; i++) {
 		if (cache.metadata[i].block == block_id) {
 			if (!write) {
 				cache.metadata[i].reads++;
 			}
+			printf("found da shit\n");	
 			return &cache.data[i];
 		}
 	}
 
+	printf("NOT FOUND SHIT\n");	
 	return NULL;
 }
 
@@ -140,19 +151,27 @@ int hdd_flush_family(int family_id, int flush_force) {
 		cache.metadata[family_id + i].writes = 0;
 	}
 	if (nwrites) {
+		printf("before sync\n");
 		_disk_write(ATA0, (void *)&cache.data[family_id], 2 * HDD_READ_GROUP_SIZE, 
 			cache.metadata[family_id].block * 2 + 1);
+		printf("afte sync\n");
 	}
+	return !!nwrites;
 }
+
 
 
 int hdd_cache_sync() {
 	int i = 0;
+	int count = 0;
 	for (; i < HDD_READ_GROUP_SIZE; i++) {
 		if (cache.metadata[i * HDD_READ_GROUP_SIZE].block != -1) {
-			hdd_flush_family(i * HDD_READ_GROUP_SIZE, TRUE);
+			count += hdd_flush_family(i * HDD_READ_GROUP_SIZE, TRUE);
 		}
 	}
+	krn = 1;
+	printf("syncd %d\n", count);
+	krn = 0;
 }
 
 
@@ -179,7 +198,7 @@ void hdd_read(char * answer, unsigned int sector) {
 		int i = 0;
 		for (; i < HDD_BLOCK_SIZE; i++) {
 			answer[i] = data[i];
-		}
+		}	
 	} else {
 		_disk_read(ATA0, answer, 2, sector);
 	}

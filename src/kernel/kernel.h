@@ -77,8 +77,27 @@
 
 #define SLEEP        44
 
+#define SYNC         45
+
 void _disk();
 void setready();
+
+
+void _e00();
+void _e01();
+void _e02();
+void _e03();
+void _e04();
+void _e05();
+void _e06();
+void _e07();
+void _e08();
+void _e09();
+void _e0a();
+void _e0b();
+void _e0c();
+void _e0d();
+void _e0e();
 
 #define SYSR_ERR     -1
 #define SYSR_BLOCK   -2

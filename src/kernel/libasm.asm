@@ -65,6 +65,7 @@ GLOBAL	cp
 GLOBAL	mv
 GLOBAL	fsstat
 GLOBAL	sleep
+GLOBAL	sync
 
 GLOBAL  _pfault
 GLOBAL	_rtc
@@ -88,10 +89,159 @@ EXTERN	kernel_ready
 EXTERN	Sti
 EXTERN  pfault
 
+EXTERN handler_e00
+EXTERN handler_e01
+EXTERN handler_e02
+EXTERN handler_e03
+EXTERN handler_e04
+EXTERN handler_e05
+EXTERN handler_e06
+EXTERN handler_e07
+EXTERN handler_e08
+EXTERN handler_e09
+EXTERN handler_e0a
+EXTERN handler_e0b
+EXTERN handler_e0c
+EXTERN handler_e0d
+EXTERN handler_e0e
+EXTERN handler_e0f
+EXTERN handler_e10
+EXTERN handler_e11
+EXTERN handler_e12
+EXTERN handler_e13
+EXTERN handler_e15
+EXTERN handler_e16
+EXTERN handler_e17
+EXTERN handler_e18
+EXTERN handler_e19
+EXTERN handler_e1a
+EXTERN handler_e1b
+EXTERN handler_e1c
+EXTERN handler_e1d
+EXTERN handler_e1e
+EXTERN handler_e1f
 
-
+GLOBAL _e00
+GLOBAL _e01
+GLOBAL _e02
+GLOBAL _e03
+GLOBAL _e04
+GLOBAL _e05
+GLOBAL _e06
+GLOBAL _e07
+GLOBAL _e08
+GLOBAL _e09
+GLOBAL _e0a
+GLOBAL _e0b
+GLOBAL _e0c
+GLOBAL _e0d
+GLOBAL _e0e
+GLOBAL _e0f
+GLOBAL _e10
+GLOBAL _e11
+GLOBAL _e12
+GLOBAL _e13
+GLOBAL _e15
+GLOBAL _e16
+GLOBAL _e17
+GLOBAL _e18
+GLOBAL _e19
+GLOBAL _e1a
+GLOBAL _e1b
+GLOBAL _e1c
+GLOBAL _e1d
+GLOBAL _e1e
+GLOBAL _e1f
 
 SECTION .text
+
+
+
+
+_e00:
+		call Cli
+		call handler_e00
+		call Sti
+		iret
+_e01:
+		call Cli
+		call handler_e01
+		call Sti
+		iret
+_e02:
+		call Cli
+		call handler_e02
+		call Sti
+		iret
+_e03:
+		call Cli
+		call handler_e03
+		call Sti
+		iret
+_e04:
+		call Cli
+		call handler_e04
+		call Sti
+		iret
+_e05:
+		call Cli
+		call handler_e05
+		call Sti
+		iret
+_e06:
+		call Cli
+		call handler_e06
+		call Sti
+		iret
+_e07:
+		call Cli
+		call handler_e07
+		call Sti
+		iret
+_e08:
+		call Cli
+		call handler_e08
+		call Sti
+		iret
+_e09:
+		call Cli
+		call handler_e09
+		call Sti
+		iret
+_e0a:
+		call Cli
+		call handler_e0a
+		call Sti
+		iret
+_e0b:
+		call Cli
+		call handler_e0b
+		call Sti
+		iret
+_e0c:
+		call Cli
+		call handler_e0c
+		call Sti
+		iret
+_e0d:
+		call Cli
+		call handler_e0d
+		call Sti
+		iret
+_e0e:
+		call Cli
+		call handler_e0e
+		call Sti
+		iret
+
+
+
+
+
+
+
+
+
 
 _Cli:
 		cli			; limpia flag de interrupciones
@@ -989,4 +1139,16 @@ sleep:
 		pop		ebp
 		mov		eax, [kernel_buffer + 60]
 		call	softyield
+		ret
+		
+sync:
+		push	ebp
+		mov		ebp, esp
+		pusha
+		mov		eax, 45				; eax en 43 para chmod
+		mov 	ebx, [ebp+8]		
+		mov 	ecx, [ebp+12]		
+		mov 	edx, [ebp+16]		
+		int		80h
+		popa
 		ret

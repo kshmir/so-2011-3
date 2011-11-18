@@ -1522,3 +1522,8 @@ unsigned int fs_mv(char * name, char * newname, int from_inode) {
 	return i1;
 	
 }
+
+
+unsigned int fs_ph_blocks_are_empty(unsigned int ph_block, int amount) {
+	
+}
