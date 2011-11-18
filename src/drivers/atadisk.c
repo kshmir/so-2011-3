@@ -179,7 +179,7 @@ void translateBytes(char * ans, unsigned short databyte){
 //of sectors the message will need
 int _disk_write(int ata, char * msg, int numreads, unsigned int sector){
 	
-
+	printf("Writing sector %d to %d\n", sector, numreads);
 	// Sti();
 	//_Halt();
 	_outw(0x3F6, BIT2);
