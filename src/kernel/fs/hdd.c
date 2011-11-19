@@ -21,6 +21,8 @@ hdd_cache cache;
 
 hdd_block buffer[HDD_READ_GROUP_SIZE];
 
+int dirty_cache = 1;
+
 int _cache = 1;
 
 int least_reads_family_index() {
@@ -48,8 +50,24 @@ int least_reads_family_index() {
 	}
 
 	if (min_reads_index == -1) {
-		printf("i must clear cache\n");
-		hdd_cache_sync();
+		min_reads = 100000;
+		for (i = 0; i < HDD_READ_GROUP_COUNT; i++) {
+			int reads = 0;
+			int writes = 0;
+			for (j = 0; j < HDD_READ_GROUP_SIZE; j++) {
+				reads += cache.metadata[i * HDD_READ_GROUP_SIZE + j].reads;
+				writes += cache.metadata[i * HDD_READ_GROUP_SIZE + j].writes;
+			}
+			if (!writes && reads < min_reads) {
+				min_reads = reads;
+				min_reads_index = i;
+				if (!reads) {
+					return min_reads_index;
+				}
+			}
+		}
+		hdd_cache_sync(TRUE);
+		min_reads = 100000;
 		for (i = 0; i < HDD_READ_GROUP_COUNT; i++) {
 			int reads = 0;
 			for (j = 0; j < HDD_READ_GROUP_SIZE; j++) {
@@ -59,15 +77,11 @@ int least_reads_family_index() {
 				min_reads = reads;
 				min_reads_index = i;
 				if (!reads) {
-					printf("I find shit\n");
 					return min_reads_index;
-					break;
 				}
 			}
 		}
-		printf("I dont find anything :(\n");
 	}
-
 	return min_reads_index;
 }
 
@@ -104,28 +118,24 @@ void * hdd_get_block(int block_id, int write) {
 	_disk_read(ATA0, (void*)&buffer, 2 * HDD_READ_GROUP_SIZE, 
 		(block_id / HDD_READ_GROUP_SIZE) * HDD_READ_GROUP_SIZE * 2 + 1);
 
-	printf("Adding to cache\n");
 	hdd_cache_add((void *)&buffer, HDD_READ_GROUP_SIZE, (block_id / HDD_READ_GROUP_SIZE) 
 			* HDD_READ_GROUP_SIZE, write);
 			
-	printf("Added to cache\n");	
 	i = 0;
 	for (; i < HDD_CACHE_SIZE; i++) {
 		if (cache.metadata[i].block == block_id) {
 			if (!write) {
 				cache.metadata[i].reads++;
 			}
-			printf("found da shit\n");	
 			return &cache.data[i];
 		}
 	}
 
-	printf("NOT FOUND SHIT\n");	
 	return NULL;
 }
 
 int hdd_write_block(char * data, int block_id) {
-	hdd_get_block(block_id, TRUE);
+	hdd_get_block(block_id, FALSE);
 	int i = 0;
 	int j = 0;
 	for (; i < HDD_CACHE_SIZE; i++) {
@@ -136,6 +146,7 @@ int hdd_write_block(char * data, int block_id) {
 				cache.data[i].data[j] = data[j];
 			}
 			cache.metadata[i].writes += !!changes;
+			dirty_cache = dirty_cache | cache.metadata[i].writes;
 			return 1;
 		}
 	}	
@@ -150,28 +161,37 @@ int hdd_flush_family(int family_id, int flush_force) {
 		nwrites += cache.metadata[family_id + i].writes;
 		cache.metadata[family_id + i].writes = 0;
 	}
-	if (nwrites) {
-		printf("before sync\n");
+	if (nwrites > 8 || (flush_force && nwrites > 0)) {
+		// printf("Making %d writes | %d\n", nwrites, flush_force);
 		_disk_write(ATA0, (void *)&cache.data[family_id], 2 * HDD_READ_GROUP_SIZE, 
 			cache.metadata[family_id].block * 2 + 1);
-		printf("afte sync\n");
 	}
 	return !!nwrites;
 }
 
 
 
-int hdd_cache_sync() {
+int hdd_cache_sync(int full) {
+	if(!dirty_cache)
+	{
+		return 0;
+	}
+	
 	int i = 0;
 	int count = 0;
 	for (; i < HDD_READ_GROUP_SIZE; i++) {
 		if (cache.metadata[i * HDD_READ_GROUP_SIZE].block != -1) {
 			count += hdd_flush_family(i * HDD_READ_GROUP_SIZE, TRUE);
+			if(count && !full)	{
+				return;
+			}
 		}
 	}
-	krn = 1;
-	printf("syncd %d\n", count);
-	krn = 0;
+	dirty_cache = 0;
+	// krn = 1;
+	// printf("syncd %d\n", count);
+	// krn = 0;
+	return 1;
 }
 
 

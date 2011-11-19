@@ -873,6 +873,8 @@ int _fsstat(int argc, char ** argv) {
 	printf("Total inodes: %d\n", data[3]);
 	printf("Free Bytes: %d\n", data[4]);
 	printf("Total available bytes: %d\n", data[5]);
+	
+	// hdd_stat();
 }
 
 int _sync(int argc, char ** argv) {

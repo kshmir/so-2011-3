@@ -14,7 +14,7 @@
 
 #define SECTOR_SIZE 512
 
-#define HDD_READ_GROUP_COUNT 16
+#define HDD_READ_GROUP_COUNT 10
 #define HDD_READ_GROUP_SIZE 16
 #define HDD_BLOCK_SIZE 1024		
 #define HDD_CACHE_SIZE (HDD_READ_GROUP_COUNT * 16)
@@ -49,7 +49,10 @@ void hdd_read(char * answer, unsigned int sector);
 
 void hdd_write(char * buffer, unsigned int sector);
 
-// Only used for memory temporal hdd.
-void hdd_close();
+void hdd_stat();
+
+int hdd_dispose(int block_id);
+
+int hdd_disposed_reads(int block_id);
 
 #endif

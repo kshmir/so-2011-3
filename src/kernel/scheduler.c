@@ -203,6 +203,8 @@ Process * getp() {
 	return current_process;
 }
 
+
+
 int ran = 0;
 /** Removes all the process in the wait queue of pid, closes the file descriptors 
 of the pid and turns it to zombie*/
@@ -216,10 +218,13 @@ void process_cleanpid(int pid) {
 		sched_enqueue(p);
 	}
 
+
 	int i = 0;
 	for(; i < PROCESS_FD_SIZE; ++i)	{
 		fd_close(_curr->file_descriptors[i]);
 	}
+	
+
 
 	_curr->state = PROCESS_ZOMBIE;
 	_processes_available++;
@@ -227,6 +232,7 @@ void process_cleanpid(int pid) {
 }
 /** Cleans current process (same as above)*/
 void process_cleaner() {
+
 
 	while(!queue_isempty(current_process->wait_queue)) {
 		Process * p = queue_dequeue(current_process->wait_queue);

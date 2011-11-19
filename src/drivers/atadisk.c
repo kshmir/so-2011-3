@@ -108,9 +108,6 @@ int _next_io() {
 
 //reads "numreads" sectors from disk starting at "sector"
 int _disk_read(int ata, char * ans, int numreads, unsigned int sector){
-	
-
-
 	ata= ATA0;
 	_outw(0x3F6, BIT2);
 
