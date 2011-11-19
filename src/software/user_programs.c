@@ -876,7 +876,3 @@ int _fsstat(int argc, char ** argv) {
 	
 	// hdd_stat();
 }
-
-int _sync(int argc, char ** argv) {
-	hdd_cache_sync();
-}

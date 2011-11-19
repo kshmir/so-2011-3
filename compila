@@ -28,6 +28,7 @@ ccache gcc -c ../src/kernel/users.c              -o users.o          -fno-builti
 ccache gcc -c ../src/kernel/paging.c             -o paging.o         -fno-builtin
 ccache gcc -c ../src/kernel/pic.c                -o pic.o            -fno-builtin
 ccache gcc -c ../src/drivers/atadisk.c           -o atadisk.o        -fno-builtin
+ccache gcc -c ../src/monix/monix.c           -o monix.o        -fno-builtin
 ccache gcc -c ../src/software/user_programs.c    -o user_programs.o  -fno-builtin
 ccache gcc -c ../src/libs/mcgio.c                -o mcgio.o          -fno-builtin   # Os is for optimize size, since having a 80k+ binary didn't work on grub.
 ccache gcc -c ../src/libs/heap.c                 -o heap.o           -fno-builtin   # Bad thing: Some things broke so we used it just a bit.
@@ -42,7 +43,7 @@ ccache gcc -c ../src/libs/list.c                 -o list.o           -fno-builti
 
 #Linkedits all the files.
 ld -T ../include/link.ld -o kernel.bin libasm.o string.o loader.o users.o kernel.o \
-  mcgio.o stdlib.o video.o hdd.o atadisk.o stdio.o internal_shell.o mcglib.o scheduler.o queue.o \
-  tty.o tty_context.o list.o semaphore.o fifo.o fd.o signals.o pqueue.o bitmap.o fs.o heap.o paging.o pic.o    
+  mcgio.o stdlib.o video.o atadisk.o stdio.o internal_shell.o mcglib.o scheduler.o queue.o \
+  tty.o tty_context.o list.o semaphore.o fifo.o fd.o signals.o pqueue.o bitmap.o fs.o heap.o paging.o pic.o monix.o hdd.o 
 
 echo "Compila end"

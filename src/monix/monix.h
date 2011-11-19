@@ -265,6 +265,5 @@ void sleep(int msecs);
 
 int logout();
 
-int sync();
 
 #endif
