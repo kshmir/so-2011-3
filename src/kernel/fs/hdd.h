@@ -14,7 +14,8 @@
 
 #define SECTOR_SIZE 512
 
-#define HDD_READ_GROUP_COUNT 10
+#define HDD_READ_GROUP_COUNT 32
+#define HDD_DISPOSE_HIST_COUNT (HDD_READ_GROUP_COUNT / 3)
 #define HDD_READ_GROUP_SIZE 16
 #define HDD_BLOCK_SIZE 1024		
 #define HDD_CACHE_SIZE (HDD_READ_GROUP_COUNT * 16)
@@ -35,6 +36,7 @@ typedef struct hdd_block_metadata {
 	int    block;						// Block number inside the disk
 	unsigned short  reads;				// Number of reads made inside the block.
 	unsigned short  writes;				// Number of writes made inside the block since the last flush.
+	int		untouchable;
 } hdd_block_metadata;
 
 typedef struct hdd_cache {

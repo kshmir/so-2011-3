@@ -18,6 +18,9 @@ DESCR_INT idt[0x81];
 IDTR idtr; 
 
 
+void _debug() {
+	*(char*)(0xb8002) = 'a';
+}
 
 // Clears the kernel passage variables.
 void clear_kernel_buffer() {
@@ -366,6 +369,8 @@ Process * p1, * idle, * kernel;
 
 // Starts the kernel's idle process. This process has kernel permissions.
 int idle_main(int argc, char ** params) {
+
+	*(char*)(0xb8000) = '1';
 	Cli();
 	make_atomic();
 	
@@ -379,11 +384,10 @@ int idle_main(int argc, char ** params) {
 	tty_init(4);
 	tty_init(5);		
 	
-	setready(); 				// Set the kernel as ready and the FS as loaded
 	users_init();				// Init the users
 // 	
 	fs_finish();
-	
+	setready(); 				// Set the kernel as ready and the FS as loaded
 	release_atomic();	
 	Sti();
 
@@ -488,14 +492,14 @@ kmain() {
 	// 	d *= 10;
 	// }
 
-	init_paging();
+	// init_paging();
 	PIC_remap(0x20, 0x70);
 	Sti();
 	
 
-
 	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0, 0, NULL, 0);
 
+	*(char*)(0xb8004) = 'X';
 	// We soon exit out of here :)
 	while (1);
 

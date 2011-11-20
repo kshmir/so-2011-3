@@ -1,12 +1,14 @@
 // Declare the page directory and a page table, both 4kb-aligned
 
-
+#include "paging.h"
 
 typedef struct page_entry {
 	unsigned int data[1024];
 } page_dir_t, page_entry_t;
 
-page_entry_t global_entries[1200];
+int 		 used_entries[1024];
+page_entry_t stackd_entries[1024];
+page_entry_t global_entries[10240];
 page_dir_t 	 * kernel_pdir;
 page_entry_t * kernel_pentries;
 
@@ -26,18 +28,27 @@ void init_paging() {
 		for (k = 0; k < 1024; k++)	{
 			kernel_pentries[j].data[k] = (j * 4096 * 1024) | (k * 4096) | 0x3;	// ...map the first 4MB of memory into the page table...
 		}
-		if (j < 64) {
-			kernel_pdir->data[j] = (int)kernel_pentries + (j % 16) * 4096  | 0x3;
-		} else {
-			kernel_pdir->data[j] = 0;
-		}
+		
+		kernel_pdir->data[j] = (int)kernel_pentries + j * 4096  | 0x3;
 	}
 
 	// Copies the address of the page directory into the CR3 register and, finally, enables paging!
 
-	asm volatile (	"mov %0, %%eax\n"
+	asm volatile ("mov %0, %%eax\n"
 			"mov %%eax, %%cr3\n"
 			"mov %%cr0, %%eax\n"
 			"orl $0x80000000, %%eax\n"
 			"mov %%eax, %%cr0\n" :: "m" (kernelpagedirPtr));
+}
+
+void set_proc_stack(Process * p) {
+	if(p->pid != -1)	{
+		page_dir_t * process_dir = (page_dir_t *) aligned(&global_entries[24 + p->pid]);
+		kernel_pentries = (page_entry_t *) aligned(&global_entries[3]);
+		int k = 0, j = 0;
+
+		for(; j < 1024; ++j)	{
+			// process_dir->data[j] = (int)kernel_pentries + (j % 16) * 4096  | 0x3;
+		}
+	}
 }

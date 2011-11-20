@@ -25,14 +25,49 @@ int dirty_cache = 1;
 
 int _cache = 1;
 
+int disposed_history_reads[HDD_DISPOSE_HIST_COUNT];
+int disposed_history[HDD_DISPOSE_HIST_COUNT];
+int disposed_history_index = 0;
+
+int hdd_dispose(int block_id) {
+	if(!kernel_rd())	{
+		return 1;
+	}
+
+	if(disposed_history[disposed_history_index] == block_id)	{
+		return 1;
+	}
+	disposed_history[disposed_history_index++] = block_id;
+	if(disposed_history_index == HDD_DISPOSE_HIST_COUNT - 1)	{
+		disposed_history_index = 0;
+	}
+	return 1;
+}
+
+int hdd_disposed_reads(int block_id) {
+	if(!kernel_rd())	{
+		return 0;
+	}
+	
+	int count = 0;
+	int i = 0;
+	for(i = 0; i < HDD_DISPOSE_HIST_COUNT; ++i)	{
+		count += (disposed_history[i] == block_id);
+	}
+	return count;
+}
+
 int least_reads_family_index() {
 	int i = 0;
 	int j = 0;
 	int min_reads = 100000;
 	int min_reads_index = -1;
 	for (; i < HDD_READ_GROUP_COUNT; i++) {
+		if(cache.metadata[i * HDD_READ_GROUP_SIZE].untouchable)	{
+			continue;
+		}
+		
 		int reads = 0;
-
 		int valid = 0;
 		for (j = 0; j < HDD_READ_GROUP_SIZE; j++) {
 			if (cache.metadata[i * HDD_READ_GROUP_SIZE + j].block == -1) {
@@ -43,32 +78,53 @@ int least_reads_family_index() {
 		if (reads < min_reads && valid) {
 			min_reads = reads;
 			min_reads_index = i;
-			if (!reads) {
-				break;
-			}
 		}
 	}
 
 	if (min_reads_index == -1) {
 		min_reads = 100000;
 		for (i = 0; i < HDD_READ_GROUP_COUNT; i++) {
+			if(cache.metadata[i * HDD_READ_GROUP_SIZE].untouchable)	{
+				continue;
+			}
 			int reads = 0;
 			int writes = 0;
 			for (j = 0; j < HDD_READ_GROUP_SIZE; j++) {
 				reads += cache.metadata[i * HDD_READ_GROUP_SIZE + j].reads;
 				writes += cache.metadata[i * HDD_READ_GROUP_SIZE + j].writes;
 			}
-			if (!writes && reads < min_reads) {
+			if (!writes && reads < min_reads && !hdd_disposed_reads(cache.metadata[i * HDD_READ_GROUP_SIZE].block)) {
 				min_reads = reads;
 				min_reads_index = i;
-				if (!reads) {
-					return min_reads_index;
-				}
 			}
 		}
+	}
+	if (min_reads_index == -1) {
 		hdd_cache_sync(TRUE);
 		min_reads = 100000;
 		for (i = 0; i < HDD_READ_GROUP_COUNT; i++) {
+			if(cache.metadata[i * HDD_READ_GROUP_SIZE].untouchable)	{
+				continue;
+			}
+			
+			int reads = 0;
+			for (j = 0; j < HDD_READ_GROUP_SIZE; j++) {
+				reads += cache.metadata[i * HDD_READ_GROUP_SIZE + j].reads;
+			}
+			if (reads < min_reads && !hdd_disposed_reads(cache.metadata[i * HDD_READ_GROUP_SIZE].block)) {
+				min_reads = reads;
+				min_reads_index = i;
+			}
+		}
+	}
+	
+	if (min_reads_index == -1) {
+		min_reads = 100000;
+		for (i = 0; i < HDD_READ_GROUP_COUNT; i++) {
+			if(cache.metadata[i * HDD_READ_GROUP_SIZE].untouchable)	{
+				continue;
+			}
+			
 			int reads = 0;
 			for (j = 0; j < HDD_READ_GROUP_SIZE; j++) {
 				reads += cache.metadata[i * HDD_READ_GROUP_SIZE + j].reads;
@@ -76,12 +132,10 @@ int least_reads_family_index() {
 			if (reads < min_reads) {
 				min_reads = reads;
 				min_reads_index = i;
-				if (!reads) {
-					return min_reads_index;
-				}
 			}
 		}
 	}
+	hdd_dispose(cache.metadata[min_reads_index * HDD_READ_GROUP_SIZE].block);
 	return min_reads_index;
 }
 
@@ -96,6 +150,7 @@ int hdd_cache_add(hdd_block * buff, int len, int start_block, int write) {
 		cache.metadata[least_reads_fam * HDD_READ_GROUP_SIZE + i].block   = start_block + i;
 		cache.metadata[least_reads_fam * HDD_READ_GROUP_SIZE + i].reads   = 0;
 		cache.metadata[least_reads_fam * HDD_READ_GROUP_SIZE + i].writes  = 0;
+		cache.metadata[least_reads_fam * HDD_READ_GROUP_SIZE + i].untouchable  = !kernel_rd();
 
 		for (j = 0; j < HDD_BLOCK_SIZE; j++) {
 			cache.data[least_reads_fam * HDD_READ_GROUP_SIZE + i].data[j] = buff[i].data[j];

@@ -88,6 +88,7 @@ EXTERN	Cli
 EXTERN	kernel_ready
 EXTERN	Sti
 EXTERN  pfault
+EXTERN _debug
 
 EXTERN handler_e00
 EXTERN handler_e01
@@ -306,7 +307,8 @@ _yield:
 
 ; Handler de INT 8 (Timer tick)
 _int_08_hand:
-		call Cli
+		call _debug
+		cli
 		pushad
 			mov eax, esp
 			push eax
@@ -324,7 +326,7 @@ _int_08_hand:
 		popad
 		mov al,20h			; Envio de EOI generico al PIC
 		out 20h,al
-		call Sti
+		sti
 		iret
 
 __stack_chk_fail:
@@ -443,17 +445,6 @@ _rdtsc:
 
 
 
-_debug:
-		push	bp
-		mov		bp, sp
-		push	ax
-vuelve:	
-		mov		ax, 1
-		cmp		ax, 0
-		jne		vuelve
-		pop		ax
-		pop		bp
-		retn
 		
 		
 

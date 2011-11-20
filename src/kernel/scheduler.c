@@ -412,19 +412,20 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 
 
 	if(strcmp(name, "idle") == 0) {
+		*(char*)(0xb8000) = '0';
 		idle = p;
 	} else if(!queue_block)	{
 		sched_enqueue( p);
 	}
 
-
+	
 	return p;
 }
 
 /** Saves process stack pointes*/
 void scheduler_save_esp (int esp)
 {
-
+	*(char*)(0xb8000) = '1';
 	if (current_process != NULL) {
 		current_process->esp = esp;
 		if(yield_save_cntx)
@@ -438,10 +439,12 @@ void scheduler_save_esp (int esp)
 void * scheduler_get_temp_esp (void) {
 	if(idle != NULL)
 	{
+		*(char*)(0xb8000) = '2';
 		return (void*)idle->esp;
 	} 
 	else
 	{
+		*(char*)(0xb8000) = 'F';
 		return NULL;
 	}
 
@@ -463,6 +466,7 @@ void release_atomic() {
 /** Here the scheduler decides which will be the next process to excecute*/
 void scheduler_think (void) {
 
+	*(char*)(0xb8000) = '0';
 	// Only thinks when not atomic and outside the kernel.
 	if(atomic || in_kernel()) {
 		return;

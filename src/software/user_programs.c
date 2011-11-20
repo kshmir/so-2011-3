@@ -610,6 +610,10 @@ int _fbulk(int argc, char ** argv) {
 			sect[i] = 'a';
 		}
 		for(i = 0; i < times * 16; ++i)	{
+			if(i % 400 == 0)	{
+				printf("%d out of %d\n", i, times * 16);	
+			}
+
 			write(fd, sect, 512);
 		}
 	} else {
