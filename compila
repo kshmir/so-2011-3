@@ -30,7 +30,7 @@ gcc -Os -c ../src/kernel/pic.c                -o pic.o            -fno-builtin
 gcc -Os -c ../src/drivers/atadisk.c           -o atadisk.o        -fno-builtin
 gcc -Os -c ../src/monix/monix.c               -o monix.o        -fno-builtin
 gcc -Os -c ../src/software/user_programs.c    -o user_programs.o  -fno-builtin
-gcc -c ../src/libs/mcgio.c                -o mcgio.o          -fno-builtin   # Os is for optimize size, since having a 80k+ binary didn't work on grub.
+gcc -c ../src/libs/mcgio.c                -o mcgio.o          -fno-builtin       # Os is for optimize size, since having a 80k+ binary didn't work on grub.
 gcc -Os -c ../src/libs/heap.c                 -o heap.o           -fno-builtin   # Bad thing: Some things broke so we used it just a bit.
 gcc -c ../src/libs/mcglib.c               -o mcglib.o         -fno-builtin
 gcc -c ../src/libs/stdio.c                -o stdio.o          -fno-builtin
