@@ -98,6 +98,23 @@ void _e0b();
 void _e0c();
 void _e0d();
 void _e0e();
+void _e0f();
+void _e10();
+void _e11();
+void _e12();
+void _e13();
+void _e14();
+void _e15();
+void _e16();
+void _e17();
+void _e18();
+void _e19();
+void _e1a();
+void _e1b();
+void _e1c();
+void _e1d();
+void _e1e();
+void _e1f();
 
 #define SYSR_ERR     -1
 #define SYSR_BLOCK   -2

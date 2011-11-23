@@ -4,32 +4,47 @@
 
 typedef struct page_entry {
 	unsigned int data[1024];
-} page_dir_t, page_entry_t;
+} page_dir_t, page_entry_t, page_t;
 
-int 		 used_entries[1024];
-page_entry_t stackd_entries[1024];
-page_entry_t global_entries[10240];
+int 		 used_pages[1024];
+int 		 used_entries[64];
+page_t       stack_pages[1125];
+page_entry_t stackd_entries[165];
+page_entry_t global_entries[100];
+page_entry_t * aligned_st_pages;
+page_entry_t * aligned_st_entries;
+
 page_dir_t 	 * kernel_pdir;
 page_entry_t * kernel_pentries;
 
 #define aligned(dir) ((((int)dir + 4095)>>12)<<12)
 
 void init_paging() {
+	aligned_st_pages = (page_t *) aligned(&stack_pages[1]);
+	aligned_st_entries = (page_entry_t *) aligned(&stackd_entries[1]);
 	kernel_pdir = (page_dir_t *) aligned(&global_entries[1]);
 	kernel_pentries = (page_entry_t *) aligned(&global_entries[3]);
 	
 	// Pointers to the page directory and the page table
 	void *kernelpagedirPtr = kernel_pdir;
 	void *lowpagetablePtr = kernel_pentries;
-	int k = 0, j = 0;
+	int k = 0, j = 0, i = 0;
+	
+	for(i = 0; i < 1024; ++i) {
+		used_pages[i] = 0;
+	}
+	
+	for(i = 0; i < 64; ++i) {
+		used_entries[i] = 0;
+	}
 
 	for(; j < 1024; ++j)	{
 		// Counts from 0 to 1023 to...
 		for (k = 0; k < 1024; k++)	{
-			kernel_pentries[j].data[k] = (j * 4096 * 1024) | (k * 4096) | 0x3;	// ...map the first 4MB of memory into the page table...
+			kernel_pentries[j % 16].data[k] = ((j % 16) * 4096 * 1024) | (k * 4096) | 0x3;	// ...map the first 4MB of memory into the page table...
 		}
 		
-		kernel_pdir->data[j] = (int)kernel_pentries + j * 4096  | 0x3;
+		kernel_pdir->data[j] = (int)kernel_pentries + (j % 16) * 4096  | 0x3;
 	}
 
 	// Copies the address of the page directory into the CR3 register and, finally, enables paging!
@@ -39,16 +54,80 @@ void init_paging() {
 			"mov %%cr0, %%eax\n"
 			"orl $0x80000000, %%eax\n"
 			"mov %%eax, %%cr0\n" :: "m" (kernelpagedirPtr));
+			
 }
 
-void set_proc_stack(Process * p) {
-	if(p->pid != -1)	{
-		page_dir_t * process_dir = (page_dir_t *) aligned(&global_entries[24 + p->pid]);
-		kernel_pentries = (page_entry_t *) aligned(&global_entries[3]);
-		int k = 0, j = 0;
-
-		for(; j < 1024; ++j)	{
-			// process_dir->data[j] = (int)kernel_pentries + (j % 16) * 4096  | 0x3;
+int k = 0, j = 0, i = 0;
+page_entry_t * get_stack_entry() {
+ 	i = 0;
+	k = 0;
+	for(i = 0; i < 64; ++i)
+	{
+		if(!used_entries[i])
+		{
+			used_entries[i] = 1;
+			for(k = 0; k < 1024; ++k)	{
+				aligned_st_entries[i].data[k] = 0;
+			}
+			return &aligned_st_entries[i]; 
 		}
 	}
+}
+
+page_t * get_stack_page() {
+	i = 0;
+	k = 0;
+	for(i = 0; i < 1024; ++i)
+	{
+		if(!used_pages[i])
+		{
+			used_pages[i] = 1;
+			for(k = 0; k < 1024; ++k)
+			{
+				aligned_st_pages[i].data[k] = 0;
+			}
+			return &aligned_st_pages[i];
+		}
+	}
+}
+
+int index = 0;
+
+
+
+void set_proc_stack(Process * p) {
+	aligned_st_pages         = (page_t *) aligned(&stack_pages[1]);
+	aligned_st_entries       = (page_entry_t *) aligned(&stackd_entries[1]);
+	page_dir_t * process_dir = (page_dir_t *) aligned(&global_entries[24 + sched_pindex(p)]);
+	kernel_pentries          = (page_entry_t *) aligned(&global_entries[3]);
+
+	page_entry_t * pentry = get_stack_entry();
+
+	for(j = 0; j < 1024; ++j)	{
+		process_dir->data[j] = (int)kernel_pentries + (j % 16) * 4096  | 0x3;
+		pentry->data[j] = 0;
+	}
+
+	p->process_dir = (void *) kernel_pdir;
+
+	page_t * pstack  = get_stack_page();
+	page_t * pstack2 = get_stack_page();
+	page_t * pstack3 = get_stack_page();
+	page_t * pstack4 = get_stack_page();
+	page_t * pstack5 = get_stack_page();
+	page_t * pstack6 = get_stack_page();
+	page_t * pstack7 = get_stack_page();
+
+
+	p->stackp = (void *) (0xFFFFFFFF - 4096 - 4096 * 1024 * sched_pindex(p)); // All stacks start here.
+
+	// printf("%d\n", p->stackp);
+	kernel_pdir->data[1023 - sched_pindex(p)] = (int) pentry | 0x3;
+	
+	pentry->data[1023] = (int) pstack  | 0x3;
+	pentry->data[1022] = 0;
+	// pentry->data[1020] = (int) pstack4 | 0x3;
+	// pentry->data[1019] = (int) pstack5 | 0x3;
+	// pentry->data[1018] = (int) pstack6 | 0x3;
+	// pentry->data[1017] = (int) pstack7 | 0x3;
 }

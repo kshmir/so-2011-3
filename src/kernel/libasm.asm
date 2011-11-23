@@ -18,6 +18,7 @@ GLOBAL	_rdtsc
 
 GLOBAL _GetCS
 GLOBAL _GetCR2
+GLOBAL _GetCR3
 GLOBAL _GetESP
 GLOBAL _Halt
 GLOBAL _yield
@@ -110,6 +111,7 @@ EXTERN handler_e10
 EXTERN handler_e11
 EXTERN handler_e12
 EXTERN handler_e13
+EXTERN handler_e14
 EXTERN handler_e15
 EXTERN handler_e16
 EXTERN handler_e17
@@ -142,6 +144,7 @@ GLOBAL _e10
 GLOBAL _e11
 GLOBAL _e12
 GLOBAL _e13
+GLOBAL _e14
 GLOBAL _e15
 GLOBAL _e16
 GLOBAL _e17
@@ -160,82 +163,168 @@ SECTION .text
 
 
 _e00:
-		call Cli
-		call handler_e00
-		call Sti
-		iret
+mov eax, 0b8000h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
 _e01:
-		call Cli
-		call handler_e01
-		call Sti
-		iret
+mov eax, 0b8a20h
+mov ebx, 0f48h
+mov [eax], ebx
+iret
 _e02:
-		call Cli
-		call handler_e02
-		call Sti
-		iret
+mov eax, 0b8a20h
+mov ebx, 0f48h
+mov [eax], ebx
+iret
 _e03:
-		call Cli
-		call handler_e03
-		call Sti
-		iret
+mov eax, 0b8a20h
+mov ebx, 0f48h
+mov [eax], ebx
+iret
 _e04:
-		call Cli
-		call handler_e04
-		call Sti
+		mov eax, 0b8b16h
+		mov ebx, 0f44h
+		mov [eax], ebx
 		iret
 _e05:
-		call Cli
-		call handler_e05
-		call Sti
+		mov eax, 0b8b26h
+		mov ebx, 0f43h
+		mov [eax], ebx
 		iret
 _e06:
-		call Cli
-		call handler_e06
-		call Sti
+		mov eax, 0b8a26h
+		mov ebx, 0f42h
+		mov [eax], ebx
 		iret
 _e07:
-		call Cli
-		call handler_e07
-		call Sti
+		mov eax, 0b8a24h
+		mov ebx, 0f41h
+		mov [eax], ebx
 		iret
 _e08:
-		call Cli
-		call handler_e08
-		call Sti
+		mov eax, 0b8a22h
+		mov ebx, 0f40h
+		mov [eax], ebx
 		iret
+
 _e09:
-		call Cli
-		call handler_e09
-		call Sti
-		iret
+mov eax, 0b8a20h
+mov ebx, 0f48h
+mov [eax], ebx
+iret
 _e0a:
-		call Cli
-		call handler_e0a
-		call Sti
-		iret
+mov eax, 0b8a20h
+mov ebx, 0f48h
+mov [eax], ebx
+iret
 _e0b:
-		call Cli
-		call handler_e0b
-		call Sti
-		iret
+mov eax, 0b8a20h
+mov ebx, 0f48h
+mov [eax], ebx
+iret
 _e0c:
-		call Cli
-		call handler_e0c
-		call Sti
+		mov eax, 0b8a20h
+		mov ebx, 0f48h
+		mov [eax], ebx
 		iret
 _e0d:
-		call Cli
+		mov eax, cs
+		push eax
 		call handler_e0d
-		call Sti
 		iret
 _e0e:
-		call Cli
-		call handler_e0e
-		call Sti
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
 		iret
+_e0f:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
 
 
+_e10:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e11:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e12:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e13:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e14:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e15:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e16:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e17:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e18:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e19:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e1a:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e1b:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e1c:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e1d:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e1e:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
+_e1f:
+mov eax, 0b8a12h
+mov ebx, 0f50h
+mov [eax], ebx
+iret
 
 
 
@@ -263,6 +352,10 @@ _GetCS: 		; For debugging
 		
 _GetESP:		; For debugging
 		mov eax, esp
+		ret
+
+_GetCR3:	; For debugging
+		mov eax, cr3
 		ret
 		
 _GetCR2:	; For debugging
@@ -307,9 +400,8 @@ _yield:
 
 ; Handler de INT 8 (Timer tick)
 _int_08_hand:
-		call _debug
 		cli
-		pushad
+		pusha
 			mov eax, esp
 			push eax
 				call scheduler_save_esp
@@ -323,7 +415,7 @@ _int_08_hand:
 			call scheduler_load_esp
 			mov esp,eax
 			;call _debug;
-		popad
+		popa
 		mov al,20h			; Envio de EOI generico al PIC
 		out 20h,al
 		sti
@@ -352,7 +444,6 @@ _pfault:
 		out 	0a0h,al
 		call Sti
 		iret
-		
 		
 _setCursor:
 		push	ebp
@@ -465,6 +556,8 @@ _int_09_hand:
 		call Sti
 		iret
 	_09hand:
+		mov eax, 1h
+		mov [ebx], eax
 		call Cli
 		pushad
 			mov eax, esp
@@ -479,7 +572,6 @@ _int_09_hand:
 	
 			call scheduler_load_esp
 			mov esp,eax
-			;call _debug;
 		popad
 		mov 	al,20h			; Envio de EOI generico al PIC
 		out 	20h,al

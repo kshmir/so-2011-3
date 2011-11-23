@@ -48,7 +48,7 @@ int Cli() {
 }
 
 
-int sched_mode = MODE_ROUNDR;
+int sched_mode = MODE_PRIORITY;
 
 /** Switches the scheduler mode to round robin or priority*/
 void sched_set_mode(int m) {
@@ -108,9 +108,10 @@ void * sched_dequeue() {
 }
 /** Tells the scheduler to add the process to the ready queue*/
 void process_setready(Process * p) { 
-	
 	sched_enqueue(p);
 }
+
+static unsigned int esp = 0;
 
 int out = 0;
 /** Initializes the process pool, ready queue, yield queue and priority queue*/
@@ -364,12 +365,22 @@ int sched_getpid() {
 	return current_process->pid;
 }
 
+int sched_pindex(Process * p) {
+	int i = 0;
+	for(; i < PROCESS_MAX; ++i) {
+		if(process_pool[i].pid == p->pid) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 /** Builds the stack frame of a process*/
 int	stackf_build(void * stack, main_pointer _main, int argc, void * argv) {
 
-	void * bottom 	= (void *)((int)stack + PROCESS_STACK_SIZE -1);
-
-	StackFrame * f	= (StackFrame *)(bottom - sizeof(StackFrame));
+	stack 	= (void *)((int)stack + PROCESS_STACK_SIZE - 1);
+	
+	StackFrame * f	= (StackFrame *)(stack - sizeof(StackFrame));
 
 	f->EBP     = 0;
 	f->EIP     = (int)_main;
@@ -380,8 +391,8 @@ int	stackf_build(void * stack, main_pointer _main, int argc, void * argv) {
 	f->argc    = argc;
 	f->argv    = argv;
 
-
-	return	(int)f;
+	return (int)f;
+	// return	0xFFFFFFFF - sizeof(StackFrame);
 }
 /** Creates a process setting it's attributes and enqueues it in the ready list*/
 Process * create_process(char * name, main_pointer _main, int priority, unsigned int tty, 
@@ -392,14 +403,32 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 	p->gid                 = 0;
 	p->ppid                = (current_process != NULL) ? current_process->pid : 0;
 	p->priority            = priority;
-	p->esp                 = stackf_build(p->stack, _main, argc, params);
+	
+	set_proc_stack(p);
+	
+	
+	p->esp                 = stackf_build(p->stackp, _main, argc, params);
+
+	
+
 	p->state               = PROCESS_READY;
 	p->file_descriptors[0] = fd_open_with_index(stdin,0,0,0);
 	p->file_descriptors[1] = fd_open_with_index(stdout,0,0,0);
 	p->file_descriptors[2] = fd_open_with_index(stderr,0,0,0);
 	p->is_tty              = is_tty;
 	p->wait_queue          = queue_init(PROCESS_WAIT_MAX);
-	
+
+	esp = p->esp;	
+
+
+
+
+
+
+
+
+
+
 	sg_set_defaults(p);
 	
 
@@ -412,11 +441,11 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 
 
 	if(strcmp(name, "idle") == 0) {
-		*(char*)(0xb8000) = '0';
 		idle = p;
 	} else if(!queue_block)	{
 		sched_enqueue( p);
 	}
+
 
 	
 	return p;
@@ -425,7 +454,7 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 /** Saves process stack pointes*/
 void scheduler_save_esp (int esp)
 {
-	*(char*)(0xb8000) = '1';
+	*(char*)(0xb8d00) = '1';
 	if (current_process != NULL) {
 		current_process->esp = esp;
 		if(yield_save_cntx)
@@ -436,14 +465,26 @@ void scheduler_save_esp (int esp)
 	}
 }
 
+
 void * scheduler_get_temp_esp (void) {
 	if(idle != NULL)
 	{
-		*(char*)(0xb8000) = '2';
-		return (void*)idle->esp;
+
+		void * ret = (void*)idle->esp;
+		esp = (int)idle->esp;
+		// asm volatile ("mov %0, %%eax\n"
+				// "mov %%eax, %%cr3\n"
+				// "mov %%cr0, %%eax\n"
+				// "orl $0x80000000, %%eax\n"
+				// "mov %%eax, %%cr0\n" 
+				// :: "m" (idle->process_dir));
+
+		// printf("%d\n", idle->esp);
+		return ret;
 	} 
 	else
 	{
+		while(1);
 		*(char*)(0xb8000) = 'F';
 		return NULL;
 	}
@@ -463,15 +504,16 @@ void release_atomic() {
 }
 
 
+
 /** Here the scheduler decides which will be the next process to excecute*/
 void scheduler_think (void) {
+	*(char*)(0xb8c10) = ' ';
 
-	*(char*)(0xb8000) = '0';
 	// Only thinks when not atomic and outside the kernel.
 	if(atomic || in_kernel()) {
 		return;
 	}
-
+	
 
 	// Handles the yields
 	if(yielded == 0) {
@@ -491,21 +533,21 @@ void scheduler_think (void) {
 		sched_enqueue(current_process);
 		current_process = NULL;
 	}
-
 	// If the scheduler is not empty then we take one out of there
 	if (!sched_isempty()) {
 		current_process = sched_dequeue();
-		
+
 		// Process wakeup
 		if (current_process->state == PROCESS_BLOCKED) {
 			current_process->state = PROCESS_READY;
 			soft_yielded = 1;
 		}
 	
-		// Proccess dead? next one!
+		// Process dead? next one!
 		if (current_process->state == PROCESS_ZOMBIE) {
 			softyield();
 		}
+
 	}
 	else {
 		// Then we're idling
@@ -531,6 +573,9 @@ void scheduler_think (void) {
 		// Just for fancy
 		current_process->state = PROCESS_RUNNING;
 	}
+	*(char*)(0xb8c1a) = current_process->tty + '0';
+	*(char*)(0xb8c1c) = current_process->pid + '0';
+	*(char*)(0xb8c10) = 'S';
 }
 
 // Sleeps the process.
@@ -540,9 +585,25 @@ int scheduler_sleep(int msecs) {
 	return current_process->pid;
 }
 
+int percentage = 0;
+
+
 // Handles the ticks
 void scheduler_tick() {
 	int i = 0;
+	
+	unsigned int esp = _GetESP();
+	
+	*(char*)(0xb8510) = esp % 10 + '0';
+	*(char*)(0xb850e) = (esp / 10) % 10 + '0';
+	*(char*)(0xb850c) = (esp / 100) % 10 + '0';
+	*(char*)(0xb850a) = (esp / 1000) % 10 + '0';
+	*(char*)(0xb8508) = (esp / 10000) % 10 + '0';
+	*(char*)(0xb8506) = (esp / 100000) % 10 + '0';
+	*(char*)(0xb8504) = (esp / 1000000) % 10 + '0';
+	*(char*)(0xb8502) = (esp / 10000000) % 10 + '0';
+	*(char*)(0xb8500) = (esp / 100000000) % 10 + '0';
+	
 	for(; i < PROCESS_MAX; ++i)	{
 		if(process_pool[i].state == PROCESS_BLOCKED
 			&& process_pool[i].sleeptime > 0)	{
@@ -554,6 +615,7 @@ void scheduler_tick() {
 			}
 		} 
 	}
+
 	_outb(0x70, 0x0C);
 	_inb(0x71);
 }
@@ -563,9 +625,19 @@ void * storage_index() {
 	return think_storage; // Array storing the ticks of the processes
 }
 
+
 // Used by scheduler in context switching
 int scheduler_load_esp()
 {
+	// asm volatile ("mov %0, %%eax\n"
+			// "mov %%eax, %%cr3\n"
+			// "mov %%cr0, %%eax\n"
+			// "orl $0x80000000, %%eax\n"
+			// "mov %%eax, %%cr0\n" 
+			// :: "m" (current_process->process_dir));
+	
+	esp = current_process->esp;
+
 	return current_process->esp;
 }
 

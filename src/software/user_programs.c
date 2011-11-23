@@ -15,10 +15,21 @@ int proc_comparer(top_data * t1, top_data * t2) {
 	return t2->ticks - t1->ticks;
 }
 
+int x = 0;
+void f(int a) {
+	while(a < 10000000) { 
+		x = 0;
+		while(x > 0) {
+			x++;
+		}
+		a++;
+	}
+	f(0);
+}
+
 // Helps teachers to understand a bit our mess, well, no
 int _printHelp(int size, char** args) {
-	int valor = *(char*)0xffffffff;
-	printf("value: %d\n", valor);
+	f(0);
 }
 
 // Test the breakable code

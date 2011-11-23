@@ -171,11 +171,9 @@ void unlock_all_contexts() {
 
 void unlock_contexts() {
 	while(!queue_isempty(cnt()->read_pblocks)) {
-		
 		Process * p = queue_dequeue(cnt()->read_pblocks);
 		process_setready(p);
 	}
-
 }
 
 

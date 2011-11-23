@@ -16,7 +16,7 @@
 
 // Process' attributes
 #define	PROCESS_FD_SIZE			64
-#define PROCESS_STACK_SIZE		16384
+#define PROCESS_STACK_SIZE		4096
 #define PROCESS_MAX				64
 #define PROCESS_WAIT_MAX		64
 #define PROCESS_HISTORY_SIZE	100

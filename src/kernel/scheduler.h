@@ -26,6 +26,8 @@ typedef struct Process {
 	int					file_descriptors[PROCESS_FD_SIZE];
 	int					open_fds;
 	int					sleeptime;
+	void * 				process_dir;
+	void * 				stackp;
 	void *				signals[PROCESS_SIGNALS];
 	Queue				* wait_queue;
 } Process;

@@ -39,7 +39,9 @@ int queue_contains(Queue * q, void * ptr) {
 	
 	return 0;
 }
+extern int kbhit;
 
+int hits = 0;
 int queue_enqueue(Queue * q, void * data) {
 	if(!queue_isfull(q) && !queue_contains(q, data)) {
 		q->data[q->write_ptr++] = (int) data;

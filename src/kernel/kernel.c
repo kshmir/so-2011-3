@@ -47,7 +47,7 @@ void clear_kernel_buffer() {
 void setup_IDT_entry(DESCR_INT *item, byte selector, dword offset, byte access, byte cero) {
 	item->selector = selector;
 	item->offset_l = offset & 0xFFFF;
-	item->offset_h = offset >> 16;
+	item->offset_h = (offset >> 16) & 0xFFFF;
 	item->access = access;
 	item->cero = cero;
 }
@@ -76,12 +76,14 @@ int kernel_ready() {
 	return ready;
 }
 
+
+int kbhit = 0;
 // Keyboard handler
 void int_09() {
 	krn++;
 	char scancode;
 	scancode = _in(0x60);
-
+	
 	// We check if the scancode is a char or a control key.
 	int flag = scancode >= 0x02 && scancode <= 0x0d;
 	flag = flag || (scancode >= 0x10 && scancode <= 0x1b);
@@ -90,6 +92,7 @@ void int_09() {
 	if (flag)	{
 		char sc = scanCodeToChar(scancode);
 		if(sc != 0 && sc != EOF)	{
+			kbhit = 1;
 			pushC(sc); 		  //guarda un char en el stack
 		}
 	}
@@ -345,19 +348,16 @@ void int_80() {
 // Fires a signal after a syscall, only if the kernel has been set to do so.
 void signal_on_demand() {
 	if (kernel_buffer[KERNEL_RETURN - 1] != 0) {
-		
 		if (kernel_buffer[0] == KILL) {
 			make_atomic();
 			int sigcode = kernel_buffer[KERNEL_RETURN - 1];
 			int pid = kernel_buffer[KERNEL_RETURN - 2];
-		
 			sg_handle(sigcode, pid);
 			release_atomic();
 		}
 		kernel_buffer[KERNEL_RETURN - 1] = 0; // SIGCODE
 		kernel_buffer[KERNEL_RETURN - 2] = 0; // PID
 	}
-
 }
 
 ///////////// Fin Handlers de interrupciones.
@@ -370,12 +370,10 @@ Process * p1, * idle, * kernel;
 // Starts the kernel's idle process. This process has kernel permissions.
 int idle_main(int argc, char ** params) {
 
-	*(char*)(0xb8000) = '1';
 	Cli();
 	make_atomic();
-	
+
 	mount();					// Mount or start the FS
-	
 
 	tty_init(0);				// Load up the TTY's
 	tty_init(1);
@@ -383,7 +381,7 @@ int idle_main(int argc, char ** params) {
 	tty_init(3);
 	tty_init(4);
 	tty_init(5);		
-	
+
 	users_init();				// Init the users
 // 	
 	fs_finish();
@@ -391,11 +389,12 @@ int idle_main(int argc, char ** params) {
 	release_atomic();	
 	Sti();
 
+
 	int count = 0;
 	while(1) {
 		_Halt(); // Now set to idle.
 		count++;
-		if(count % 3000 == 0)
+		if(count % 30 == 0)
 		{
 			Cli();
 			hdd_cache_sync();
@@ -420,6 +419,7 @@ void pfault(int code) {
 }
 
 
+
 ///////////// Inicio KMAIN
 
 /**********************************************
@@ -430,13 +430,38 @@ kmain() {
 	int i, num;
 
 	setup_IDT_entry(&idt[0x00], 0x08, (dword) & _e00, ACS_INT, 0);
-	setup_IDT_entry(&idt[13], 0x08, (dword) & _e0d, ACS_INT, 0);
-	setup_IDT_entry(&idt[12], 0x08, (dword) & _e0c, ACS_INT, 0);
-	setup_IDT_entry(&idt[11], 0x08, (dword) & _e0b, ACS_INT, 0);
-	setup_IDT_entry(&idt[8], 0x08, (dword) & _e08, ACS_INT, 0);
-
-	setup_IDT_entry(&idt[0x0E], 0x08, (dword) & _e0e, ACS_INT, 0);
-
+	setup_IDT_entry(&idt[0x01], 0x08, (dword) & _e01, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x02], 0x08, (dword) & _e02, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x03], 0x08, (dword) & _e03, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x04], 0x08, (dword) & _e04, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x05], 0x08, (dword) & _e05, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x06], 0x08, (dword) & _e06, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x07], 0x08, (dword) & _e07, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x08], 0x08, (dword) & _e08, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x09], 0x08, (dword) & _e09, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x0a], 0x08, (dword) & _e0a, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x0b], 0x08, (dword) & _e0b, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x0c], 0x08, (dword) & _e0c, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x0d], 0x08, (dword) & _e0d, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x0e], 0x08, (dword) & _e0e, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x0f], 0x08, (dword) & _e0f, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x10], 0x08, (dword) & _e10, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x11], 0x08, (dword) & _e11, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x12], 0x08, (dword) & _e12, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x13], 0x08, (dword) & _e13, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x14], 0x08, (dword) & _e14, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x15], 0x08, (dword) & _e15, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x16], 0x08, (dword) & _e16, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x17], 0x08, (dword) & _e17, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x18], 0x08, (dword) & _e18, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x19], 0x08, (dword) & _e19, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x1a], 0x08, (dword) & _e1a, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x1b], 0x08, (dword) & _e1b, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x1c], 0x08, (dword) & _e1c, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x1d], 0x08, (dword) & _e1d, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x1e], 0x08, (dword) & _e1e, ACS_INT, 0);
+	setup_IDT_entry(&idt[0x1f], 0x08, (dword) & _e1f, ACS_INT, 0);
+	
 	setup_IDT_entry(&idt[0x70], 0x08, (dword) & _rtc, ACS_INT, 0);
 
 	/* CARGA DE IDT CON LA RUTINA DE ATENCION DE IRQ0    */
@@ -470,10 +495,8 @@ kmain() {
 	_outb(0x70, 0x0A); //reset index to A
 	_outb(0x71, (prev & 0xF0) | rate); //write only our rate to A. Note, rate is the bottom 4 bits.
 	
-
 	scheduler_init();
-
-
+	
 	/* Habilito interrupcion de timer tick*/
 	_mascaraPIC1(0x00);
 	_mascaraPIC2(0x00);
@@ -482,24 +505,14 @@ kmain() {
 	prev= _inb(0x71); //read the current value of register B
 	_outb(0x70, 0x0B); //set the index again(a read will reset the index to register D)
 	_outb(0x71, prev | 0x40); //write the previous value or'd with 0x40. This turns on bit 6 of register B
-
-	// int stack = _GetESP();
-	// i = 0;
-	// int d = 1;
-	// for(; i < 8; ++i)
-	// {
-	// 	*(char*)(0xb80f0 + 8 * 2 - i * 2) = (*(int *)(stack) / d) % 10+'0';
-	// 	d *= 10;
-	// }
-
-	// init_paging();
+	
+	init_paging();
 	PIC_remap(0x20, 0x70);
 	Sti();
 	
 
 	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0, 0, NULL, 0);
 
-	*(char*)(0xb8004) = 'X';
 	// We soon exit out of here :)
 	while (1);
 

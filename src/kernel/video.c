@@ -15,9 +15,6 @@
 int defaultStyle = 0x07;
 
 VIDEO_MODE_INFO* current_video_mode;
-// Counter of IRQ8 ticks since start.
-int ticks = 0;
-int cursor_ticks = 0;
 
 // Counter of the video position
 int videoPos = 0;
