@@ -588,11 +588,21 @@ int scheduler_sleep(int msecs) {
 int percentage = 0;
 
 
-// Handles the ticks
-void scheduler_tick() {
-	int i = 0;
+
+int waits = 0;
+
+void update_stack() {
 	
-	unsigned int esp = _GetESP();
+	unsigned int esp = _GetESP();	
+	esp = ((unsigned int)current_process->stackp - esp + 4096);
+	
+	if((esp + 3072) > 4096 * (current_process->stack_index + 1))	{
+		add_process_stack(current_process);
+	}
+	
+	while((esp + 3072) < 4096 * (current_process->stack_index))	{
+		release_process_stack(current_process);
+	}
 	
 	*(char*)(0xb8510) = esp % 10 + '0';
 	*(char*)(0xb850e) = (esp / 10) % 10 + '0';
@@ -603,6 +613,13 @@ void scheduler_tick() {
 	*(char*)(0xb8504) = (esp / 1000000) % 10 + '0';
 	*(char*)(0xb8502) = (esp / 10000000) % 10 + '0';
 	*(char*)(0xb8500) = (esp / 100000000) % 10 + '0';
+}
+
+// Handles the ticks
+void scheduler_tick() {
+	int i = 0;
+	
+	update_stack();
 	
 	for(; i < PROCESS_MAX; ++i)	{
 		if(process_pool[i].state == PROCESS_BLOCKED
@@ -611,7 +628,7 @@ void scheduler_tick() {
 			if(!process_pool[i].sleeptime)	{
 				process_pool[i].state = PROCESS_READY;
 				sched_enqueue(&process_pool[i]);
-
+	
 			}
 		} 
 	}

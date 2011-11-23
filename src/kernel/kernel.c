@@ -394,7 +394,7 @@ int idle_main(int argc, char ** params) {
 	while(1) {
 		_Halt(); // Now set to idle.
 		count++;
-		if(count % 30 == 0)
+		if(count % 3000 == 0)
 		{
 			Cli();
 			hdd_cache_sync();

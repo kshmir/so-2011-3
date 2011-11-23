@@ -10,7 +10,7 @@ int 		 used_pages[1024];
 int 		 used_entries[64];
 page_t       stack_pages[1125];
 page_entry_t stackd_entries[165];
-page_entry_t global_entries[100];
+page_entry_t global_entries[32];
 page_entry_t * aligned_st_pages;
 page_entry_t * aligned_st_entries;
 
@@ -91,41 +91,52 @@ page_t * get_stack_page() {
 	}
 }
 
+void release_stack_page(page_t * page) {
+	int index = (page - aligned_st_pages) / 4096;
+	used_pages[index] = 0;
+}
+
 int index = 0;
 
+void add_process_stack(Process * p) {
+	*(char*)(0xb8514) = '0' + p->stack_index;
+	page_entry_t * pentry = (page_entry_t *) p->stacke;
+	page_t * pstack  = get_stack_page();
+	p->stack_index++;
+	pentry->data[1023 - p->stack_index] = (int) pstack | 0x3;
+}
+
+void release_process_stack(Process * p) {
+	*(char*)(0xb8516) = '0' + p->stack_index;
+	page_entry_t * pentry = (page_entry_t *) p->stacke;
+	page_t * pstack  = get_stack_page((page_t *)(pentry->data[1023 - p->stack_index]));
+	p->stack_index--;
+}
 
 
 void set_proc_stack(Process * p) {
 	aligned_st_pages         = (page_t *) aligned(&stack_pages[1]);
 	aligned_st_entries       = (page_entry_t *) aligned(&stackd_entries[1]);
-	page_dir_t * process_dir = (page_dir_t *) aligned(&global_entries[24 + sched_pindex(p)]);
 	kernel_pentries          = (page_entry_t *) aligned(&global_entries[3]);
 
 	page_entry_t * pentry = get_stack_entry();
 
 	for(j = 0; j < 1024; ++j)	{
-		process_dir->data[j] = (int)kernel_pentries + (j % 16) * 4096  | 0x3;
 		pentry->data[j] = 0;
 	}
 
-	p->process_dir = (void *) kernel_pdir;
-
 	page_t * pstack  = get_stack_page();
-	page_t * pstack2 = get_stack_page();
-	page_t * pstack3 = get_stack_page();
-	page_t * pstack4 = get_stack_page();
-	page_t * pstack5 = get_stack_page();
-	page_t * pstack6 = get_stack_page();
-	page_t * pstack7 = get_stack_page();
-
-
+	page_t * pstack2  = get_stack_page();
+	
+	p->stacke = (void *) pentry;
 	p->stackp = (void *) (0xFFFFFFFF - 4096 - 4096 * 1024 * sched_pindex(p)); // All stacks start here.
 
 	// printf("%d\n", p->stackp);
 	kernel_pdir->data[1023 - sched_pindex(p)] = (int) pentry | 0x3;
 	
 	pentry->data[1023] = (int) pstack  | 0x3;
-	pentry->data[1022] = 0;
+	
+	p->stack_index = 0;
 	// pentry->data[1020] = (int) pstack4 | 0x3;
 	// pentry->data[1019] = (int) pstack5 | 0x3;
 	// pentry->data[1018] = (int) pstack6 | 0x3;
