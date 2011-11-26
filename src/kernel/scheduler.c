@@ -246,7 +246,12 @@ void process_cleaner() {
 		close(i);
 	}
 	
-	
+	// i = 0;
+	// for(i = 0; i < current_process->argc; ++i)
+	// {
+	// 	free(((char**)current_process->params)[i]);
+	// }
+	// free(current_process->params);
 
 	current_process->state = PROCESS_ZOMBIE;
 	_processes_available++;
@@ -412,7 +417,8 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 	
 	p->esp                 = stackf_build(p->stackp, _main, argc, params);
 
-	
+	p->params = params;
+	p->argc= argc;
 
 	p->state               = PROCESS_READY;
 	p->file_descriptors[0] = fd_open_with_index(stdin,0,0,0);
@@ -598,25 +604,25 @@ int waits = 0;
 
 void update_stack() {
 	
-	// unsigned int esp = _GetESP();	
-	// esp = ((unsigned int)current_process->stackp - esp + 4096);
+	unsigned int esp = _GetESP();	
+	esp = ((unsigned int)current_process->stackp - esp + 4096);
 	
-	// if((esp + 3072) > 4096 * (current_process->stack_index + 1))	{
-		// add_process_stack(current_process);
-	// }
+	if((esp + 3072) > 4096 * (current_process->stack_index + 1))	{
+		add_process_stack(current_process);
+	}
 	
-	// while((esp + 3072) < 4096 * (current_process->stack_index))	{
-		// if (release_process_stack(current_process)) {
-			// break;
-		// }
-	// }
+	while((esp + 3072) < 4096 * (current_process->stack_index))	{
+		if (release_process_stack(current_process)) {
+			break;
+		}
+	}
 }
 
 // Handles the ticks
 void scheduler_tick() {
 	int i = 0;
 	
-	// update_stack();
+	update_stack();
 	
 	for(; i < PROCESS_MAX; ++i)	{
 		if(process_pool[i].state == PROCESS_BLOCKED

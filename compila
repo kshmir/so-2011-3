@@ -11,30 +11,31 @@ nasm -f aout ../src/startup/kstart.asm  -o kstart.o
 nasm -f aout ../src/startup/loader.asm  -o loader.o
 
 # Compiles the .c files.
-ccache gcc -c ../src/kernel/video.c              -o video.o          -fno-builtin
-ccache gcc -c ../src/kernel/fd.c                 -o fd.o             -fno-builtin
-ccache gcc -c ../src/kernel/fifo.c               -o fifo.o           -fno-builtin
-ccache gcc -c ../src/kernel/semaphore.c          -o semaphore.o      -fno-builtin
-ccache gcc -c ../src/kernel/signals.c            -o signals.o        -fno-builtin
-ccache gcc -c ../src/kernel/scheduler.c          -o scheduler.o      -fno-builtin
-ccache gcc -c ../src/kernel/tty.c                -o tty.o            -fno-builtin
-ccache gcc -c ../src/kernel/tty_context.c        -o tty_context.o    -fno-builtin
-ccache gcc -c ../src/kernel/kernel.c             -o kernel.o         -fno-builtin
-ccache gcc -c ../src/kernel/internal_shell.c     -o internal_shell.o -fno-builtin
-ccache gcc -c ../src/kernel/fs/hdd.c             -o hdd.o            -fno-builtin
-ccache gcc -c ../src/kernel/fs/bitmap.c          -o bitmap.o         -fno-builtin
+ccache gcc -c ../src/kernel/video.c                  -o video.o          -fno-builtin
+ccache gcc -c ../src/kernel/fd.c                     -o fd.o             -fno-builtin
+ccache gcc -c ../src/kernel/fifo.c                   -o fifo.o           -fno-builtin
+ccache gcc -c ../src/kernel/semaphore.c              -o semaphore.o      -fno-builtin
+ccache gcc -c ../src/kernel/signals.c                -o signals.o        -fno-builtin
+ccache gcc -c ../src/kernel/scheduler.c              -o scheduler.o      -fno-builtin
+ccache gcc -c ../src/kernel/tty.c                    -o tty.o            -fno-builtin
+ccache gcc -c ../src/kernel/tty_context.c            -o tty_context.o    -fno-builtin
+ccache gcc -c ../src/kernel/kernel.c                 -o kernel.o         -fno-builtin
+ccache gcc -c ../src/kernel/internal_shell.c         -o internal_shell.o -fno-builtin
+ccache gcc -c ../src/kernel/gdt.c                    -o gdt.o            -fno-builtin
+ccache gcc -c ../src/kernel/fs/hdd.c                 -o hdd.o            -fno-builtin
+ccache gcc -c ../src/kernel/fs/bitmap.c              -o bitmap.o         -fno-builtin
 ccache gcc -Os -c ../src/kernel/fs/fs.c              -o fs.o             -fno-builtin
 ccache gcc -Os -c ../src/kernel/users.c              -o users.o          -fno-builtin
 ccache gcc -Os -c ../src/kernel/paging.c             -o paging.o         -fno-builtin
 ccache gcc -Os -c ../src/kernel/pic.c                -o pic.o            -fno-builtin
 ccache gcc -Os -c ../src/drivers/atadisk.c           -o atadisk.o        -fno-builtin
-ccache gcc -Os -c ../src/monix/monix.c               -o monix.o        -fno-builtin
+ccache gcc -Os -c ../src/monix/monix.c               -o monix.o          -fno-builtin
 ccache gcc -Os -c ../src/software/user_programs.c    -o user_programs.o  -fno-builtin
-ccache gcc -c ../src/libs/mcgio.c                -o mcgio.o          -fno-builtin       # Os is for optimize size, since having a 80k+ binary didn't work on grub.
+ccache gcc -c ../src/libs/mcgio.c                    -o mcgio.o          -fno-builtin   # Os is for optimize size, since having a 80k+ binary didn't work on grub.
 ccache gcc -Os -c ../src/libs/heap.c                 -o heap.o           -fno-builtin   # Bad thing: Some things broke so we used it just a bit.
-ccache gcc -c ../src/libs/mcglib.c               -o mcglib.o         -fno-builtin
-ccache gcc -c ../src/libs/stdio.c                -o stdio.o          -fno-builtin
-ccache gcc -c ../src/libs/malloc.c                -o malloc.o          -fno-builtin
+ccache gcc -c ../src/libs/mcglib.c                   -o mcglib.o         -fno-builtin
+ccache gcc -c ../src/libs/stdio.c                    -o stdio.o          -fno-builtin
+ccache gcc -c ../src/libs/malloc.c                   -o malloc.o         -fno-builtin
 ccache gcc -Os -c ../src/libs/stdlib.c               -o stdlib.o         -fno-builtin
 ccache gcc -Os -c ../src/libs/string.c               -o string.o         -fno-builtin
 ccache gcc -Os -c ../src/libs/queue.c                -o queue.o          -fno-builtin
@@ -45,6 +46,6 @@ ccache gcc -Os -c ../src/libs/list.c                 -o list.o           -fno-bu
 ld -T ../include/link.ld -o kernel.bin libasm.o string.o loader.o users.o kernel.o \
   mcgio.o stdlib.o video.o atadisk.o stdio.o internal_shell.o mcglib.o scheduler.o queue.o \
   tty.o tty_context.o list.o semaphore.o fifo.o fd.o signals.o pqueue.o bitmap.o fs.o heap.o paging.o pic.o monix.o hdd.o \
-  malloc.o
+  malloc.o gdt.o
 
 echo "Compila end"

@@ -48,6 +48,7 @@ char* getConsoleString(int showdata) {
 	int sx     = getCursorX();
 	int sy     = getCursorY();
 
+
 	while ((c = getC()) != '\n') {
 		int dirKey = 0;//getA();
 

@@ -153,11 +153,9 @@ void set_proc_stack(Process * p) {
 
 		page_t * pstack  = get_stack_page();
 
-		int old = p->stacke;
 		p->stacke = (void *)((int)p->stacke | (int)pentry);
 		p->stackp = (void *) (0xFFFFFFFF - 4096 - 4096 * 1024 * sched_pindex(p)); // All stacks start here.
 
-		// printf("%d\n", p->stackp);
 		kernel_pdir->data[1023 - sched_pindex(p)] = (int) pentry | 0x3;
 
 		pentry->data[1023] = (int) pstack  | 0x3;

@@ -85,6 +85,7 @@ int process_input(const char * input, int tty_number) {
 		int n = 0;
 		char** strs = split_string(file_call_buffer, ' ', &n);
 		
+		
 		int pid = pcreate(strs[0], n, strs);
 		
 		if(pid != -1)
@@ -168,6 +169,7 @@ int tty_main (int argc, char ** argv)
 				{
 					status = 0;
 				}
+				// free(input);
 				break;
 			case 0:
 				child = pcreate("su", 1, NULL);

@@ -88,6 +88,8 @@ static void declare_allocd(int log_index, int size) {
 	}
 }
 
+
+int last_i = 0;
 void * malloc(size_t size) {
 	int i = 0, j = 0;
 	int found_size = 0;
@@ -108,7 +110,7 @@ void * malloc(size_t size) {
 	}
 	
 	// Iterate over free memory.
-	for (i = 0; i < MEM_BLOCK_COUNT; i++) {
+	for (i = last_i; i < MEM_BLOCK_COUNT; i++) {
 		// With no start index.
 		if (found_index == -1) {
 			int endj = -1;
@@ -208,7 +210,13 @@ void * malloc(size_t size) {
 			////printf("Alloc place: %d\n", data_index);
 			break;
 		}
+		
+		if(i == MEM_BLOCK_COUNT - 1)
+		{
+			i = 0;
+		}
 	}
+	last_i = i;
 	
 	char * ptr = (void *)(data + data_index * 32);
 	i = 0;
@@ -337,7 +345,6 @@ int free(void * ptr) {
 			}
 		}
 
-		
 		rebuild_block(meta_index);
 		
 		meta_index++;
