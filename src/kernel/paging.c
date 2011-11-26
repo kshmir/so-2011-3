@@ -163,7 +163,6 @@ void set_proc_stack(Process * p) {
 		pentry->data[1023] = (int) pstack  | 0x3;
 
 		p->stack_index = 0;
-		printf("Loading %d %d\n", old, sched_pindex(p));
 		p->loaded = 1;
 	}
 
