@@ -29,6 +29,7 @@ typedef struct Process {
 	void * 				stacke;
 	void * 				stackp;
 	int					stack_index;
+	int					loaded;
 	void *				signals[PROCESS_SIGNALS];
 	Queue				* wait_queue;
 } Process;

@@ -245,6 +245,8 @@ void process_cleaner() {
 	for(; i < PROCESS_FD_SIZE; ++i)	{
 		close(i);
 	}
+	
+	
 
 	current_process->state = PROCESS_ZOMBIE;
 	_processes_available++;
@@ -403,6 +405,7 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 	p->gid                 = 0;
 	p->ppid                = (current_process != NULL) ? current_process->pid : 0;
 	p->priority            = priority;
+
 	
 	set_proc_stack(p);
 	
@@ -509,6 +512,8 @@ void release_atomic() {
 void scheduler_think (void) {
 	*(char*)(0xb8c10) = ' ';
 
+
+
 	// Only thinks when not atomic and outside the kernel.
 	if(atomic || in_kernel()) {
 		return;
@@ -603,16 +608,6 @@ void update_stack() {
 	while((esp + 3072) < 4096 * (current_process->stack_index))	{
 		release_process_stack(current_process);
 	}
-	
-	*(char*)(0xb8510) = esp % 10 + '0';
-	*(char*)(0xb850e) = (esp / 10) % 10 + '0';
-	*(char*)(0xb850c) = (esp / 100) % 10 + '0';
-	*(char*)(0xb850a) = (esp / 1000) % 10 + '0';
-	*(char*)(0xb8508) = (esp / 10000) % 10 + '0';
-	*(char*)(0xb8506) = (esp / 100000) % 10 + '0';
-	*(char*)(0xb8504) = (esp / 1000000) % 10 + '0';
-	*(char*)(0xb8502) = (esp / 10000000) % 10 + '0';
-	*(char*)(0xb8500) = (esp / 100000000) % 10 + '0';
 }
 
 // Handles the ticks

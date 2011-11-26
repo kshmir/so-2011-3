@@ -96,10 +96,14 @@ void release_stack_page(page_t * page) {
 	used_pages[index] = 0;
 }
 
+void release_stack_entry(page_t * entry) {
+	int index = (entry - aligned_st_entries) / 4096;
+	used_entries[index] = 0;
+}
+
 int index = 0;
 
 void add_process_stack(Process * p) {
-	*(char*)(0xb8514) = '0' + p->stack_index;
 	page_entry_t * pentry = (page_entry_t *) p->stacke;
 	page_t * pstack  = get_stack_page();
 	p->stack_index++;
@@ -107,36 +111,56 @@ void add_process_stack(Process * p) {
 }
 
 void release_process_stack(Process * p) {
-	*(char*)(0xb8516) = '0' + p->stack_index;
 	page_entry_t * pentry = (page_entry_t *) p->stacke;
-	page_t * pstack  = get_stack_page((page_t *)(pentry->data[1023 - p->stack_index]));
+	release_stack_page((page_t *)(pentry->data[1023 - p->stack_index]));
 	p->stack_index--;
 }
 
 
+
+
 void set_proc_stack(Process * p) {
+
+	if (kernel_rd()) {
+		int esp = sched_pindex(p);
+		*(char*)(0xb8510) = esp % 10 + '0';
+		*(char*)(0xb850e) = (esp / 10) % 10 + '0';
+		*(char*)(0xb850c) = (esp / 100) % 10 + '0';
+		*(char*)(0xb850a) = (esp / 1000) % 10 + '0';
+		*(char*)(0xb8508) = (esp / 10000) % 10 + '0';
+		*(char*)(0xb8506) = (esp / 100000) % 10 + '0';
+		*(char*)(0xb8504) = (esp / 1000000) % 10 + '0';
+		*(char*)(0xb8502) = (esp / 10000000) % 10 + '0';
+		*(char*)(0xb8500) = (esp / 100000000) % 10 + '0';
+	}
+	
 	aligned_st_pages         = (page_t *) aligned(&stack_pages[1]);
 	aligned_st_entries       = (page_entry_t *) aligned(&stackd_entries[1]);
 	kernel_pentries          = (page_entry_t *) aligned(&global_entries[3]);
 
-	page_entry_t * pentry = get_stack_entry();
 
-	for(j = 0; j < 1024; ++j)	{
-		pentry->data[j] = 0;
+	if(!p->loaded)
+	{
+		page_entry_t * pentry = get_stack_entry();
+
+		for(j = 0; j < 1024; ++j)	{
+			pentry->data[j] = 0;
+		}
+
+		page_t * pstack  = get_stack_page();
+		page_t * pstack2  = get_stack_page();
+
+		p->stacke = (void *) pentry;
+		p->stackp = (void *) (0xFFFFFFFF - 4096 - 4096 * 1024 * sched_pindex(p)); // All stacks start here.
+
+		// printf("%d\n", p->stackp);
+		kernel_pdir->data[1023 - sched_pindex(p)] = (int) pentry | 0x3;
+
+		pentry->data[1023] = (int) pstack  | 0x3;
+
+		p->stack_index = 0;
+		p->loaded = 1;
 	}
-
-	page_t * pstack  = get_stack_page();
-	page_t * pstack2  = get_stack_page();
-	
-	p->stacke = (void *) pentry;
-	p->stackp = (void *) (0xFFFFFFFF - 4096 - 4096 * 1024 * sched_pindex(p)); // All stacks start here.
-
-	// printf("%d\n", p->stackp);
-	kernel_pdir->data[1023 - sched_pindex(p)] = (int) pentry | 0x3;
-	
-	pentry->data[1023] = (int) pstack  | 0x3;
-	
-	p->stack_index = 0;
 	// pentry->data[1020] = (int) pstack4 | 0x3;
 	// pentry->data[1019] = (int) pstack5 | 0x3;
 	// pentry->data[1018] = (int) pstack6 | 0x3;

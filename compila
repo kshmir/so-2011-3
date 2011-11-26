@@ -34,6 +34,7 @@ ccache gcc -c ../src/libs/mcgio.c                -o mcgio.o          -fno-builti
 ccache gcc -Os -c ../src/libs/heap.c                 -o heap.o           -fno-builtin   # Bad thing: Some things broke so we used it just a bit.
 ccache gcc -c ../src/libs/mcglib.c               -o mcglib.o         -fno-builtin
 ccache gcc -c ../src/libs/stdio.c                -o stdio.o          -fno-builtin
+ccache gcc -c ../src/libs/malloc.c                -o malloc.o          -fno-builtin
 ccache gcc -Os -c ../src/libs/stdlib.c               -o stdlib.o         -fno-builtin
 ccache gcc -Os -c ../src/libs/string.c               -o string.o         -fno-builtin
 ccache gcc -Os -c ../src/libs/queue.c                -o queue.o          -fno-builtin
@@ -43,6 +44,7 @@ ccache gcc -Os -c ../src/libs/list.c                 -o list.o           -fno-bu
 #Linkedits all the files.
 ld -T ../include/link.ld -o kernel.bin libasm.o string.o loader.o users.o kernel.o \
   mcgio.o stdlib.o video.o atadisk.o stdio.o internal_shell.o mcglib.o scheduler.o queue.o \
-  tty.o tty_context.o list.o semaphore.o fifo.o fd.o signals.o pqueue.o bitmap.o fs.o heap.o paging.o pic.o monix.o hdd.o 
+  tty.o tty_context.o list.o semaphore.o fifo.o fd.o signals.o pqueue.o bitmap.o fs.o heap.o paging.o pic.o monix.o hdd.o \
+  malloc.o
 
 echo "Compila end"

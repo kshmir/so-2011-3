@@ -25,7 +25,6 @@ void f(int a) {
 		}
 		a++;
 	}
-
 	b++;
 	if(b < 3000)	{
 		f(0);
@@ -40,10 +39,18 @@ void f(int a) {
 	}
 }
 
+void stackd(int i) {
+	if (i < 10) {
+		int data = (int)malloc(1024 + i * 256);
+		stackd(++i);
+		printf("%d\n", (int)data);
+		free((void*)data);
+	}
+}
+
 // Helps teachers to understand a bit our mess, well, no
 int _printHelp(int size, char** args) {
-	b = 0;
-	f(0);
+	printf("%d\n", '8');
 }
 
 // Test the breakable code

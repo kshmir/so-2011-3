@@ -85,7 +85,6 @@ int process_input(const char * input, int tty_number) {
 		int n = 0;
 		char** strs = split_string(file_call_buffer, ' ', &n);
 		
-		
 		int pid = pcreate(strs[0], n, strs);
 		
 		if(pid != -1)
@@ -104,7 +103,7 @@ int process_input(const char * input, int tty_number) {
 				int _stdin = open(stdin_call_buffer, O_RD);
 				if(_stdin >= 0)
 				{
-					pdup2(pid, _stdin, STDIN);				
+					pdup2(pid, _stdin, STDIN);
 				} else {
 					printf("TTY: file %s could not be opened for input, invalid perms?\n", stdin_call_buffer);
 				}
@@ -161,7 +160,7 @@ int tty_main (int argc, char ** argv)
 	int child;
 	while(1) {
 		switch (status){
-			case 0:
+			case 1:
 				printf("user@tty%d:", tty_number);
 				input = (char *) getConsoleString(1);
 				process_input(input, tty_number);
@@ -170,7 +169,7 @@ int tty_main (int argc, char ** argv)
 					status = 0;
 				}
 				break;
-			case 1:
+			case 0:
 				child = pcreate("su", 1, NULL);
 				prun(child);
 				waitpid(child);

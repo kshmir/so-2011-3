@@ -234,9 +234,9 @@ _e0d:
 		call handler_e0d
 		iret
 _e0e:
-		mov eax, 0b8a12h
-		mov ebx, 0f50h
-		mov [eax], ebx
+		mov eax, cs
+		push eax
+		call handler_e0e
 		iret
 _e0f:
 mov eax, 0b8a12h

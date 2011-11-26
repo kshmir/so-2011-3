@@ -68,8 +68,17 @@ void handler_e0c() {
 void handler_e0d(int cs) {
 	*(char*)(0xb8a12) = '0' + cs;
 }
-void handler_e0e() {
-	*(char*)(0xb8a12) = 'P';
+void handler_e0e(int esp) {
+	esp = _GetCR2();
+	*(char*)(0xb8510) = esp % 10 + '0';
+	*(char*)(0xb850e) = (esp / 10) % 10 + '0';
+	*(char*)(0xb850c) = (esp / 100) % 10 + '0';
+	*(char*)(0xb850a) = (esp / 1000) % 10 + '0';
+	*(char*)(0xb8508) = (esp / 10000) % 10 + '0';
+	*(char*)(0xb8506) = (esp / 100000) % 10 + '0';
+	*(char*)(0xb8504) = (esp / 1000000) % 10 + '0';
+	*(char*)(0xb8502) = (esp / 10000000) % 10 + '0';
+	*(char*)(0xb8500) = (esp / 100000000) % 10 + '0';
 }
 
 void handler_e10() {
