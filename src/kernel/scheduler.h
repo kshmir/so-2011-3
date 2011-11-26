@@ -18,7 +18,7 @@ typedef struct Process {
 	unsigned int		gid;
 	unsigned int		priority;
 	char *				name;
-	// char				stack[PROCESS_STACK_SIZE];
+	char				stack[PROCESS_STACK_SIZE];
 	int					state;
 	int					is_tty;
 	int					tty;

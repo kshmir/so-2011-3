@@ -598,23 +598,25 @@ int waits = 0;
 
 void update_stack() {
 	
-	unsigned int esp = _GetESP();	
-	esp = ((unsigned int)current_process->stackp - esp + 4096);
+	// unsigned int esp = _GetESP();	
+	// esp = ((unsigned int)current_process->stackp - esp + 4096);
 	
-	if((esp + 3072) > 4096 * (current_process->stack_index + 1))	{
-		add_process_stack(current_process);
-	}
+	// if((esp + 3072) > 4096 * (current_process->stack_index + 1))	{
+		// add_process_stack(current_process);
+	// }
 	
-	while((esp + 3072) < 4096 * (current_process->stack_index))	{
-		release_process_stack(current_process);
-	}
+	// while((esp + 3072) < 4096 * (current_process->stack_index))	{
+		// if (release_process_stack(current_process)) {
+			// break;
+		// }
+	// }
 }
 
 // Handles the ticks
 void scheduler_tick() {
 	int i = 0;
 	
-	update_stack();
+	// update_stack();
 	
 	for(; i < PROCESS_MAX; ++i)	{
 		if(process_pool[i].state == PROCESS_BLOCKED

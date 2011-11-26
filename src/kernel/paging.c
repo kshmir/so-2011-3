@@ -41,10 +41,10 @@ void init_paging() {
 	for(; j < 1024; ++j)	{
 		// Counts from 0 to 1023 to...
 		for (k = 0; k < 1024; k++)	{
-			kernel_pentries[j % 16].data[k] = ((j % 16) * 4096 * 1024) | (k * 4096) | 0x3;	// ...map the first 4MB of memory into the page table...
+			kernel_pentries[j % 16].data[k] = ((j % 16) * 4096 * 1024) | (k * 4096) | 0x7;	// ...map the first 4MB of memory into the page table...
 		}
 		
-		kernel_pdir->data[j] = (int)kernel_pentries + (j % 16) * 4096  | 0x3;
+		kernel_pdir->data[j] = (int)kernel_pentries + (j % 16) * 4096  | 0x7;
 	}
 
 	// Copies the address of the page directory into the CR3 register and, finally, enables paging!
@@ -110,10 +110,16 @@ void add_process_stack(Process * p) {
 	pentry->data[1023 - p->stack_index] = (int) pstack | 0x3;
 }
 
-void release_process_stack(Process * p) {
-	page_entry_t * pentry = (page_entry_t *) p->stacke;
-	release_stack_page((page_t *)(pentry->data[1023 - p->stack_index]));
-	p->stack_index--;
+int release_process_stack(Process * p) {
+	if(p->stack_index > 1)
+	{
+		page_entry_t * pentry = (page_entry_t *) p->stacke;
+		release_stack_page((page_t *)(pentry->data[1023 - p->stack_index]));
+		p->stack_index--;
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 
@@ -138,19 +144,17 @@ void set_proc_stack(Process * p) {
 	aligned_st_entries       = (page_entry_t *) aligned(&stackd_entries[1]);
 	kernel_pentries          = (page_entry_t *) aligned(&global_entries[3]);
 
-
-	if(!p->loaded)
-	{
+	if(!p->stacke) {
 		page_entry_t * pentry = get_stack_entry();
 
 		for(j = 0; j < 1024; ++j)	{
-			pentry->data[j] = 0;
+			pentry->data[j] = 0x3;
 		}
 
 		page_t * pstack  = get_stack_page();
-		page_t * pstack2  = get_stack_page();
 
-		p->stacke = (void *) pentry;
+		int old = p->stacke;
+		p->stacke = (void *)((int)p->stacke | (int)pentry);
 		p->stackp = (void *) (0xFFFFFFFF - 4096 - 4096 * 1024 * sched_pindex(p)); // All stacks start here.
 
 		// printf("%d\n", p->stackp);
@@ -159,8 +163,10 @@ void set_proc_stack(Process * p) {
 		pentry->data[1023] = (int) pstack  | 0x3;
 
 		p->stack_index = 0;
+		printf("Loading %d %d\n", old, sched_pindex(p));
 		p->loaded = 1;
 	}
+
 	// pentry->data[1020] = (int) pstack4 | 0x3;
 	// pentry->data[1019] = (int) pstack5 | 0x3;
 	// pentry->data[1018] = (int) pstack6 | 0x3;

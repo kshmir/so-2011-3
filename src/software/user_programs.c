@@ -48,9 +48,14 @@ void stackd(int i) {
 	}
 }
 
+int fx() {
+	return fx();
+}
+
 // Helps teachers to understand a bit our mess, well, no
 int _printHelp(int size, char** args) {
-	printf("%d\n", '8');
+	stackd(0);
+	stackd(0);
 }
 
 // Test the breakable code

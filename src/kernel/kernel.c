@@ -383,11 +383,12 @@ int idle_main(int argc, char ** params) {
 	tty_init(5);		
 
 	users_init();				// Init the users
-// 	
+	
 	fs_finish();
 	setready(); 				// Set the kernel as ready and the FS as loaded
 	release_atomic();	
 	Sti();
+
 
 
 	int count = 0;
@@ -400,7 +401,7 @@ int idle_main(int argc, char ** params) {
 			hdd_cache_sync();
 			Sti();
 		}
-
+	
 	}
 }
 
@@ -420,6 +421,8 @@ void pfault(int code) {
 
 
 
+unsigned int kernel_stack = 0;
+
 ///////////// Inicio KMAIN
 
 /**********************************************
@@ -427,6 +430,11 @@ void pfault(int code) {
  Punto de entrada de código C.
  *************************************************/
 kmain() {
+	
+	
+	kernel_stack = _GetESP();
+	
+	
 	int i, num;
 
 	setup_IDT_entry(&idt[0x00], 0x08, (dword) & _e00, ACS_INT, 0);
@@ -507,11 +515,15 @@ kmain() {
 	_outb(0x71, prev | 0x40); //write the previous value or'd with 0x40. This turns on bit 6 of register B
 	
 	init_paging();
+	// setupGDT();
 	PIC_remap(0x20, 0x70);
-	Sti();
 	
+	Sti();	
 
 	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0, 0, NULL, 0);
+
+
+	// set_user_mode();
 
 	// We soon exit out of here :)
 	while (1);

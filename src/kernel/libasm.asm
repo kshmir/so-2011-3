@@ -159,29 +159,26 @@ GLOBAL _e1f
 
 SECTION .text
 
-
-
-
 _e00:
-mov eax, 0b8000h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8000h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e01:
-mov eax, 0b8a20h
-mov ebx, 0f48h
-mov [eax], ebx
-iret
+		mov eax, 0b8a20h
+		mov ebx, 0f48h
+		mov [eax], ebx
+		iret
 _e02:
-mov eax, 0b8a20h
-mov ebx, 0f48h
-mov [eax], ebx
-iret
+		mov eax, 0b8a20h
+		mov ebx, 0f48h
+		mov [eax], ebx
+		iret
 _e03:
-mov eax, 0b8a20h
-mov ebx, 0f48h
-mov [eax], ebx
-iret
+		mov eax, 0b8a20h
+		mov ebx, 0f48h
+		mov [eax], ebx
+		iret
 _e04:
 		mov eax, 0b8b16h
 		mov ebx, 0f44h
@@ -207,22 +204,21 @@ _e08:
 		mov ebx, 0f40h
 		mov [eax], ebx
 		iret
-
 _e09:
-mov eax, 0b8a20h
-mov ebx, 0f48h
-mov [eax], ebx
-iret
+		mov eax, 0b8a20h
+		mov ebx, 0f48h
+		mov [eax], ebx
+		iret
 _e0a:
-mov eax, 0b8a20h
-mov ebx, 0f48h
-mov [eax], ebx
-iret
+		mov eax, 0b8a20h
+		mov ebx, 0f48h
+		mov [eax], ebx
+		iret
 _e0b:
-mov eax, 0b8a20h
-mov ebx, 0f48h
-mov [eax], ebx
-iret
+		mov eax, 0b8a20h
+		mov ebx, 0f48h
+		mov [eax], ebx
+		iret
 _e0c:
 		mov eax, 0b8a20h
 		mov ebx, 0f48h
@@ -239,96 +235,90 @@ _e0e:
 		call handler_e0e
 		iret
 _e0f:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
-
-
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e10:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e11:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e12:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e13:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e14:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e15:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e16:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e17:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e18:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e19:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e1a:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e1b:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e1c:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e1d:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e1e:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 _e1f:
-mov eax, 0b8a12h
-mov ebx, 0f50h
-mov [eax], ebx
-iret
-
-
-
-
+		mov eax, 0b8a12h
+		mov ebx, 0f50h
+		mov [eax], ebx
+		iret
 
 
 

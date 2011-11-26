@@ -217,6 +217,14 @@ void pushC(char c) {
 	
 	current_tty = kb_tty;
 
+	if(cnt()->charBufferSize > 16)
+	{
+		unlock_contexts();
+
+		current_tty = aux;
+		return;
+	}
+
 	cnt()->charBuffer[cnt()->charBufferWIndex++] = c;
 	
 	if(cnt()->charBufferWIndex == BUFFER_SIZE) {

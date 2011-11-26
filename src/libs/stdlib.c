@@ -1,8 +1,8 @@
 #include "stdlib.h"
 #include "../monix/monix.h"
 
-// //***** All the following code is just not cool, but it works ¨*****//
-// 
+//***** All the following code is just not cool, but it works ¨*****//
+
 // char heap_space[1024*1024*16];
 // size_t offset;
 // 
@@ -24,7 +24,7 @@
 //      return ret;
 // }
 // 
-// // Roughly reallocs some memory
+// 
 // void * realloc(void * ptr, size_t size,size_t old_size)
 // {
 //     char * ret = (char*)malloc(size);
