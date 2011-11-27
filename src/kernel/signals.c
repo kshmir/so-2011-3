@@ -10,20 +10,34 @@ void sigkill_h(int pid){
 	Process * current = process_getbypid(pid);
 	if(!current->is_tty)	{
 		process_cleanpid(pid);
+		process_kill_children(SIGKILL, pid);	
 	} 
-
-	process_kill_children(SIGKILL, pid);	
+	else {
+		if(current->waitpid != 0)	{
+			process_cleanpid(current->waitpid);
+			current->waitpid = 0;
+		}
+	}
 }
+extern int krn;
 /* Kills the process with the pid recieved, and also it's children*/
 void sigint_h(int pid){
 	if(pid == 0)	{
 		return;
 	}
+
 	Process * current = process_getbypid(pid);
 	if(!current->is_tty)	{
 		process_cleanpid(pid);
+		process_kill_children(SIGINT, pid);	
+	} else {
+
+		if(current->waitpid != 0)	{
+			process_cleanpid(current->waitpid);
+			current->waitpid = 0;
+		}
 	}
-	process_kill_children(SIGINT, pid);
+
 }
 /* Clears every previous functions and asigns only sigkill and sigint signals */
 void sg_set_defaults(Process * p) {

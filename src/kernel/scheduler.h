@@ -28,6 +28,7 @@ typedef struct Process {
 	int					sleeptime;
 	int 				argc;
 	void * 				params;
+	int					waitpid;
 	void * 				stacke;
 	void * 				stackp;
 	int					stack_index;

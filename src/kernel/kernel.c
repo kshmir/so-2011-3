@@ -238,10 +238,10 @@ void int_80() {
 			if(p == NULL)	{
 				kernel_buffer[KERNEL_RETURN] = (int) -1;
 			} else {
-				if(kernel_buffer[2] <= 4 && kernel_buffer[2] >= 0)	{
+				if(kernel_buffer[2] < 4 && kernel_buffer[2] >= 0)	{
 					p->priority = kernel_buffer[2];
 				}
-				kernel_buffer[KERNEL_RETURN] = (int) p->gid;
+				kernel_buffer[KERNEL_RETURN] = (int) -1;
 			}
 			break;
 		case SETSCHED:

@@ -138,7 +138,6 @@ int process_input(const char * input, int tty_number) {
 /** Starts a shell, it's a user process, but yes, resides in the kernel's code */
 int tty_main (int argc, char ** argv)
 {	
-	*(char*)(0xb8710) = 'F';
 	clear_screen();
 	
 	char cadena[50];
@@ -169,7 +168,6 @@ int tty_main (int argc, char ** argv)
 				{
 					status = 0;
 				}
-				// free(input);
 				break;
 			case 0:
 				child = pcreate("su", 1, NULL);
@@ -196,7 +194,6 @@ int tty_init(int tty_num) {
 	fd_open_with_index(FD_TTY0 + tty_num, _FD_TTY, NULL, 0666);
 	init_context(tty_index);
 	create_process("tty", tty_main, 0, tty_num, 1, FD_TTY0 + tty_num, FD_TTY0 + tty_num, FD_TTY0 + tty_num, 1, _params, 0);
-	*(char*)(0xb8a10) = 't';
 
 	tty_index++;
 }

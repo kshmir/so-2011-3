@@ -297,12 +297,18 @@ static void rebuild_block(int meta_index) {
 			}
 		}
 	}
-
-	
 }
 
 int free(void * ptr) {
+	
+	
 	int index       = (int)((int)ptr - (int)data) / 32; // Decode it's data index
+	
+	if(index < 0 || index >= MEM_BLOCK_COUNT)
+	{
+		return 0;
+	}
+	
 	int meta_index  = index / 128;
 	int ph_meta_end = index % 128;
 	// We don't know meta_end now, we need to calculate it based on the block

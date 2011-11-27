@@ -3,12 +3,12 @@ ENTRY (_loader)
 SECTIONS{
 	. = 0x00100000;
 
-	.text :{
-		*(.text)
-	}
-
 	.data : {
 		*(.__mbHeader)
+	}
+
+	.text :{
+		*(.text)
 	}
 
 	.rodata ALIGN (0x1000) : {

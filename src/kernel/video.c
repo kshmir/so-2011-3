@@ -201,8 +201,10 @@ void incrementCursor() {
 		else
 			setCursorY(getCursorY() + 1);
 		return;
+	} else {
+		setCursorX(getCursorX() + 1);
 	}
-	setCursorX(getCursorX() + 1);
+
 }
 void decrementCursor() {
 	if (getCursorX() < 1) {

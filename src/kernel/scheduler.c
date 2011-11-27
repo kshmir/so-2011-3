@@ -54,12 +54,11 @@ int sched_mode = MODE_PRIORITY;
 void sched_set_mode(int m) {
 	if (m == 0 || m == 1) {
 		sched_mode = m;
-		
 		Process * p;		
 		if (m == 1) {
 			while(!queue_isempty(ready_queue)) {
 				p = queue_dequeue(ready_queue);
-				pqueue_enqueue(priority_queue,p,p->priority);
+				pqueue_enqueue(priority_queue,p,0);
 			}
 		} else if (m == 0){
 			while(!pqueue_isempty(priority_queue)) {
@@ -213,23 +212,35 @@ void process_cleanpid(int pid) {
 
 	Process * _curr = process_getbypid(pid);
 
-	while(!queue_isempty(_curr->wait_queue)) {
-		Process * p = queue_dequeue(_curr->wait_queue);
-		p->state = PROCESS_READY;
-		sched_enqueue(p);
+	if(_curr != NULL)
+	{
+		while(!queue_isempty(_curr->wait_queue)) {
+			Process * p = queue_dequeue(_curr->wait_queue);
+			p->state = PROCESS_READY;
+			sched_enqueue(p);
+		}
+
+
+		int i = 0;
+		for(; i < PROCESS_FD_SIZE; ++i)	{
+			fd_close(_curr->file_descriptors[i]);
+		}
+
+		if(_curr->params != NULL && _curr->argc != 0)
+		{
+			i = 0;
+			for(i = 0; i < _curr->argc; ++i)
+			{
+				free(((char**)_curr->params)[i]);
+			}
+			free(_curr->params);
+		}
+
+		_curr->state = PROCESS_ZOMBIE;
+		_processes_available++;
+		softyield();
 	}
 
-
-	int i = 0;
-	for(; i < PROCESS_FD_SIZE; ++i)	{
-		fd_close(_curr->file_descriptors[i]);
-	}
-	
-
-
-	_curr->state = PROCESS_ZOMBIE;
-	_processes_available++;
-	softyield();
 }
 /** Cleans current process (same as above)*/
 void process_cleaner() {
@@ -245,13 +256,17 @@ void process_cleaner() {
 	for(; i < PROCESS_FD_SIZE; ++i)	{
 		close(i);
 	}
-	
-	// i = 0;
-	// for(i = 0; i < current_process->argc; ++i)
-	// {
-	// 	free(((char**)current_process->params)[i]);
-	// }
-	// free(current_process->params);
+
+	if(current_process->params != NULL && current_process->argc != 0)
+	{
+		i = 0;
+		for(i = 0; i < current_process->argc; ++i)
+		{
+			free(((char**)current_process->params)[i]);
+		}
+		free(current_process->params);
+	}	
+
 
 	current_process->state = PROCESS_ZOMBIE;
 	_processes_available++;
@@ -305,6 +320,7 @@ int sched_waitpid(int pid) {
 		}
 		queue_enqueue(p->wait_queue, current_process);
 		current_process->state = PROCESS_BLOCKED;
+		current_process->waitpid = pid;
 		return pid;
 	} else {
 		return -1;
@@ -362,7 +378,7 @@ void process_kill_children(int sigcode, int pid) {
 	int i = 0;
 	for(; i < PROCESS_MAX; ++i) {
 		if(process_pool[i].state != PROCESS_ZOMBIE && process_pool[i].state != -1
-		&& process_pool[i].ppid == pid) {
+			&& process_pool[i].ppid == pid && process_pool[i].ppid != 0) {
 			sg_handle(sigcode, process_pool[i].pid);
 		}
 	}
@@ -408,7 +424,7 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 	p->name                = name;
 	p->pid                 = process_getnextpid();
 	p->gid                 = 0;
-	p->ppid                = (current_process != NULL) ? current_process->pid : 0;
+	p->ppid                = (current_process != NULL && current_process != idle) ? current_process->pid : 0;
 	p->priority            = priority;
 
 	
@@ -463,7 +479,6 @@ int is_tty, int stdin, int stdout, int stderr, int argc, void * params, int queu
 /** Saves process stack pointes*/
 void scheduler_save_esp (int esp)
 {
-	*(char*)(0xb8d00) = '1';
 	if (current_process != NULL) {
 		current_process->esp = esp;
 		if(yield_save_cntx)
@@ -494,7 +509,6 @@ void * scheduler_get_temp_esp (void) {
 	else
 	{
 		while(1);
-		*(char*)(0xb8000) = 'F';
 		return NULL;
 	}
 
@@ -516,7 +530,7 @@ void release_atomic() {
 
 /** Here the scheduler decides which will be the next process to excecute*/
 void scheduler_think (void) {
-	*(char*)(0xb8c10) = ' ';
+
 
 
 
@@ -568,14 +582,6 @@ void scheduler_think (void) {
 	// Well... just avoids wrongly the times.
 	if (soft_yielded) {
 		soft_yielded = 0;
-	} else {
-		if(current_process != idle)
-		{
-			think_storage[think_storage_index++] = current_process->pid;
-			if (think_storage_index == PROCESS_HISTORY_SIZE) {
-				think_storage_index = 0;
-			}
-		}
 	}
 
 	// Sets the tty as the one of the current process.
@@ -584,9 +590,6 @@ void scheduler_think (void) {
 		// Just for fancy
 		current_process->state = PROCESS_RUNNING;
 	}
-	*(char*)(0xb8c1a) = current_process->tty + '0';
-	*(char*)(0xb8c1c) = current_process->pid + '0';
-	*(char*)(0xb8c10) = 'S';
 }
 
 // Sleeps the process.
@@ -618,6 +621,7 @@ void update_stack() {
 	}
 }
 
+
 // Handles the ticks
 void scheduler_tick() {
 	int i = 0;
@@ -628,12 +632,18 @@ void scheduler_tick() {
 		if(process_pool[i].state == PROCESS_BLOCKED
 			&& process_pool[i].sleeptime > 0)	{
 			process_pool[i].sleeptime--;
-			if(!process_pool[i].sleeptime)	{
+			if(process_pool[i].sleeptime <= 0)	{
 				process_pool[i].state = PROCESS_READY;
 				sched_enqueue(&process_pool[i]);
-	
 			}
-		} 
+		}
+	}
+	if(current_process != idle)
+	{
+		think_storage[think_storage_index++] = current_process->pid;
+		if (think_storage_index == PROCESS_HISTORY_SIZE) {
+			think_storage_index = 0;
+		}
 	}
 
 	_outb(0x70, 0x0C);

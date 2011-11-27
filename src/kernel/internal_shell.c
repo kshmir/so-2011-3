@@ -99,6 +99,9 @@ void putChar(char c) {
 		x += (c != '\r') ? 1 : -1;
 	} else {
 		newLine();
+		x = getCursorX();
+		y = getCursorY();
+		getVideoMode()->screen[x][y] = c;
 	}
 	release_atomic();
 }

@@ -35,7 +35,7 @@ ccache gcc -c ../src/libs/mcgio.c                    -o mcgio.o          -fno-bu
 ccache gcc -Os -c ../src/libs/heap.c                 -o heap.o           -fno-builtin   # Bad thing: Some things broke so we used it just a bit.
 ccache gcc -c ../src/libs/mcglib.c                   -o mcglib.o         -fno-builtin
 ccache gcc -c ../src/libs/stdio.c                    -o stdio.o          -fno-builtin
-ccache gcc -c ../src/libs/malloc.c                   -o malloc.o         -fno-builtin
+ccache gcc -Os -c ../src/libs/malloc.c               -o malloc.o         -fno-builtin
 ccache gcc -Os -c ../src/libs/stdlib.c               -o stdlib.o         -fno-builtin
 ccache gcc -Os -c ../src/libs/string.c               -o string.o         -fno-builtin
 ccache gcc -Os -c ../src/libs/queue.c                -o queue.o          -fno-builtin

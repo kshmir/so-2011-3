@@ -125,21 +125,7 @@ int release_process_stack(Process * p) {
 
 
 
-void set_proc_stack(Process * p) {
-
-	if (kernel_rd()) {
-		int esp = sched_pindex(p);
-		*(char*)(0xb8510) = esp % 10 + '0';
-		*(char*)(0xb850e) = (esp / 10) % 10 + '0';
-		*(char*)(0xb850c) = (esp / 100) % 10 + '0';
-		*(char*)(0xb850a) = (esp / 1000) % 10 + '0';
-		*(char*)(0xb8508) = (esp / 10000) % 10 + '0';
-		*(char*)(0xb8506) = (esp / 100000) % 10 + '0';
-		*(char*)(0xb8504) = (esp / 1000000) % 10 + '0';
-		*(char*)(0xb8502) = (esp / 10000000) % 10 + '0';
-		*(char*)(0xb8500) = (esp / 100000000) % 10 + '0';
-	}
-	
+void set_proc_stack(Process * p) {	
 	aligned_st_pages         = (page_t *) aligned(&stack_pages[1]);
 	aligned_st_entries       = (page_entry_t *) aligned(&stackd_entries[1]);
 	kernel_pentries          = (page_entry_t *) aligned(&global_entries[3]);
