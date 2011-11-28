@@ -69,7 +69,6 @@ void backSpace() {
 	} else {
 		removeLastC();
 	}
-
 }
 
 // Removes a tab

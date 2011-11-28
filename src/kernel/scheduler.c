@@ -226,15 +226,15 @@ void process_cleanpid(int pid) {
 			fd_close(_curr->file_descriptors[i]);
 		}
 
-		if(_curr->params != NULL && _curr->argc != 0)
-		{
-			i = 0;
-			for(i = 0; i < _curr->argc; ++i)
-			{
-				free(((char**)_curr->params)[i]);
-			}
-			free(_curr->params);
-		}
+		// if(_curr->params != NULL && _curr->argc != 0)
+		// {
+		// 	i = 0;
+		// 	for(i = 0; i < _curr->argc; ++i)
+		// 	{
+		// 		free(((char**)_curr->params)[i]);
+		// 	}
+		// 	free(_curr->params);
+		// }
 
 		_curr->state = PROCESS_ZOMBIE;
 		_processes_available++;
@@ -257,15 +257,15 @@ void process_cleaner() {
 		close(i);
 	}
 
-	if(current_process->params != NULL && current_process->argc != 0)
-	{
-		i = 0;
-		for(i = 0; i < current_process->argc; ++i)
-		{
-			free(((char**)current_process->params)[i]);
-		}
-		free(current_process->params);
-	}	
+	// if(current_process->params != NULL && current_process->argc != 0)
+	// {
+	// 	i = 0;
+	// 	for(i = 0; i < current_process->argc; ++i)
+	// 	{
+	// 		free(((char**)current_process->params)[i]);
+	// 	}
+	// 	free(current_process->params);
+	// }	
 
 
 	current_process->state = PROCESS_ZOMBIE;

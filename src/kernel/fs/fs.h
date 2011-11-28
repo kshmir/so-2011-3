@@ -292,7 +292,7 @@ unsigned int folder_rem_direntry(unsigned int file_inode, unsigned int folder_in
 // from_inode: inode folder from which to copy
 // to_inode: inode folder to which we copy
 // returns: a MONIX error code or > 1 if OK
-unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode);
+unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode, int in_recursion);
 
 // fs_mv
 // Moves (even recursively) a folder or file from a name to another.

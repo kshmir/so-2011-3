@@ -556,11 +556,12 @@ int _mkdir (int argc, char ** argv)
 int _rm (int argc, char ** argv)
 {
 	if(argc > 1)	{
+		printf("Deleting %s...\n", argv[1]);
 		int code = rm(argv[1]);
 		if(code > 0)	{
-			printf("File %s deleted sucessfully.\n", argv[1]);
+			printf("File deleted sucessfully.\n");
 		} else if(code == ERR_NO_EXIST) {
-			printf("File %s doesn't exist, focus boy!\n", argv[1]);
+			printf("File doesn't exist, focus boy!\n");
 		} else if(code == ERR_PERMS) { 
 			printf("You don't have the permissions to delete %s\n", argv[1]);			
 		}
@@ -864,12 +865,13 @@ int _link(int argc, char ** argv)	{
 int _cp(int argc, char ** argv) {
 	if(argc > 2)
 	{
+		printf("Copying %s to %s\n", argv[1], argv[2]);
 		int code = cp(argv[1], argv[2]);
 		if(code > 0)
 		{
-			printf("Copied from %s to %s successfully\n", argv[1], argv[2]);
+			printf("Copied successfully!\n");
 		} 	else if(code == ERR_PERMS) { 
-			printf("You don't have the permissions to copy %s\n", argv[1]);			
+			printf("You don't have the permissions to perform the operation\n");			
 		}
 	}
 }

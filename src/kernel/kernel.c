@@ -323,7 +323,7 @@ void int_80() {
 			kernel_buffer[KERNEL_RETURN] = fs_getmod(kernel_buffer[1]);
 			break;
 		case CP:
-			kernel_buffer[KERNEL_RETURN] = fs_cp(kernel_buffer[1], kernel_buffer[2], current_ttyc()->pwd, current_ttyc()->pwd);
+			kernel_buffer[KERNEL_RETURN] = fs_cp(kernel_buffer[1], kernel_buffer[2], current_ttyc()->pwd, current_ttyc()->pwd, 0);
 			break;
 		case MV:
 			kernel_buffer[KERNEL_RETURN] = fs_mv(kernel_buffer[1], kernel_buffer[2], current_ttyc()->pwd);
@@ -515,7 +515,7 @@ kmain() {
 	_outb(0x71, prev | 0x40); //write the previous value or'd with 0x40. This turns on bit 6 of register B
 	
 	init_paging();
-	// setupGDT();
+	setupGDT();
 	PIC_remap(0x20, 0x70);
 	
 	Sti();	

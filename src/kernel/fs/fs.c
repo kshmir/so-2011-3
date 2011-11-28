@@ -50,6 +50,9 @@ static int fs_done;         // Without this set to 1, all ACLs pass.
 
 int bitmap_handling = 0;	// For debugging
 
+int opened_link = 0;
+static int file_op = 0;
+
 ///////////// Block Handling
 
 // Writes a block to disk (or disk cache)
@@ -762,6 +765,20 @@ unsigned int fs_rm(unsigned int inode, int inside_recursion) {
 		return ERR_PERMS;					// If you can't write you can't delete...
 	}
 	
+	if(n.links > 0)
+	{
+		return ERR_PERMS;					// If you can't write you can't delete...
+	}
+	
+	if(n.mode == EXT2_S_IFLNK)
+	{
+		int ptr = n.data_blocks[0];
+		inode_read(ptr, &n);
+		n.links--;
+		inode_write(ptr, &n);
+		inode_read(inode, &n);
+	}
+	
 	if (!inside_recursion) { // I'm not sure about this, but well... at least it's just a security flaw.
 		inode_read(n._dir_inode, &n);
 		if(!fs_has_perms(&n, ACTION_WRITE))	{		
@@ -980,6 +997,10 @@ unsigned int fs_open_link(char * name, char * target_name) {
 			inode_read(result, &n);
 			n.data_blocks[0] = target_inode;
 			inode_write(result, &n);	
+			result = fs_open_reg_file(target_name, folder_inode, O_RD);
+			inode_read(result, &n);
+			n.links++;
+			inode_write(result, &n);				
 			return 1;
 		}
 		else {
@@ -1005,7 +1026,7 @@ unsigned int fs_open_reg_file(char * name, unsigned int folder_inode, int mode) 
 // Opens a file
 unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int type) {
 	unsigned int inode_id = 0;
-
+	opened_link = 0;
 	if(strcmp(name, "/") == 0 && strlen(name) == strlen("/"))	{
 		return 1; // root
 	}
@@ -1040,9 +1061,10 @@ unsigned int fs_open_file(char * name, unsigned int folder_inode, int mode, int 
 				can = 0;
 			}
 			if(can || !fs_done)	{
-				if(n.mode == EXT2_S_IFLNK)	{
+				if(n.mode == EXT2_S_IFLNK && !file_op)	{
 					return n.data_blocks[0];
 				}
+				file_op = 0;
 				return inode_id;
 			} else {
 				return ERR_PERMS;
@@ -1394,13 +1416,19 @@ unsigned int fs_is_fifo(int inode) {
 }
 
 // Used to copy a file
-unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode) {
+unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode, int in_recursion) {
+	
+	file_op = 1;
 	int i1 = fs_open_file(name, from_inode, O_RD, EXT2_S_IFREG);
 	if(i1 < 0)	{
 		return i1; // If there's an error with the first name then there's nothing to do actually.
 	}
 	inode_read(i1, &n);	
 	int i2;
+	if(n.mode == EXT2_S_IFLNK && in_recursion)	{
+		return 0;
+	}
+	
 	if(!(n.mode & EXT2_S_IFDIR))
 	{
 		i2 = fs_open_file(newname, to_inode, O_WR, n.mode & (~EXT2_S_IFDIR)); 
@@ -1436,7 +1464,7 @@ unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode) {
 					break;
 				} else {
 					if (dot->name_len > 0 && dot->inode != i1 && dot->inode != n._dir_inode && i2 != 0) {
-						int _cp = fs_cp(dot->name, dot->name, i1, i2);
+						int _cp = fs_cp(dot->name, dot->name, i1, i2, 1);
 
 						if(_cp < 0)
 						{
@@ -1452,7 +1480,7 @@ unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode) {
 			}
 			inode_read(i1, &n);
 		} else {
-			fs_write_file(i2, (void *)&data, sizeof(block));		
+			fs_write_file(i2, (void *)&data, sizeof(block));
 		}
 	}
 
@@ -1461,6 +1489,7 @@ unsigned int fs_cp(char * name, char * newname, int from_inode, int to_inode) {
 
 // Used to move a file
 unsigned int fs_mv(char * name, char * newname, int from_inode) {
+	file_op = 1;
 	int i1 = fs_open_file(name, from_inode, O_WR | O_RD, EXT2_S_IFREG);
 	if(i1 < 0)	{
 		return i1; // If there's an error with the first name then there's nothing to do actually.
