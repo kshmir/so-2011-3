@@ -92,13 +92,15 @@ page_t * get_stack_page() {
 }
 
 void release_stack_page(page_t * page) {
-	int index = (page - aligned_st_pages) / 4096;
+	int index = (page - aligned_st_pages);
 	used_pages[index] = 0;
+	printvid(40,2, (page - aligned_st_pages));
 }
 
 void release_stack_entry(page_t * entry) {
 	int index = (entry - aligned_st_entries) / 4096;
 	used_entries[index] = 0;
+
 }
 
 int index = 0;
@@ -107,15 +109,18 @@ void add_process_stack(Process * p) {
 	page_entry_t * pentry = (page_entry_t *) p->stacke;
 	page_t * pstack  = get_stack_page();
 	p->stack_index++;
-	pentry->data[1023 - p->stack_index] = (int) pstack | 0x3;
+	pentry->data[1023 - p->stack_index] = (int) pstack | 0x7;
+	printvid(60,2, (pstack - aligned_st_pages));
+	printvid(40,1, p->stack_index);
 }
 
 int release_process_stack(Process * p) {
-	if(p->stack_index > 1)
+	if(p->stack_index >= 1)
 	{
 		page_entry_t * pentry = (page_entry_t *) p->stacke;
 		release_stack_page((page_t *)(pentry->data[1023 - p->stack_index]));
 		p->stack_index--;
+		printvid(40,1, p->stack_index);
 		return 0;
 	} else {
 		return 1;
@@ -134,7 +139,7 @@ void set_proc_stack(Process * p) {
 		page_entry_t * pentry = get_stack_entry();
 
 		for(j = 0; j < 1024; ++j)	{
-			pentry->data[j] = 0x3;
+			pentry->data[j] = 0;
 		}
 
 		page_t * pstack  = get_stack_page();
@@ -142,9 +147,9 @@ void set_proc_stack(Process * p) {
 		p->stacke = (void *)((int)p->stacke | (int)pentry);
 		p->stackp = (void *) (0xFFFFFFFF - 4096 - 4096 * 1024 * sched_pindex(p)); // All stacks start here.
 
-		kernel_pdir->data[1023 - sched_pindex(p)] = (int) pentry | 0x3;
+		kernel_pdir->data[1023 - sched_pindex(p)] = (int) pentry | 0x7;
 
-		pentry->data[1023] = (int) pstack  | 0x3;
+		pentry->data[1023] = (int) pstack  | 0x7;
 
 		p->stack_index = 0;
 		p->loaded = 1;

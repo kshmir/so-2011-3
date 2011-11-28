@@ -53,9 +53,29 @@ int fx() {
 }
 
 // Helps teachers to understand a bit our mess, well, no
-int _printHelp(int size, char** args) {
-	stackd(0);
-	stackd(0);
+int _stack(int size, char** args) {
+	printf("Start stack test\n");
+	b = 0;
+	f(0);
+	printf("Ended stack test\n");
+}
+
+// Helps teachers to understand a bit our mess, well, no
+int _malloc(int size, char** args) {
+	char * cadena = (char *) malloc(8000);
+	int i = 0;
+	
+	for(i = 0; i < 299; ++i)	{
+		cadena[i] = '0';
+	}
+	
+	printf("Imprimo muchos ceros: %s\n", cadena);
+	
+	free(cadena);
+	
+	cadena = (char *) malloc(8000);
+	
+	printf("No imprimo nada: %s\n", cadena);
 }
 
 // Test the breakable code

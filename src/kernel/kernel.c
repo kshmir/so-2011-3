@@ -523,7 +523,7 @@ kmain() {
 	idle = create_process("idle", idle_main, 0, 0, 0, 0, 0, 0, 0, NULL, 0);
 
 
-	// set_user_mode();
+	// set_user_mode(); Doesn't work.
 
 	// We soon exit out of here :)
 	while (1);

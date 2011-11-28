@@ -1,3 +1,5 @@
+#include "../../include/defs.h"
+
 extern int krn;
 
 void handler_e00() {
@@ -69,16 +71,7 @@ void handler_e0d(int cs) {
 	*(char*)(0xb8a12) = '0' + cs;
 }
 void handler_e0e(unsigned int esp) {
-	esp = _GetCR2();
-	*(char*)(0xb8610) = esp % 10 + '0';
-	*(char*)(0xb860e) = (esp / 10) % 10 + '0';
-	*(char*)(0xb860c) = (esp / 100) % 10 + '0';
-	*(char*)(0xb860a) = (esp / 1000) % 10 + '0';
-	*(char*)(0xb8608) = (esp / 10000) % 10 + '0';
-	*(char*)(0xb8606) = (esp / 100000) % 10 + '0';
-	*(char*)(0xb8604) = (esp / 1000000) % 10 + '0';
-	*(char*)(0xb8602) = (esp / 10000000) % 10 + '0';
-	*(char*)(0xb8600) = (esp / 100000000) % 10 + '0';
+	printvid(0,2,101010);
 }
 
 void handler_e10() {

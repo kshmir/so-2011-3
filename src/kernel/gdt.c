@@ -45,6 +45,8 @@ void setupGDT(void) {
 
     __asm__ volatile("lgdt (%%eax)"::"A"(&gdtr):);
     __asm__ volatile("ltr %%ax"::"a"(TASK_STATE_SEGMENT):);
+
+
 }
 
 unsigned int gdt_page_address(void) {

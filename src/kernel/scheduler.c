@@ -348,14 +348,14 @@ int sched_pcreate(char * name, int argc, void * params) {
 }
 
 // User processes names
-char* _function_names[] = { "help", "test", "clear", "ssh", "hola", "reader", "writer", 
+char* _function_names[] = { "stack", "malloc", "test", "clear", "ssh", "hola", "reader", "writer", 
 	"kill", "getc", "putc", "top", "hang", "setp", "setsched", "dcheck", 
 	"dread", "dwrite", "dfill", "ls", "cd", "pwd", "mkdir", "rm", "touch", "cat", "fwrite",
 	"logout", "makeuser", "setgid", "udelete", "chown", "chmod", "getown", "getmod", "fbulk",
 	"finfo", "su", "link", "cp", "mv", "smallhang", "fsstat", NULL };
 
 // User processes pointers
-int ((*_functions[])(int, char**)) = { _printHelp, _test, _clear, _ssh, _hola_main, 
+int ((*_functions[])(int, char**)) = { _stack, _malloc, _test, _clear, _ssh, _hola_main, 
 	reader_main, writer_main, _kill, getc_main, putc_main, top_main, _hang, 
 	_setp, _setsched, _dcheck, _dread, _dwrite, _dfill, _ls, _cd, _pwd, _mkdir, _rm, _touch,
 	_cat, _fwrite, _logout, _makeuser, _setgid, _udelete, _chown, _chmod, _getown, _getmod, _fbulk,
@@ -607,16 +607,27 @@ int waits = 0;
 
 void update_stack() {
 	
-	unsigned int esp = _GetESP();	
-	esp = ((unsigned int)current_process->stackp - esp + 4096);
+	unsigned int esp = _GetESP();
 	
-	if((esp + 3072) > 4096 * (current_process->stack_index + 1))	{
-		add_process_stack(current_process);
-	}
-	
-	while((esp + 3072) < 4096 * (current_process->stack_index))	{
-		if (release_process_stack(current_process)) {
-			break;
+	if(current_process->state == PROCESS_RUNNING)
+	{
+		esp = ((unsigned int)current_process->stackp - esp + 4096);
+
+		if((esp + 3072) > 4096 * (current_process->stack_index + 1))	{
+			add_process_stack(current_process);
+		}
+
+		int locks = 0;
+		while(current_process->stack_index > 1 && (esp + 3072) < 4096 * (current_process->stack_index - 2))	{
+			if (release_process_stack(current_process)) {
+				break;
+			} else {
+				locks++;
+				if(locks > 10)
+				{
+					break;
+				}
+			}
 		}
 	}
 }
@@ -656,6 +667,7 @@ void * storage_index() {
 }
 
 
+
 // Used by scheduler in context switching
 int scheduler_load_esp()
 {
@@ -667,6 +679,8 @@ int scheduler_load_esp()
 			// :: "m" (current_process->process_dir));
 	
 	esp = current_process->esp;
+	
+	printvid(40,0, esp);
 
 	return current_process->esp;
 }
