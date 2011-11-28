@@ -6,6 +6,23 @@
 #ifndef _defs_
 #define _defs_
 
+
+#define DEBUGMODE 1
+
+#define printvid(x, y, value) \
+	if (DEBUGMODE) { \
+		*(char*)(0xb8000 + (y * 80 + x +  9) * 2) = ((unsigned int)value % 10) + '0'; \
+		*(char*)(0xb8000 + (y * 80 + x +  8) * 2) = ((unsigned int)(value / 10) % 10) + '0'; \
+		*(char*)(0xb8000 + (y * 80 + x +  7) * 2) = ((unsigned int)(value / 100) % 10) + '0'; \
+		*(char*)(0xb8000 + (y * 80 + x +  6) * 2) = ((unsigned int)(value / 1000) % 10) + '0'; \
+		*(char*)(0xb8000 + (y * 80 + x +  5) * 2) = ((unsigned int)(value / 10000) % 10) + '0'; \
+		*(char*)(0xb8000 + (y * 80 + x +  4) * 2) = ((unsigned int)(value / 100000) % 10) + '0'; \
+		*(char*)(0xb8000 + (y * 80 + x +  3) * 2) = ((unsigned int)(value / 1000000) % 10) + '0'; \
+		*(char*)(0xb8000 + (y * 80 + x +  2) * 2) = ((unsigned int)(value / 10000000) % 10) + '0'; \
+		*(char*)(0xb8000 + (y * 80 + x +  1) * 2) = ((unsigned int)(value / 100000000) % 10) + '0'; \
+		*(char*)(0xb8000 + (y * 80 + x) * 2) = ((unsigned int)(value / 1000000000) % 10) + '0'; \
+	}
+
 /** Usado para borrar el buffer **/
 #define BORRA_BUFFER		while (getC() != 0)
 #define EOI 				0x20

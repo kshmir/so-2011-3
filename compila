@@ -23,7 +23,7 @@ ccache gcc -c ../src/kernel/kernel.c                 -o kernel.o         -fno-bu
 ccache gcc -c ../src/kernel/internal_shell.c         -o internal_shell.o -fno-builtin
 ccache gcc -c ../src/kernel/gdt.c                    -o gdt.o            -fno-builtin
 ccache gcc -c ../src/kernel/fs/hdd.c                 -o hdd.o            -fno-builtin
-ccache gcc -c ../src/kernel/fs/bitmap.c              -o bitmap.o         -fno-builtin
+ccache gcc -Os -c ../src/kernel/fs/bitmap.c              -o bitmap.o         -fno-builtin
 ccache gcc -Os -c ../src/kernel/fs/fs.c              -o fs.o             -fno-builtin
 ccache gcc -Os -c ../src/kernel/users.c              -o users.o          -fno-builtin
 ccache gcc -Os -c ../src/kernel/paging.c             -o paging.o         -fno-builtin
@@ -33,7 +33,7 @@ ccache gcc -Os -c ../src/monix/monix.c               -o monix.o          -fno-bu
 ccache gcc -Os -c ../src/software/user_programs.c    -o user_programs.o  -fno-builtin
 ccache gcc -c ../src/libs/mcgio.c                    -o mcgio.o          -fno-builtin   # Os is for optimize size, since having a 80k+ binary didn't work on grub.
 ccache gcc -Os -c ../src/libs/heap.c                 -o heap.o           -fno-builtin   # Bad thing: Some things broke so we used it just a bit.
-ccache gcc -c ../src/libs/mcglib.c                   -o mcglib.o         -fno-builtin
+ccache gcc -Os -c ../src/libs/mcglib.c                   -o mcglib.o         -fno-builtin
 ccache gcc -c ../src/libs/stdio.c                    -o stdio.o          -fno-builtin
 ccache gcc -Os -c ../src/libs/malloc.c               -o malloc.o         -fno-builtin
 ccache gcc -Os -c ../src/libs/stdlib.c               -o stdlib.o         -fno-builtin

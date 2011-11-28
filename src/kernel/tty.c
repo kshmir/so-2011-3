@@ -153,7 +153,7 @@ int tty_main (int argc, char ** argv)
 
 	
 	printf("Monix v1 - TTY %d\n", tty_number);
-	printf("Cristian Pereyra - Legajo 51190\n");
+	printf("Cristian Pereyra  -  Legajo 51190\n");
 	printf("Sistemas Operativos - 2011 - ITBA\n");
 	printf("Dennis Ritchie RIP\n");
 
