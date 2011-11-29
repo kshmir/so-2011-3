@@ -682,6 +682,7 @@ int scheduler_load_esp()
 	
 	printvid(40,0, esp);
 
+	update_process_stack(current_process);
 	return current_process->esp;
 }
 

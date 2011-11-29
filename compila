@@ -22,7 +22,7 @@ ccache gcc -c ../src/kernel/tty_context.c            -o tty_context.o    -fno-bu
 ccache gcc -c ../src/kernel/kernel.c                 -o kernel.o         -fno-builtin
 ccache gcc -c ../src/kernel/internal_shell.c         -o internal_shell.o -fno-builtin
 ccache gcc -c ../src/kernel/gdt.c                    -o gdt.o            -fno-builtin
-ccache gcc -c ../src/kernel/fs/hdd.c                 -o hdd.o            -fno-builtin
+ccache gcc -Os -c ../src/kernel/fs/hdd.c                 -o hdd.o            -fno-builtin
 ccache gcc -Os -c ../src/kernel/fs/bitmap.c              -o bitmap.o         -fno-builtin
 ccache gcc -Os -c ../src/kernel/fs/fs.c              -o fs.o             -fno-builtin
 ccache gcc -Os -c ../src/kernel/users.c              -o users.o          -fno-builtin

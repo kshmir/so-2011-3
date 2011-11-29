@@ -128,7 +128,17 @@ int release_process_stack(Process * p) {
 }
 
 
-
+void update_process_stack(Process * p) {
+	int i = 1;
+	for(; i < 64; ++i)
+	{
+		if(i != sched_pindex(p))
+		{
+			kernel_pdir->data[1023 - i] = 0;
+		}
+	}
+	kernel_pdir->data[1023 - sched_pindex(p)] = (int) p->stacke | 0x7;
+}
 
 void set_proc_stack(Process * p) {	
 	aligned_st_pages         = (page_t *) aligned(&stack_pages[1]);
